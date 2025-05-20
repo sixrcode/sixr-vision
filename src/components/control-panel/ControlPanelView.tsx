@@ -50,14 +50,12 @@ export function ControlPanelView() {
         <div className="flex items-center gap-3">
           {isInitialized && (
             <div className="flex items-center text-sm text-green-400" title="Audio is active">
-              <Mic className="mr-1 h-4 w-4" />
-              <span>Audio</span>
+              <Mic className="h-4 w-4" />
             </div>
           )}
           {settings.showWebcam && (
             <div className="flex items-center text-sm text-sky-400" title="Webcam is active">
-              <Camera className="mr-1 h-4 w-4" />
-              <span>Webcam</span>
+              <Camera className="h-4 w-4" />
             </div>
           )}
           {!isInitialized && (
@@ -95,7 +93,7 @@ export function ControlPanelView() {
             <PaletteGenie value="ai-palette-genie" />
             <AmbianceGenerator value="ai-ambiance-generator" />
             <ProceduralAssetsGenerator value="ai-procedural-assets" />
-            <AiVisualOverlayMixer value="ai-visual-overlay-mixer" /> {/* Add new component */}
+            <AiVisualOverlayMixer value="ai-visual-overlay-mixer" />
             <OtherControls value="system-safety" />
           </Accordion>
         </div>
