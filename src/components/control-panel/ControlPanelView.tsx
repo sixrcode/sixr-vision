@@ -16,7 +16,7 @@ import { AiVisualOverlayMixer } from './ai-tools/AiVisualOverlayMixer';
 import { LogoAnimationControls } from './LogoAnimationControls';
 import { OtherControls } from './OtherControls';
 import { useAudioAnalysis } from '@/hooks/useAudioAnalysis';
-import { useEffect, useRef, useState } from 'react'; // Added useState
+import { useEffect, useState } from 'react';
 import { Power, Mic, MicOff, Camera, Loader2 } from 'lucide-react';
 import { Accordion } from '@/components/ui/accordion';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
@@ -26,23 +26,15 @@ import { useSettings } from '@/providers/SettingsProvider';
 export function ControlPanelView() {
   const { initializeAudio, stopAudioAnalysis, isInitialized, error } = useAudioAnalysis();
   const { settings } = useSettings();
-  const audioInitializationAttempted = useRef(false);
   const [isTogglingAudio, setIsTogglingAudio] = useState(false);
 
 
-  useEffect(() => {
-    // Attempt initial audio activation (webcam handled by its own component/settings)
-    // This effect will only run once due to audioInitializationAttempted.current
-    if (!isInitialized && !error && !audioInitializationAttempted.current && typeof window !== 'undefined') {
-      audioInitializationAttempted.current = true; 
-      // console.log("ControlPanelView: Attempting initial audio initialization.");
-      // setIsTogglingAudio(true);
-      // initializeAudio().finally(() => setIsTogglingAudio(false));
-      // Let's make auto-init opt-in or triggered by a more explicit user action
-      // For now, rely on the user clicking the power button.
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Removed dependencies to make it truly run once for attempt flag
+  // useEffect(() => {
+  //   // This effect was for initial auto-activation, now handled by button click
+  //   // if (!isInitialized && !error && !audioInitializationAttempted.current && typeof window !== 'undefined') {
+  //   //   audioInitializationAttempted.current = true;
+  //   // }
+  // }, [isInitialized, error, initializeAudio]);
 
 
   const sColor = "rgb(254, 190, 15)";
@@ -53,7 +45,7 @@ export function ControlPanelView() {
 
   const handlePowerToggle = async () => {
     console.log("handlePowerToggle called. isInitialized:", isInitialized, "isTogglingAudio:", isTogglingAudio);
-    if (isTogglingAudio) return; // Prevent multiple clicks while processing
+    if (isTogglingAudio) return; 
 
     setIsTogglingAudio(true);
     if (isInitialized) {
@@ -64,9 +56,6 @@ export function ControlPanelView() {
       await initializeAudio();
     }
     setIsTogglingAudio(false);
-    // Note: isInitialized state used in the button's visual below will update on next render,
-    // so the button icon might not immediately reflect the change if it's very fast.
-    // The console log helps track the *attempted* state change.
     console.log("handlePowerToggle finished. The 'isInitialized' state will update on the next render.");
   };
 
