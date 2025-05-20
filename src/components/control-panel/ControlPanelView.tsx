@@ -16,8 +16,8 @@ import { AiVisualOverlayMixer } from './ai-tools/AiVisualOverlayMixer';
 import { LogoAnimationControls } from './LogoAnimationControls';
 import { OtherControls } from './OtherControls';
 import { useAudioAnalysis } from '@/hooks/useAudioAnalysis';
-import { useEffect, useRef } from 'react'; // Added useRef here
-import { Power, Mic, MicOff, Camera } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react'; // Added useState
+import { Power, Mic, MicOff, Camera, Loader2 } from 'lucide-react';
 import { Accordion } from '@/components/ui/accordion';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { useSettings } from '@/providers/SettingsProvider';
@@ -27,15 +27,22 @@ export function ControlPanelView() {
   const { initializeAudio, stopAudioAnalysis, isInitialized, error } = useAudioAnalysis();
   const { settings } = useSettings();
   const audioInitializationAttempted = useRef(false);
+  const [isTogglingAudio, setIsTogglingAudio] = useState(false);
 
 
   useEffect(() => {
-    // Attempt initial audio and webcam activation
-    if (!isInitialized && !error && !audioInitializationAttempted.current) {
-      audioInitializationAttempted.current = true; // Mark as attempted
-      initializeAudio();
+    // Attempt initial audio activation (webcam handled by its own component/settings)
+    // This effect will only run once due to audioInitializationAttempted.current
+    if (!isInitialized && !error && !audioInitializationAttempted.current && typeof window !== 'undefined') {
+      audioInitializationAttempted.current = true; 
+      // console.log("ControlPanelView: Attempting initial audio initialization.");
+      // setIsTogglingAudio(true);
+      // initializeAudio().finally(() => setIsTogglingAudio(false));
+      // Let's make auto-init opt-in or triggered by a more explicit user action
+      // For now, rely on the user clicking the power button.
     }
-  }, [isInitialized, initializeAudio, error]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Removed dependencies to make it truly run once for attempt flag
 
 
   const sColor = "rgb(254, 190, 15)";
@@ -44,12 +51,23 @@ export function ControlPanelView() {
   const rColor = "rgb(91, 185, 70)";
   const torusFontFamily = "'Torus Variations', var(--font-geist-mono), monospace";
 
-  const handlePowerToggle = () => {
+  const handlePowerToggle = async () => {
+    console.log("handlePowerToggle called. isInitialized:", isInitialized, "isTogglingAudio:", isTogglingAudio);
+    if (isTogglingAudio) return; // Prevent multiple clicks while processing
+
+    setIsTogglingAudio(true);
     if (isInitialized) {
-      stopAudioAnalysis();
+      console.log("Calling stopAudioAnalysis...");
+      await stopAudioAnalysis();
     } else {
-      initializeAudio();
+      console.log("Calling initializeAudio...");
+      await initializeAudio();
     }
+    setIsTogglingAudio(false);
+    // Note: isInitialized state used in the button's visual below will update on next render,
+    // so the button icon might not immediately reflect the change if it's very fast.
+    // The console log helps track the *attempted* state change.
+    console.log("handlePowerToggle finished. The 'isInitialized' state will update on the next render.");
   };
 
   return (
@@ -70,12 +88,19 @@ export function ControlPanelView() {
                 variant="ghost"
                 onClick={handlePowerToggle}
                 className="h-7 w-7 text-sm"
+                disabled={isTogglingAudio}
               >
-                {isInitialized ? <Power className="text-green-400" /> : <Power className="text-destructive" />}
+                {isTogglingAudio ? (
+                  <Loader2 className="animate-spin" />
+                ) : isInitialized ? (
+                  <Power className="text-green-400" /> 
+                ) : (
+                  <Power className="text-destructive" />
+                )}
               </Button>
             </TooltipTrigger>
             <TooltipContent>
-              <p>{isInitialized ? 'Stop Audio Processing' : (error ? 'Retry Audio Initialization' : 'Initialize Audio')}</p>
+              <p>{isTogglingAudio ? "Processing..." : isInitialized ? 'Stop Audio Processing' : (error ? 'Retry Audio Initialization' : 'Initialize Audio')}</p>
             </TooltipContent>
           </Tooltip>
 
@@ -92,14 +117,14 @@ export function ControlPanelView() {
           </Tooltip>
           
           {settings.showWebcam && (
-            <Tooltip>
+             <Tooltip>
               <TooltipTrigger asChild>
                 <div className="flex items-center text-sm text-sky-400 cursor-default">
                   <Camera className="h-4 w-4" />
                 </div>
               </TooltipTrigger>
               <TooltipContent>
-                <p>Webcam is active</p>
+                <p>Webcam is active</p> 
               </TooltipContent>
             </Tooltip>
           )}
@@ -148,3 +173,4 @@ export function ControlPanelView() {
     </div>
   );
 }
+
