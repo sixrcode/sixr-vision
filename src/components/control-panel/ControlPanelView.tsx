@@ -29,12 +29,15 @@ export function ControlPanelView() {
   const [isTogglingAudio, setIsTogglingAudio] = useState(false);
 
 
-  // useEffect(() => {
-  //   // This effect was for initial auto-activation, now handled by button click
-  //   // if (!isInitialized && !error && !audioInitializationAttempted.current && typeof window !== 'undefined') {
-  //   //   audioInitializationAttempted.current = true;
-  //   // }
-  // }, [isInitialized, error, initializeAudio]);
+  useEffect(() => {
+    // Attempt to initialize audio automatically on mount
+    // The initializeAudio function has internal checks to prevent re-initialization if already active or if an error occurred.
+    if (!isInitialized && !error) {
+        console.log("ControlPanelView: Attempting initial audio initialization on mount.");
+        initializeAudio();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Run only once on mount
 
 
   const sColor = "rgb(254, 190, 15)";
