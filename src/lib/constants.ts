@@ -38,7 +38,7 @@ export const SCENES: SceneDefinition[] = [
   {
     id: 'spectrum_bars',
     name: 'Spectrum Bars',
-    thumbnailUrl: 'https://placehold.co/120x80.png', // Placeholder suggesting vertical bars
+    thumbnailUrl: 'https://placehold.co/120x80/1f2937/ffffff.png', // Dark background, white bars
     dataAiHint: 'audio spectrum',
     draw: (ctx, audioData, _settings) => {
       const { width, height } = ctx.canvas;
@@ -54,10 +54,10 @@ export const SCENES: SceneDefinition[] = [
         ctx.font = '16px var(--font-geist-sans)';
         ctx.fillText('Waiting for audio input...', width / 2, height / 2);
         
-        const barWidth = width / (DEFAULT_SETTINGS.fftSize / 2);
+        const barWidth = width / audioData.spectrum.length; // Use actual spectrum length
          ctx.strokeStyle = 'hsla(var(--muted-foreground), 0.2)';
          ctx.lineWidth = 1;
-         for(let i=0; i < DEFAULT_SETTINGS.fftSize / 2; i++) {
+         for(let i=0; i < audioData.spectrum.length; i++) { // Use actual spectrum length
             ctx.strokeRect(i * barWidth, height - height * 0.3, barWidth -2, height * 0.3);
          }
         return;
@@ -74,7 +74,7 @@ export const SCENES: SceneDefinition[] = [
   {
     id: 'radial_burst',
     name: 'Radial Burst',
-    thumbnailUrl: 'https://placehold.co/120x80.png', // Placeholder suggesting outward burst
+    thumbnailUrl: 'https://placehold.co/120x80/1f2937/eab308.png', // Dark bg, yellow/gold burst suggestion
     dataAiHint: 'abstract explosion',
     draw: (ctx, audioData, settings) => {
       const { width, height } = ctx.canvas;
@@ -85,6 +85,26 @@ export const SCENES: SceneDefinition[] = [
       const centerX = width / 2;
       const centerY = height / 2;
       
+      const isAudioSilent = audioData.rms < 0.01 && audioData.spectrum.every(v => v < 5);
+
+      if (isAudioSilent && !audioData.beat) { 
+        ctx.fillStyle = 'hsl(var(--muted-foreground))';
+        ctx.textAlign = 'center';
+        ctx.font = '16px var(--font-geist-sans)';
+        ctx.fillText('Visualizer active. Waiting for audio input...', width / 2, height / 2);
+        
+        const numPlaceholderCircles = 8;
+        ctx.strokeStyle = 'hsla(var(--muted-foreground), 0.15)';
+        ctx.lineWidth = 2;
+        for (let i = 0; i < numPlaceholderCircles; i++) {
+          const r = (Math.min(width, height) * 0.05) + (i * Math.min(width, height) * 0.03);
+          ctx.beginPath();
+          ctx.arc(centerX, centerY, r, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+        return;
+      }
+      
       if (audioData.beat) {
         const particleCount = 50 + Math.floor(audioData.rms * 100);
         for (let i = 0; i < particleCount; i++) {
@@ -94,13 +114,15 @@ export const SCENES: SceneDefinition[] = [
           const y = centerY + Math.sin(angle) * radius;
           const size = 1 + Math.random() * 4 * audioData.rms;
           
-          const hue = (settings.fftSize === 128 ? 200 : settings.fftSize === 256 ? 260 : 320) + audioData.bassEnergy * 60;
+          const hueBase = (settings.fftSize === 128 ? 200 : settings.fftSize === 256 ? 260 : 320);
+          const hue = (hueBase + audioData.bassEnergy * 60) % 360;
           ctx.fillStyle = `hsla(${hue}, 100%, ${50 + audioData.trebleEnergy * 50}%, ${0.5 + audioData.midEnergy * 0.5})`;
           ctx.beginPath();
           ctx.arc(x, y, size, 0, Math.PI * 2);
           ctx.fill();
         }
       }
+      
        const numStaticParticles = 20;
        for (let i = 0; i < numStaticParticles; i++) {
          const angle = (i / numStaticParticles) * Math.PI * 2;
@@ -118,7 +140,7 @@ export const SCENES: SceneDefinition[] = [
   {
     id: 'mirror_silhouette',
     name: 'Mirror Silhouette',
-    thumbnailUrl: 'https://placehold.co/120x80.png', // Placeholder suggesting a mirrored shape
+    thumbnailUrl: 'https://placehold.co/120x80/1f2937/a78bfa.png', // Dark bg, purple-ish silhouette suggestion
     dataAiHint: 'silhouette reflection',
     draw: (ctx, audioData, settings, webcamFeed) => {
       const { width, height } = ctx.canvas;
@@ -173,7 +195,7 @@ export const SCENES: SceneDefinition[] = [
   {
     id: 'particle_finale',
     name: 'Particle Finale',
-    thumbnailUrl: 'https://placehold.co/120x80.png', // Placeholder suggesting scattered particles
+    thumbnailUrl: 'https://placehold.co/120x80/1f2937/f472b6.png', // Dark bg, pink/magenta particle suggestion
     dataAiHint: 'fireworks celebration',
     draw: (ctx, audioData, _settings) => {
       const { width, height } = ctx.canvas;
