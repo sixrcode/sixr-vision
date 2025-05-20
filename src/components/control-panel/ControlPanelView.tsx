@@ -57,16 +57,19 @@ export function ControlPanelView() {
         await initializeAudio();
         setIsTogglingAudio(false);
       }
-      if (!settings.showWebcam && !isTogglingWebcam) {
-         console.log("ControlPanelView: Auto-initializing webcam on load.");
-         setIsTogglingWebcam(true);
-         updateSetting('showWebcam', true); // This will trigger WebcamFeed's useEffect
-         setIsTogglingWebcam(false);
+      // Auto-init webcam only if settings.showWebcam is true by default and not already toggling
+      if (settings.showWebcam && !isTogglingWebcam) { // Check current setting
+         console.log("ControlPanelView: Auto-initializing webcam on load based on settings.showWebcam=true.");
+         // No direct action needed here, WebcamFeed will react to settings.showWebcam
+         // But if we wanted to force an attempt if it wasn't yet active:
+         // setIsTogglingWebcam(true);
+         // updateSetting('showWebcam', true); // This is redundant if default is true
+         // setIsTogglingWebcam(false);
       }
     };
     autoInit();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, []); // Removed settings.showWebcam from deps to avoid re-triggering webcam init if user toggles it off
 
 
   const handleAudioToggle = async () => {
@@ -94,8 +97,8 @@ export function ControlPanelView() {
   };
 
   return (
-    <div className="h-full flex flex-col text-[hsl(var(--control-panel-foreground))] !bg-control-panel-background">
-      <header className="p-4 border-b border-[hsl(var(--control-panel-border))] flex justify-between items-center">
+    <div className="h-full flex flex-col text-control-panel-foreground bg-control-panel-background">
+      <header className="p-4 border-b border-control-panel-border flex justify-between items-center">
         <div className="flex items-center">
           <SixrLogo className="h-6 w-auto mr-2" />
           <h2 className="text-lg font-semibold" style={{ fontFamily: torusFontFamily }}>
@@ -176,8 +179,8 @@ export function ControlPanelView() {
           </Accordion>
         </div>
       </ScrollArea>
-      <footer className="p-2 border-t border-[hsl(var(--control-panel-border))] text-center">
-        <p className="text-xs text-[hsl(var(--muted-foreground))]">
+      <footer className="p-2 border-t border-control-panel-border text-center">
+        <p className="text-xs text-muted-foreground">
           &copy;{' '}
           <span style={{ fontFamily: torusFontFamily }}>
             <span style={{ color: sColor }}>S</span>

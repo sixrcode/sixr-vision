@@ -76,7 +76,6 @@ body {
 
 
     /* Sidebar variables (mapped from control panel or theme) */
-    /* Directly use HSL var for sidebar background to remove indirection */
     --sidebar-background: hsl(var(--control-panel-background-hsl)); 
     --sidebar-foreground: hsl(var(--control-panel-foreground-hsl));
     --sidebar-border: hsl(var(--control-panel-border-hsl));
@@ -151,7 +150,7 @@ body {
     --control-panel-foreground: hsl(var(--control-panel-foreground-hsl));
     --control-panel-border: hsl(var(--control-panel-border-hsl));
     
-    --sidebar-background: hsl(var(--control-panel-background-hsl)); /* Use HSL var directly */
+    --sidebar-background: hsl(var(--control-panel-background-hsl));
     --sidebar-foreground: hsl(var(--control-panel-foreground-hsl));
     --sidebar-border: hsl(var(--control-panel-border-hsl));
     --sidebar-accent: var(--accent);
@@ -171,6 +170,30 @@ body {
     --chart-3: hsl(var(--chart-3-hsl));
     --chart-4: hsl(var(--chart-4-hsl));
     --chart-5: hsl(var(--chart-5-hsl));
+
+    /* Explicit Sidebar Styling Overrides */
+    /* Apply to the main sidebar container used on desktop */
+    div[data-sidebar="sidebar"]:not([data-mobile="true"]) {
+      background-color: hsl(var(--sidebar-background)) !important;
+      color: hsl(var(--sidebar-foreground)) !important;
+    }
+
+    /* Apply to the SheetContent used for mobile sidebar */
+    div[data-radix-dialog-content][data-sidebar="sidebar"][data-mobile="true"] {
+      background-color: hsl(var(--sidebar-background)) !important;
+      color: hsl(var(--sidebar-foreground)) !important;
+    }
+    /* Fallback if SheetContent doesn't directly use data-radix-dialog-content */
+     div[data-sidebar="sidebar"][data-mobile="true"] {
+      background-color: hsl(var(--sidebar-background)) !important;
+      color: hsl(var(--sidebar-foreground)) !important;
+    }
+
+    /* Ensure the direct child of ScrollArea in ControlPanelView is also themed */
+    /* This might be redundant if the sidebar itself is fixed, but acts as a safeguard */
+    .control-panel-content-wrapper { /* We might need to add this class in ControlPanelView */
+        background-color: hsl(var(--control-panel-background)) !important;
+    }
   }
 }
 

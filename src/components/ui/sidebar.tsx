@@ -182,7 +182,7 @@ const Sidebar = React.forwardRef<
       return (
         <div
           className={cn(
-            "flex h-full w-[--sidebar-width] flex-col !bg-sidebar text-sidebar-foreground", // Added ! to bg-sidebar
+            "flex h-full w-[--sidebar-width] flex-col bg-sidebar text-sidebar-foreground",
             className
           )}
           ref={ref}
@@ -200,7 +200,7 @@ const Sidebar = React.forwardRef<
             data-sidebar="sidebar"
             data-mobile="true"
             className={cn(
-              "w-[--sidebar-width] p-0 !bg-sidebar text-sidebar-foreground [&>button]:hidden", // Added ! to bg-sidebar
+              "w-[--sidebar-width] p-0 bg-sidebar text-sidebar-foreground [&>button]:hidden", 
               className
             )}
             style={
@@ -253,10 +253,9 @@ const Sidebar = React.forwardRef<
           <div
             data-sidebar="sidebar"
             className={cn(
-              "flex h-full w-full flex-col !bg-sidebar text-sidebar-foreground group-data-[variant=floating]:rounded-lg group-data-[variant=floating]:border group-data-[variant=floating]:border-sidebar-border group-data-[variant=floating]:shadow", // Added ! to bg-sidebar
+              "flex h-full w-full flex-col bg-sidebar text-sidebar-foreground group-data-[variant=floating]:rounded-lg group-data-[variant=floating]:border group-data-[variant=floating]:border-sidebar-border group-data-[variant=floating]:shadow",
               className
             )}
-            style={{ backgroundColor: 'hsl(var(--sidebar-background)) !important' } as React.CSSProperties} // Inline style with !important
           >
             {children}
           </div>
