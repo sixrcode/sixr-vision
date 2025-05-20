@@ -11,12 +11,13 @@ import { PresetSelector } from './PresetSelector';
 import { PaletteGenie } from './ai-tools/PaletteGenie';
 import { ProceduralAssetsGenerator } from './ai-tools/ProceduralAssetsGenerator';
 import { AiPresetChooser } from './ai-tools/AiPresetChooser';
+import { AmbianceGenerator } from './ai-tools/AmbianceGenerator'; // Import new component
 import { LogoAnimationControls } from './LogoAnimationControls';
 import { OtherControls } from './OtherControls';
 import { useAudioAnalysis } from '@/hooks/useAudioAnalysis';
 import { useSettings } from '@/providers/SettingsProvider';
 import { useEffect } from 'react';
-import { Power, Mic, Camera } from 'lucide-react'; // Ensure Camera is imported
+import { Power, Mic, Camera } from 'lucide-react';
 import { Accordion } from '@/components/ui/accordion';
 
 export function ControlPanelView() {
@@ -45,23 +46,19 @@ export function ControlPanelView() {
           </h2>
         </div>
 
-        <div className="flex items-center gap-3"> {/* Container for right-side elements */}
-          {/* Audio Status Indicator */}
+        <div className="flex items-center gap-3">
           {isInitialized && (
             <div className="flex items-center text-sm text-green-400" title="Audio is active">
               <Mic className="mr-1 h-4 w-4" />
               <span>Audio</span>
             </div>
           )}
-          {/* Webcam Status Indicator */}
           {settings.showWebcam && (
             <div className="flex items-center text-sm text-sky-400" title="Webcam is active">
               <Camera className="mr-1 h-4 w-4" />
               <span>Webcam</span>
             </div>
           )}
-
-          {/* Audio Initialization Button (only shown if audio is not initialized) */}
           {!isInitialized && (
             <Button
               size="sm"
@@ -95,6 +92,7 @@ export function ControlPanelView() {
             <WebcamControls value="webcam-layer" />
             <AiPresetChooser value="ai-preset-chooser" />
             <PaletteGenie value="ai-palette-genie" />
+            <AmbianceGenerator value="ai-ambiance-generator" /> {/* Add new component */}
             <ProceduralAssetsGenerator value="ai-procedural-assets" />
             <OtherControls value="system-safety" />
           </Accordion>
