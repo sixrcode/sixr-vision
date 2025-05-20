@@ -19,6 +19,7 @@ import { Accordion } from '@/components/ui/accordion';
 
 export function ControlPanelView() {
   const { initializeAudio, isInitialized, error } = useAudioAnalysis();
+  const sixrTextColor = "rgb(37, 150, 190)";
 
   // Attempt to initialize audio on mount
   useEffect(() => {
@@ -44,7 +45,9 @@ export function ControlPanelView() {
       <header className="p-4 border-b border-[hsl(var(--control-panel-border))] flex justify-between items-center">
         <div className="flex items-center">
           <SixrLogo className="h-6 w-auto mr-2" />
-          <h2 className="text-lg font-semibold">SIXR Vision</h2>
+          <h2 className="text-lg font-semibold">
+            <span style={{ color: sixrTextColor }}>SIXR</span> Vision
+          </h2>
         </div>
         {!isInitialized && (
             <Button size="sm" onClick={initializeAudio} variant={buttonState.variant} disabled={buttonState.disabled}>
@@ -75,7 +78,9 @@ export function ControlPanelView() {
         </Accordion>
       </ScrollArea>
       <footer className="p-2 border-t border-[hsl(var(--control-panel-border))] text-center">
-        <p className="text-xs text-[hsl(var(--muted-foreground))]">&copy; SIXR Systems {new Date().getFullYear()}</p>
+        <p className="text-xs text-[hsl(var(--muted-foreground))]">
+          &copy; <span style={{ color: sixrTextColor }}>SIXR</span> Systems {new Date().getFullYear()}
+        </p>
       </footer>
     </div>
   );

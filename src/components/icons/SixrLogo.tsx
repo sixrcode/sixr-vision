@@ -2,6 +2,7 @@
 import type { SVGProps } from 'react';
 
 export function SixrLogo(props: SVGProps<SVGSVGElement>) {
+  const sixrColor = "rgb(37, 150, 190)";
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
@@ -16,13 +17,11 @@ export function SixrLogo(props: SVGProps<SVGSVGElement>) {
         textAnchor="middle"
         fontSize="24"
         fontFamily="'Torus Variations Biline Bold', var(--font-geist-mono), monospace"
-        // Default fill can be removed or kept as a fallback if tspans don't cover everything
-        // fill="currentColor" 
       >
-        <tspan fill="rgba(254,190,15,1)">S</tspan>
-        <tspan fill="rgba(51,197,244,1)">I</tspan>
-        <tspan fill="rgb(37, 150, 190)">X</tspan>
-        <tspan fill="rgba(91,185,70,1)">R</tspan>
+        <tspan fill={sixrColor}>S</tspan>
+        <tspan fill={sixrColor}>I</tspan>
+        <tspan fill={sixrColor}>X</tspan>
+        <tspan fill={sixrColor}>R</tspan>
       </text>
     </svg>
   );
