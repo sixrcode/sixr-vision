@@ -43,6 +43,7 @@ export function ControlPanelView() {
   const iColor = "rgb(51, 197, 244)";
   const xColor = "rgb(235, 26, 115)";
   const rColor = "rgb(91, 185, 70)";
+  const torusFontFamily = "'Torus Variations', var(--font-geist-mono), monospace";
 
   return (
     <div className="h-full flex flex-col text-[hsl(var(--control-panel-foreground))]">
@@ -51,10 +52,10 @@ export function ControlPanelView() {
           <SixrLogo className="h-6 w-auto mr-2" />
           <h2 className="text-lg font-semibold">
             <span>
-              <span style={{ color: sColor }}>S</span>
-              <span style={{ color: iColor }}>I</span>
-              <span style={{ color: xColor }}>X</span>
-              <span style={{ color: rColor }}>R</span>
+              <span style={{ color: sColor, fontFamily: torusFontFamily }}>S</span>
+              <span style={{ color: iColor, fontFamily: torusFontFamily }}>I</span>
+              <span style={{ color: xColor, fontFamily: torusFontFamily }}>X</span>
+              <span style={{ color: rColor, fontFamily: torusFontFamily }}>R</span>
             </span> Vision
           </h2>
         </div>
@@ -90,10 +91,10 @@ export function ControlPanelView() {
         <p className="text-xs text-[hsl(var(--muted-foreground))]">
           &copy;{' '}
           <span>
-            <span style={{ color: sColor }}>S</span>
-            <span style={{ color: iColor }}>I</span>
-            <span style={{ color: xColor }}>X</span>
-            <span style={{ color: rColor }}>R</span>
+            <span style={{ color: sColor, fontFamily: torusFontFamily }}>S</span>
+            <span style={{ color: iColor, fontFamily: torusFontFamily }}>I</span>
+            <span style={{ color: xColor, fontFamily: torusFontFamily }}>X</span>
+            <span style={{ color: rColor, fontFamily: torusFontFamily }}>R</span>
           </span>{' '}
           Immersive Storytelling Lab {new Date().getFullYear()}
         </p>

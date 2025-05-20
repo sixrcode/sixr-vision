@@ -11,7 +11,12 @@ export function BrandingOverlay() {
   const { settings } = useSettings();
   const { audioData } = useAudioData();
   const [bootShimmer, setBootShimmer] = useState(true);
-  const sixrEffectColor = "rgb(235, 26, 115)"; // "X" color for general effects
+  
+  const sColor = "rgb(254, 190, 15)";
+  const iColor = "rgb(51, 197, 244)";
+  const xColor = "rgb(235, 26, 115)"; // Main brand accent / effect color
+  const rColor = "rgb(91, 185, 70)";
+  const torusFontFamily = "'Torus Variations', var(--font-geist-mono), monospace";
 
   useEffect(() => {
     const timer = setTimeout(() => setBootShimmer(false), 2000); // Shimmer for 2s
@@ -27,15 +32,16 @@ export function BrandingOverlay() {
   const centralTextContainerStyle = {
     opacity: settings.logoOpacity,
     textShadow: `
-      0 0 ${5 * rmsGlowIntensity}px ${sixrEffectColor},
-      0 0 ${10 * rmsGlowIntensity}px ${sixrEffectColor},
+      0 0 ${5 * rmsGlowIntensity}px ${xColor},
+      0 0 ${10 * rmsGlowIntensity}px ${xColor},
       0 0 ${15 * rmsGlowIntensity}px rgba(235, 26, 115, 0.7),
       0 0 ${20 * rmsGlowIntensity}px rgba(235, 26, 115, 0.5)
     `,
+    fontFamily: torusFontFamily,
   };
   
   const logoOutlineFlashStyle = audioData.beat ? {
-    filter: `drop-shadow(0 0 5px ${sixrEffectColor}) drop-shadow(0 0 10px ${sixrEffectColor})`,
+    filter: `drop-shadow(0 0 5px ${xColor}) drop-shadow(0 0 10px ${xColor})`,
   } : {};
 
 
@@ -62,16 +68,16 @@ export function BrandingOverlay() {
       {/* Centre SIXR Type */}
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
         <h1
-          className="text-6xl md:text-8xl font-mono font-bold"
+          className="text-6xl md:text-8xl font-bold" // Removed font-mono
           style={centralTextContainerStyle}
         >
-          <span style={{ color: "rgb(254, 190, 15)" }}>S</span>
+          <span style={{ color: sColor }}>S</span>
           {' '}
-          <span style={{ color: "rgb(51, 197, 244)" }}>I</span>
+          <span style={{ color: iColor }}>I</span>
           {' '}
-          <span style={{ color: "rgb(235, 26, 115)" }}>X</span>
+          <span style={{ color: xColor }}>X</span>
           {' '}
-          <span style={{ color: "rgb(91, 185, 70)" }}>R</span>
+          <span style={{ color: rColor }}>R</span>
         </h1>
       </div>
       
@@ -88,4 +94,3 @@ export function BrandingOverlay() {
     </>
   );
 }
-

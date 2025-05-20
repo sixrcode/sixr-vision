@@ -20,7 +20,7 @@ export function SixrLogo(props: SVGProps<SVGSVGElement>) {
         dominantBaseline="middle"
         textAnchor="middle"
         fontSize="24"
-        fontFamily="'Torus Variations Biline Bold', var(--font-geist-mono), monospace"
+        fontFamily="'Torus Variations', var(--font-geist-mono), monospace"
       >
         <tspan fill={sColor}>S</tspan>
         <tspan fill={iColor}>I</tspan>
@@ -30,4 +30,3 @@ export function SixrLogo(props: SVGProps<SVGSVGElement>) {
     </svg>
   );
 }
-
