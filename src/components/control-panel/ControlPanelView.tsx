@@ -57,14 +57,11 @@ export function ControlPanelView() {
         await initializeAudio();
         setIsTogglingAudio(false);
       }
-      // Auto-init webcam only if settings.showWebcam is true by default and not already toggling
-      if (settings.showWebcam && !isTogglingWebcam) { // Check current setting
-         console.log("ControlPanelView: Auto-initializing webcam on load based on settings.showWebcam=true.");
-         // No direct action needed here, WebcamFeed will react to settings.showWebcam
-         // But if we wanted to force an attempt if it wasn't yet active:
-         // setIsTogglingWebcam(true);
-         // updateSetting('showWebcam', true); // This is redundant if default is true
-         // setIsTogglingWebcam(false);
+      if (!settings.showWebcam && !isTogglingWebcam) { 
+         console.log("ControlPanelView: Auto-initializing webcam on load.");
+         setIsTogglingWebcam(true);
+         updateSetting('showWebcam', true);
+         setIsTogglingWebcam(false);
       }
     };
     autoInit();
@@ -154,7 +151,7 @@ export function ControlPanelView() {
       {audioError && !isInitialized && <p className="p-2 text-xs text-destructive bg-destructive/20 text-center">Audio Error: {audioError}. Please check microphone permissions.</p>}
       <ScrollArea className="flex-1 min-h-0">
         <div
-          className="overflow-x-hidden control-panel-content-wrapper"
+          className="overflow-x-hidden control-panel-content-wrapper" 
           style={{
             maxWidth: 'var(--sidebar-width)',
             width: '100%'
@@ -194,3 +191,4 @@ export function ControlPanelView() {
     </div>
   );
 }
+

@@ -15,28 +15,28 @@ body {
   :root {
     /* Cosmic Grapevines Theme */
     --background-hsl: 270 50% 10%; /* Deep Purple */
-    --foreground-hsl: 210 20% 98%; /* Light grey/white (unchanged) */
+    --foreground-hsl: 210 20% 95%; /* Slightly less bright than 98% for comfort */
     
     --card-hsl: 270 50% 15%; /* Slightly lighter deep purple */
-    --card-foreground-hsl: 210 20% 98%; /* (unchanged) */
+    --card-foreground-hsl: 210 20% 98%; 
     
-    --popover-hsl: 270 50% 12%; /* Darker purple for popovers */
-    --popover-foreground-hsl: 210 20% 98%; /* (unchanged) */
+    --popover-hsl: 270 50% 18%; /* Lighter than card to stand out more */
+    --popover-foreground-hsl: 210 20% 98%; 
     
     --primary-hsl: 180 70% 45%; /* Interstellar Teal */
-    --primary-foreground-hsl: 210 20% 98%; /* (unchanged) */
+    --primary-foreground-hsl: 210 20% 98%; 
     
     --secondary-hsl: 240 40% 20%; /* Muted Cosmic Blue */
-    --secondary-foreground-hsl: 210 20% 98%; /* (unchanged) */
+    --secondary-foreground-hsl: 210 20% 98%; 
     
     --muted-hsl: 270 30% 25%; /* Muted Purple */
     --muted-foreground-hsl: 210 15% 65%; /* Slightly darker muted text */
     
     --accent-hsl: 180 70% 55%; /* Lighter Interstellar Teal */
-    --accent-foreground-hsl: 210 20% 98%; /* (unchanged) */
+    --accent-foreground-hsl: 210 20% 98%; 
     
-    --destructive-hsl: 0 72.2% 50.6%; /* Red for destructive actions (unchanged) */
-    --destructive-foreground-hsl: 210 20% 98%; /* (unchanged) */
+    --destructive-hsl: 0 72.2% 50.6%; /* Red for destructive actions */
+    --destructive-foreground-hsl: 210 20% 98%; 
     
     --border-hsl: 270 40% 22%; /* Purple-ish border */
     --input-hsl: 270 35% 35%; /* Input background - Purple-ish, increased lightness for better visibility */
@@ -102,10 +102,10 @@ body {
   .dark {
     /* Ensure dark theme applies these variables */
     --background-hsl: 270 50% 10%; 
-    --foreground-hsl: 210 20% 98%; 
+    --foreground-hsl: 210 20% 95%; 
     --card-hsl: 270 50% 15%; 
     --card-foreground-hsl: 210 20% 98%; 
-    --popover-hsl: 270 50% 12%; 
+    --popover-hsl: 270 50% 18%; 
     --popover-foreground-hsl: 210 20% 98%; 
     --primary-hsl: 180 70% 45%; 
     --primary-foreground-hsl: 210 20% 98%; 
@@ -171,29 +171,7 @@ body {
     --chart-4: hsl(var(--chart-4-hsl));
     --chart-5: hsl(var(--chart-5-hsl));
 
-    /* Explicit Sidebar Styling Overrides */
-    /* Apply to the main sidebar container used on desktop */
-    div[data-sidebar="sidebar"]:not([data-mobile="true"]) {
-      background-color: hsl(var(--sidebar-background)) !important;
-      color: hsl(var(--sidebar-foreground)) !important;
-    }
-
-    /* Apply to the SheetContent used for mobile sidebar */
-    div[data-radix-dialog-content][data-sidebar="sidebar"][data-mobile="true"] {
-      background-color: hsl(var(--sidebar-background)) !important;
-      color: hsl(var(--sidebar-foreground)) !important;
-    }
-    /* Fallback if SheetContent doesn't directly use data-radix-dialog-content */
-     div[data-sidebar="sidebar"][data-mobile="true"] {
-      background-color: hsl(var(--sidebar-background)) !important;
-      color: hsl(var(--sidebar-foreground)) !important;
-    }
-
-    /* Ensure the direct child of ScrollArea in ControlPanelView is also themed */
-    /* This might be redundant if the sidebar itself is fixed, but acts as a safeguard */
-    .control-panel-content-wrapper { /* We might need to add this class in ControlPanelView */
-        background-color: hsl(var(--control-panel-background)) !important;
-    }
+    /* Explicit Sidebar Styling Overrides REMOVED to rely on Tailwind classes */
   }
 }
 
@@ -203,3 +181,4 @@ body {
   }
   /* body is already styled above to use bg-background text-foreground */
 }
+
