@@ -1,4 +1,5 @@
 {
   "gemini_api": {},
-  "google_maps_platform": {}
+  "google_maps_platform": {},
+  "secrets_manager": {}
 }
