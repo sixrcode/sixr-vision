@@ -27,7 +27,7 @@ export function ControlPanelView() {
   const { initializeAudio, stopAudioAnalysis, isInitialized, error: audioError } = useAudioAnalysis();
   const { settings, updateSetting } = useSettings();
   const [isTogglingAudio, setIsTogglingAudio] = useState(false);
-  const [isTogglingWebcam, setIsTogglingWebcam] = useState(false); // To manage webcam toggle state if needed, though not strictly necessary for a settings toggle
+  const [isTogglingWebcam, setIsTogglingWebcam] = useState(false); 
 
   const sColor = "rgb(254, 190, 15)";
   const iColor = "rgb(51, 197, 244)";
@@ -57,12 +57,11 @@ export function ControlPanelView() {
         await initializeAudio();
         setIsTogglingAudio(false);
       }
-      // No automatic webcam initialization - controlled by its own button
-      // However, if we want the webcam to try and activate if settings.showWebcam is true (persisted from previous session perhaps):
-      if (settings.showWebcam && !isTogglingWebcam) { // Check if already true
-         console.log("ControlPanelView: showWebcam is true, ensuring webcam is active (or attempting activation).");
-         // The WebcamFeed component itself handles initialization based on settings.showWebcam
-         // No direct call needed here unless we want to force a toggle state change.
+      if (!settings.showWebcam && !isTogglingWebcam) {
+         console.log("ControlPanelView: Auto-initializing webcam on load.");
+         setIsTogglingWebcam(true);
+         updateSetting('showWebcam', true); // This will trigger WebcamFeed's useEffect
+         setIsTogglingWebcam(false);
       }
     };
     autoInit();
@@ -86,12 +85,16 @@ export function ControlPanelView() {
   };
 
   const handleWebcamToggle = () => {
+    if (isTogglingWebcam) return;
     console.log("ControlPanelView: Toggling webcam via button. Current state:", settings.showWebcam);
+    setIsTogglingWebcam(true);
     updateSetting('showWebcam', !settings.showWebcam);
+    setIsTogglingWebcam(false);
+    console.log("ControlPanelView: Webcam toggle finished.");
   };
 
   return (
-    <div className="h-full flex flex-col text-[hsl(var(--control-panel-foreground))] bg-control-panel-background !bg-[hsl(var(--control-panel-background))]">
+    <div className="h-full flex flex-col text-[hsl(var(--control-panel-foreground))] !bg-control-panel-background">
       <header className="p-4 border-b border-[hsl(var(--control-panel-border))] flex justify-between items-center">
         <div className="flex items-center">
           <SixrLogo className="h-6 w-auto mr-2" />
@@ -133,9 +136,10 @@ export function ControlPanelView() {
                 variant="ghost"
                 onClick={handleWebcamToggle}
                 className="h-7 w-7 text-sm"
+                disabled={isTogglingWebcam}
                 aria-label={settings.showWebcam ? "Stop Webcam" : "Start Webcam"}
               >
-                {settings.showWebcam ? <Camera className="text-sky-400" /> : <CameraOff className="text-muted-foreground" />}
+                {isTogglingWebcam ? <Loader2 className="animate-spin" /> : settings.showWebcam ? <Camera className="text-sky-400" /> : <CameraOff className="text-muted-foreground" />}
               </Button>
             </TooltipTrigger>
             <TooltipContent>
