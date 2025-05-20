@@ -10,16 +10,16 @@ export const DEFAULT_SETTINGS: Settings = {
   gamma: 1.0,
   dither: 0.0,
   brightCap: 1.0,
-  logoOpacity: 0.2,
+  logoOpacity: 0.25, // Increased default opacity
   showWebcam: false,
   mirrorWebcam: false,
-  currentSceneId: 'spectrum_bars',
+  currentSceneId: 'radial_burst', // Changed default scene
   panicMode: false,
   logoBlackout: false,
-  logoAnimationSettings: { // Added default logo animation settings
-    type: 'none',
-    speed: 1, // Middle speed
-    color: 'rgb(235, 26, 115)', // Default to X color
+  logoAnimationSettings: {
+    type: 'pulse', // Set default animation to pulse
+    speed: 1, 
+    color: 'rgb(235, 26, 115)', 
   },
 };
 
@@ -196,3 +196,4 @@ export const SCENES: SceneDefinition[] = [
 ];
 
 export const CONTROL_PANEL_WIDTH_STRING = "280px";
+
