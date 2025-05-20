@@ -1,8 +1,8 @@
+
 "use client";
 
 import { useEffect, useRef, useState } from 'react';
 import { useSettings } from '@/providers/SettingsProvider';
-import { cn } from '@/lib/utils';
 import { toast } from '@/hooks/use-toast';
 
 type WebcamFeedProps = {
@@ -15,18 +15,33 @@ export function WebcamFeed({ onWebcamElement }: WebcamFeedProps) {
   const [stream, setStream] = useState<MediaStream | null>(null);
 
   useEffect(() => {
+    const videoNode = videoRef.current;
+    if (!videoNode) return;
+
+    const handleMediaReady = () => {
+      // Ensure videoWidth and videoHeight are available and stream is active
+      if (videoNode.videoWidth > 0 && videoNode.videoHeight > 0 && stream && settings.showWebcam) {
+        onWebcamElement(videoNode);
+      }
+    };
+
     async function setupWebcam() {
-      if (settings.showWebcam && !stream) {
+      if (settings.showWebcam) {
+        if (stream && videoNode.srcObject === stream) {
+          // Stream already active, video element might be ready or will fire event
+          if (videoNode.videoWidth > 0 && videoNode.videoHeight > 0) {
+            onWebcamElement(videoNode);
+          }
+          return; // Listener will handle if not yet ready
+        }
         try {
           const mediaStream = await navigator.mediaDevices.getUserMedia({
             video: true,
             audio: false, // Audio is handled by useAudioAnalysis
           });
           setStream(mediaStream);
-          if (videoRef.current) {
-            videoRef.current.srcObject = mediaStream;
-            onWebcamElement(videoRef.current);
-          }
+          videoNode.srcObject = mediaStream;
+          // 'loadedmetadata' or 'canplay' will call onWebcamElement via handleMediaReady
         } catch (err) {
           console.error('Error accessing webcam:', err);
           toast({
@@ -36,31 +51,52 @@ export function WebcamFeed({ onWebcamElement }: WebcamFeedProps) {
           });
           onWebcamElement(null);
         }
-      } else if (!settings.showWebcam && stream) {
-        stream.getTracks().forEach(track => track.stop());
-        setStream(null);
-        if (videoRef.current) {
-          videoRef.current.srcObject = null;
+      } else { // settings.showWebcam is false
+        if (stream) {
+          stream.getTracks().forEach(track => track.stop());
+          setStream(null);
+        }
+        if (videoNode.srcObject) {
+           videoNode.srcObject = null;
         }
         onWebcamElement(null);
       }
     }
 
+    if (settings.showWebcam) {
+      videoNode.addEventListener('loadedmetadata', handleMediaReady);
+      videoNode.addEventListener('canplay', handleMediaReady);
+    }
+    
     setupWebcam();
 
-    // Cleanup stream on component unmount if it's active
+    return () => {
+      videoNode.removeEventListener('loadedmetadata', handleMediaReady);
+      videoNode.removeEventListener('canplay', handleMediaReady);
+    };
+  }, [settings.showWebcam, stream, onWebcamElement]);
+
+  // Effect to clean up stream if component unmounts or stream object changes
+  useEffect(() => {
     return () => {
       if (stream) {
         stream.getTracks().forEach(track => track.stop());
       }
     };
-  }, [settings.showWebcam, stream, onWebcamElement]);
+  }, [stream]);
 
-  // The actual video element is not rendered visibly here.
-  // It's passed to the VisualizerView to be drawn onto the main canvas.
-  // This component just manages the stream.
-  // We could render it for debug purposes if needed.
-  // <video ref={videoRef} autoPlay playsInline muted className="hidden" />
 
-  return <video ref={videoRef} autoPlay playsInline muted className={cn("hidden", settings.showWebcam && "fixed opacity-0 pointer-events-none -z-50 w-1 h-1")} />; // Keep it in DOM but hidden
+  return (
+    <video
+      ref={videoRef}
+      autoPlay
+      playsInline
+      muted
+      className={
+        settings.showWebcam
+          ? "absolute top-[-9999px] left-[-9999px] w-auto h-auto opacity-0 pointer-events-none -z-10"
+          : "hidden"
+      }
+    />
+  );
 }

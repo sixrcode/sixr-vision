@@ -1,3 +1,4 @@
+
 import type { Settings, SceneDefinition, AudioData } from '@/types';
 
 export const FFT_SIZES = [128, 256, 512] as const;
@@ -104,6 +105,14 @@ export const SCENES: SceneDefinition[] = [
       ctx.fillRect(0,0,width,height);
       
       if (webcamFeed && settings.showWebcam) {
+        if (webcamFeed.videoWidth === 0 || webcamFeed.videoHeight === 0) {
+          ctx.fillStyle = 'hsl(var(--muted-foreground))';
+          ctx.textAlign = 'center';
+          ctx.font = '16px var(--font-geist-sans)';
+          ctx.fillText('Waiting for webcam dimensions...', width / 2, height / 2);
+          return;
+        }
+
         const camWidth = webcamFeed.videoWidth;
         const camHeight = webcamFeed.videoHeight;
         const aspectRatio = camWidth / camHeight;
@@ -136,7 +145,7 @@ export const SCENES: SceneDefinition[] = [
         ctx.fillStyle = 'hsl(var(--muted-foreground))';
         ctx.textAlign = 'center';
         ctx.font = '16px var(--font-geist-sans)';
-        ctx.fillText('Webcam not enabled or available', width / 2, height / 2);
+        ctx.fillText('Webcam not enabled or available for this scene', width / 2, height / 2);
       }
     },
   },
