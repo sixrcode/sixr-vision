@@ -51,12 +51,7 @@ export function ControlPanelView() {
         <div className="flex items-center">
           <SixrLogo className="h-6 w-auto mr-2" />
           <h2 className="text-lg font-semibold">
-            <span>
-              <span style={{ color: sColor, fontFamily: torusFontFamily }}>S</span>
-              <span style={{ color: iColor, fontFamily: torusFontFamily }}>I</span>
-              <span style={{ color: xColor, fontFamily: torusFontFamily }}>X</span>
-              <span style={{ color: rColor, fontFamily: torusFontFamily }}>R</span>
-            </span> Vision
+            Vision
           </h2>
         </div>
         {!isInitialized && (
