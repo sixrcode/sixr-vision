@@ -25,7 +25,7 @@ export function AiPresetChooser({ value }: AiPresetChooserProps) {
   const [suggestedSceneInfo, setSuggestedSceneInfo] = useState<SuggestSceneFromAudioOutput | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
-  const [autoLoad, setAutoLoad] = useState(false);
+  const [autoLoad, setAutoLoad] = useState(true); // Changed default to true
 
   const fetchSuggestion = useCallback(async (isAutoTrigger = false) => {
     setIsLoading(true);
@@ -67,14 +67,19 @@ export function AiPresetChooser({ value }: AiPresetChooserProps) {
   useEffect(() => {
     let timer: NodeJS.Timeout | undefined;
     if (autoLoad) {
-      timer = setTimeout(() => {
+      // Initial fetch shortly after component mounts if conditions are met
+      if (audioData.bpm > 0 && (audioData.bassEnergy > 0.1 || audioData.midEnergy > 0.1 || audioData.trebleEnergy > 0.1)) {
+        fetchSuggestion(true);
+      }
+      // Then set up periodic checks
+      timer = setInterval(() => { // Changed from setTimeout to setInterval for periodic checks
         if (audioData.bpm > 0 && (audioData.bassEnergy > 0.1 || audioData.midEnergy > 0.1 || audioData.trebleEnergy > 0.1)) {
            fetchSuggestion(true); 
         }
-      }, 5000); 
+      }, 10000); // Check every 10 seconds for example
     }
     return () => {
-      if (timer) clearTimeout(timer);
+      if (timer) clearInterval(timer); // Use clearInterval for setInterval
     };
   }, [audioData, autoLoad, fetchSuggestion]);
 
