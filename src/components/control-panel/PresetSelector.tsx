@@ -39,18 +39,21 @@ export function PresetSelector({ value }: PresetSelectorProps) {
                     {scene.thumbnailUrl && (
                       <Image
                         src={scene.thumbnailUrl}
-                        alt={scene.name} // Alt text remains for accessibility
+                        alt={scene.name} 
                         width={80}
                         height={60}
-                        className="rounded-md object-cover w-full" // Ensure image itself is rounded if it's the only content
+                        className="rounded-md object-cover w-full"
                         data-ai-hint={scene.dataAiHint || "abstract visual"}
                       />
                     )}
-                    {/* Removed the <p> tag that displayed the scene name on the card */}
                   </CardContent>
                 </Card>
               </TooltipTrigger>
-              <TooltipContent side="bottom" align="center">
+              <TooltipContent 
+                side="bottom" 
+                align="center" 
+                className="bg-popover text-popover-foreground" // Explicitly add background and text color
+              >
                 <p className="font-semibold">{scene.name}</p>
                 {scene.dataAiHint && (
                   <p className="text-xs text-muted-foreground">{scene.dataAiHint}</p>
