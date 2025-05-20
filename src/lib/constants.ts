@@ -47,7 +47,7 @@ export const SCENES: SceneDefinition[] = [
   {
     id: 'spectrum_bars',
     name: 'Spectrum Bars',
-    thumbnailUrl: 'https://placehold.co/120x80/1a1a2e/00ffff.png',
+    thumbnailUrl: 'https://placehold.co/120x80/1a1a2e/00ffff.png?text=Spectrum',
     dataAiHint: 'audio spectrum',
     draw: (ctx, audioData, settings) => {
       const { width, height } = ctx.canvas;
@@ -94,7 +94,7 @@ export const SCENES: SceneDefinition[] = [
   {
     id: 'radial_burst',
     name: 'Radial Burst',
-    thumbnailUrl: 'https://placehold.co/120x80/1f2937/fde047.png',
+    thumbnailUrl: 'https://placehold.co/120x80/1f2937/fde047.png?text=Burst',
     dataAiHint: 'abstract explosion',
     draw: (ctx, audioData, settings) => {
       const { width, height } = ctx.canvas;
@@ -160,7 +160,7 @@ export const SCENES: SceneDefinition[] = [
   {
     id: 'mirror_silhouette',
     name: 'Mirror Silhouette',
-    thumbnailUrl: 'https://placehold.co/120x80/1f2937/d8b4fe.png',
+    thumbnailUrl: 'https://placehold.co/120x80/1f2937/d8b4fe.png?text=Silhouette',
     dataAiHint: 'silhouette reflection',
     draw: (ctx, audioData, settings, webcamFeed) => {
       const { width, height } = ctx.canvas;
@@ -179,54 +179,69 @@ export const SCENES: SceneDefinition[] = [
 
         const camWidth = webcamFeed.videoWidth;
         const camHeight = webcamFeed.videoHeight;
-        const aspectRatio = camWidth / camHeight;
-        let drawWidth = width;
-        let drawHeight = width / aspectRatio;
-        if (drawHeight > height) {
-          drawHeight = height;
-          drawWidth = height * aspectRatio;
-        }
-        const x = (width - drawWidth) / 2;
-        const y = (height - drawHeight) / 2;
+        const camAspectRatio = camWidth / camHeight;
+        const canvasAspectRatio = width / height;
 
+        let drawWidth, drawHeight, dx, dy;
+
+        if (canvasAspectRatio > camAspectRatio) {
+          // Canvas is wider than video, so video height will match canvas height, width will be scaled
+          // This means video will be cropped top/bottom if its aspect ratio is wider than canvas
+          // OR, if canvas is wider, video width needs to scale up to fill canvas width, cropping top/bottom
+          drawWidth = width;
+          drawHeight = width / camAspectRatio;
+          dx = 0;
+          dy = (height - drawHeight) / 2;
+        } else {
+          // Canvas is taller or same aspect ratio as video, so video width will match canvas width, height will be scaled
+          // This means video will be cropped left/right if its aspect ratio is narrower than canvas
+          // OR, if canvas is taller, video height needs to scale up to fill canvas height, cropping left/right
+          drawHeight = height;
+          drawWidth = height * camAspectRatio;
+          dx = (width - drawWidth) / 2;
+          dy = 0;
+        }
+        
         ctx.save();
         if (settings.mirrorWebcam) {
           ctx.translate(width, 0);
           ctx.scale(-1, 1);
+           // Adjust dx for mirroring if it's not 0
+           if (dx !== 0) dx = width - dx - drawWidth;
         }
         
         // Draw the webcam feed. Opacity controlled by brightCap.
-        ctx.globalAlpha = settings.brightCap; 
-        ctx.drawImage(webcamFeed, x, y, drawWidth, drawHeight);
+        ctx.globalAlpha = settings.brightCap > 0.05 ? settings.brightCap : 0.05; // Ensure some visibility for difference
+        ctx.drawImage(webcamFeed, dx, dy, drawWidth, drawHeight);
         ctx.restore(); // Restore mirroring transform
 
         // Apply the difference blend for silhouette
         ctx.globalCompositeOperation = 'difference';
         
         const energyColor = (audioData.bassEnergy * 180 + audioData.midEnergy * 120 + audioData.trebleEnergy * 60 + performance.now()/60) % 360;
-        // Make the difference blend more opaque and reactive
-        const differenceAlpha = Math.min(1, (0.6 + audioData.rms * 0.4 + (audioData.beat ? 0.2 : 0)) * settings.brightCap);
+        const differenceAlpha = Math.min(1, (0.75 + audioData.rms * 0.25 + (audioData.beat ? 0.2 : 0)) * settings.brightCap); // Increased base alpha
         
-        ctx.fillStyle = `hsla(${energyColor}, 80%, 60%, ${differenceAlpha})`; // Increased saturation and lightness
+        ctx.fillStyle = `hsla(${energyColor}, 80%, 65%, ${differenceAlpha})`; 
         ctx.fillRect(0, 0, width, height);
         
         ctx.globalCompositeOperation = 'source-over'; // Reset composite operation
+        ctx.globalAlpha = 1.0; // Reset global alpha
 
         // Refined treble glow effect
-        if (audioData.trebleEnergy > 0.25 && settings.brightCap > 0.1) {
+        if (audioData.trebleEnergy > 0.2 && settings.brightCap > 0.1) {
             ctx.save();
-            if (settings.mirrorWebcam) { // Apply mirror again for the glow if needed
+            if (settings.mirrorWebcam) { 
               ctx.translate(width, 0);
               ctx.scale(-1, 1);
+              if (dx !== 0) dx = width - dx - drawWidth; // Re-apply mirrored dx
             }
-            ctx.globalCompositeOperation = 'lighter'; // 'lighter' is good for glows
-            ctx.globalAlpha = audioData.trebleEnergy * 0.5 * settings.brightCap; // Control glow intensity
-            ctx.filter = `blur(${2 + audioData.trebleEnergy * 4}px)`; // Apply blur
-            ctx.drawImage(webcamFeed, x, y, drawWidth, drawHeight); // Draw blurred webcam for glow
+            ctx.globalCompositeOperation = 'lighter'; 
+            ctx.globalAlpha = audioData.trebleEnergy * 0.4 * settings.brightCap; 
+            ctx.filter = `blur(${1 + audioData.trebleEnergy * 3}px) brightness(1.2)`; 
+            ctx.drawImage(webcamFeed, dx, dy, drawWidth, drawHeight);
             
-            ctx.filter = 'none'; // Reset filter
-            ctx.globalAlpha = 1.0; // Reset global alpha
-            ctx.globalCompositeOperation = 'source-over'; // Reset composite operation
+            ctx.filter = 'none'; 
+            ctx.globalCompositeOperation = 'source-over'; 
             ctx.restore(); 
         }
 
@@ -241,7 +256,7 @@ export const SCENES: SceneDefinition[] = [
   {
     id: 'particle_finale',
     name: 'Particle Finale',
-    thumbnailUrl: 'https://placehold.co/120x80/1f2937/fb7185.png', 
+    thumbnailUrl: 'https://placehold.co/120x80/1f2937/fb7185.png?text=Finale', 
     dataAiHint: 'particle fireworks',
     draw: (ctx, audioData, settings) => {
       const { width, height } = ctx.canvas;
@@ -292,7 +307,7 @@ export const SCENES: SceneDefinition[] = [
   {
     id: 'neon_pulse_grid',
     name: 'Neon Pulse Grid',
-    thumbnailUrl: 'https://placehold.co/120x80/1a1a2e/e07a5f.png',
+    thumbnailUrl: 'https://placehold.co/120x80/1a1a2e/e07a5f.png?text=Grid',
     dataAiHint: 'neon grid',
     draw: (ctx, audioData, settings) => {
       const { width, height } = ctx.canvas;
@@ -338,7 +353,7 @@ export const SCENES: SceneDefinition[] = [
   {
     id: 'frequency_rings',
     name: 'Frequency Rings',
-    thumbnailUrl: 'https://placehold.co/120x80/000000/00ff00.png', 
+    thumbnailUrl: 'https://placehold.co/120x80/000000/00ff00.png?text=Rings', 
     dataAiHint: 'frequency rings',
     draw: (ctx, audioData, settings) => {
       const { width, height } = ctx.canvas;
@@ -384,7 +399,7 @@ export const SCENES: SceneDefinition[] = [
   {
     id: 'strobe_light',
     name: 'Strobe Light',
-    thumbnailUrl: 'https://placehold.co/120x80/f1f1f1/111111.png', 
+    thumbnailUrl: 'https://placehold.co/120x80/f1f1f1/111111.png?text=Strobe', 
     dataAiHint: 'strobe light',
     draw: (ctx, audioData, settings) => {
       const { width, height } = ctx.canvas;
@@ -410,7 +425,7 @@ export const SCENES: SceneDefinition[] = [
   {
     id: 'echoing_shapes',
     name: 'Echoing Shapes',
-    thumbnailUrl: 'https://placehold.co/120x80/4a00e0/8e2de2.png',
+    thumbnailUrl: 'https://placehold.co/120x80/4a00e0/8e2de2.png?text=Shapes',
     dataAiHint: 'glowing orbs abstract shapes',
     draw: (ctx, audioData, settings) => {
       const { width, height } = ctx.canvas;
@@ -458,7 +473,7 @@ export const SCENES: SceneDefinition[] = [
   {
     id: 'geometric_tunnel',
     name: 'Geometric Tunnel',
-    thumbnailUrl: 'https://placehold.co/120x80/0f2027/2c5364.png', 
+    thumbnailUrl: 'https://placehold.co/120x80/0f2027/2c5364.png?text=Tunnel', 
     dataAiHint: 'geometric tunnel flight',
     draw: (ctx, audioData, settings) => {
       const { width, height } = ctx.canvas;
@@ -505,3 +520,4 @@ export const SCENES: SceneDefinition[] = [
 ];
 
 export const CONTROL_PANEL_WIDTH_STRING = "280px";
+
