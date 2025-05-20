@@ -35,7 +35,7 @@ body {
     --destructive-foreground-hsl: 210 20% 98%; /* (unchanged) */
     
     --border-hsl: 270 40% 22%; /* Purple-ish border */
-    --input-hsl: 270 40% 22%; /* Input background - same as border */
+    --input-hsl: 270 35% 35%; /* Input background - Purple-ish, increased lightness for better visibility */
     --ring-hsl: 180 70% 55%; /* Focus ring color - Lighter Teal (same as accent) */
     
     --radius: 0.5rem;
@@ -114,7 +114,7 @@ body {
     --destructive-hsl: 0 72.2% 50.6%; 
     --destructive-foreground-hsl: 210 20% 98%; 
     --border-hsl: 270 40% 22%; 
-    --input-hsl: 270 40% 22%; 
+    --input-hsl: 270 35% 35%; /* Input background - Purple-ish, increased lightness */
     --ring-hsl: 180 70% 55%;
 
     --control-panel-background-hsl: 270 50% 8%; 
