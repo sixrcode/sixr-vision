@@ -11,7 +11,7 @@ export const DEFAULT_SETTINGS: Settings = {
   dither: 0.0,
   brightCap: 1.0,
   logoOpacity: 0.25,
-  showWebcam: true, // Webcam now on by default
+  showWebcam: false, // Webcam OFF by default, controlled by main power button
   mirrorWebcam: false,
   currentSceneId: 'radial_burst',
   panicMode: false,
@@ -30,7 +30,7 @@ export const DEFAULT_SETTINGS: Settings = {
   aiGeneratedOverlayUri: null,
   aiOverlayOpacity: 0.5,
   aiOverlayBlendMode: 'overlay', // A common blending mode for overlays
-  aiOverlayPrompt: 'vibrant abstract energy', // Default starter prompt for auto-generation
+  aiOverlayPrompt: 'vibrant abstract energy', 
 };
 
 export const INITIAL_AUDIO_DATA: AudioData = {
@@ -83,9 +83,9 @@ export const SCENES: SceneDefinition[] = [
         ctx.fillStyle = `hsl(${hue % 360}, ${saturation}%, ${lightness}%)`;
         ctx.fillRect(i * barWidth, height - barHeight, barWidth - 2, barHeight);
 
-        if (normalizedValue > 0.3) { // Lowered threshold for "glow"
+        if (normalizedValue > 0.3) { 
           ctx.fillStyle = `hsla(${(hue + 20) % 360}, ${saturation + 10}%, ${lightness + 20}%, 0.4)`;
-          ctx.fillRect(i * barWidth, height - barHeight * 1.1, barWidth - 2, barHeight * 0.2); // Top glow
+          ctx.fillRect(i * barWidth, height - barHeight * 1.1, barWidth - 2, barHeight * 0.2); 
         }
       });
     },
@@ -97,7 +97,7 @@ export const SCENES: SceneDefinition[] = [
     dataAiHint: 'abstract explosion particles',
     draw: (ctx, audioData, settings) => {
       const { width, height } = ctx.canvas;
-      ctx.fillStyle = `hsla(var(--background), ${settings.sceneTransitionActive && settings.sceneTransitionDuration > 0 ? 0.2 : 0.1})`; // Slightly faster fade for trails
+      ctx.fillStyle = `hsla(var(--background), ${settings.sceneTransitionActive && settings.sceneTransitionDuration > 0 ? 0.25 : 0.15})`; 
       ctx.fillRect(0,0,width,height);
 
       const centerX = width / 2;
@@ -146,7 +146,7 @@ export const SCENES: SceneDefinition[] = [
           const x = centerX + Math.cos(angle) * radius * (1 + Math.random() * 0.6); 
           const y = centerY + Math.sin(angle) * radius * (1 + Math.random() * 0.6);
           const size = (2 + Math.random() * 7 * (audioData.rms + audioData.bassEnergy * 0.6)) * settings.brightCap; 
-          const hueBase = (audioData.bassEnergy * 60); // Shift towards orange/red for bass beats
+          const hueBase = (audioData.bassEnergy * 60); 
           const hue = (hueBase + Math.random()*40 - 20 + performance.now()/50) % 360;
           ctx.fillStyle = `hsla(${hue}, 100%, ${65 + audioData.trebleEnergy * 30}%, ${0.7 + audioData.midEnergy * 0.3})`; 
           ctx.beginPath();
@@ -166,41 +166,20 @@ export const SCENES: SceneDefinition[] = [
       ctx.fillStyle = 'hsl(var(--background))';
       ctx.fillRect(0,0,width,height);
 
-      if (webcamFeed && settings.showWebcam) {
-        if (webcamFeed.videoWidth === 0 || webcamFeed.videoHeight === 0) {
-          ctx.fillStyle = 'hsl(var(--muted-foreground))';
-          ctx.textAlign = 'center';
-          ctx.font = '16px var(--font-geist-sans)';
-          ctx.fillText('Waiting for webcam dimensions...', width / 2, height / 2);
-          return;
-        }
-
+      if (webcamFeed && settings.showWebcam && webcamFeed.readyState >= webcamFeed.HAVE_METADATA && webcamFeed.videoWidth > 0 && webcamFeed.videoHeight > 0) {
         const camWidth = webcamFeed.videoWidth;
         const camHeight = webcamFeed.videoHeight;
         const camAspect = camWidth / camHeight;
         const canvasAspect = width / height;
 
-        let drawWidth, drawHeight, sx, sy, sWidth, sHeight, dx, dy, dWidth, dHeight;
-
-        // Calculate "cover" scaling
+        let sx = 0, sy = 0, sWidth = camWidth, sHeight = camHeight;
+        
         if (canvasAspect > camAspect) { // Canvas is wider than cam: fit height, crop width
-            sHeight = camHeight;
-            sWidth = sHeight * canvasAspect;
+            sWidth = camHeight * canvasAspect;
             sx = (camWidth - sWidth) / 2;
-            sy = 0;
-            dWidth = width;
-            dHeight = height;
-            dx = 0;
-            dy = 0;
         } else { // Canvas is taller or same aspect as cam: fit width, crop height
-            sWidth = camWidth;
-            sHeight = sWidth / canvasAspect;
-            sx = 0;
+            sHeight = camWidth / canvasAspect;
             sy = (camHeight - sHeight) / 2;
-            dWidth = width;
-            dHeight = height;
-            dx = 0;
-            dy = 0;
         }
         
         ctx.save();
@@ -209,38 +188,45 @@ export const SCENES: SceneDefinition[] = [
           ctx.scale(-1, 1);
         }
 
-        ctx.globalAlpha = Math.max(0.1, settings.brightCap * (0.85 + audioData.rms * 0.15)); // Slightly higher base alpha
-        ctx.drawImage(webcamFeed, sx, sy, sWidth, sHeight, dx, dy, dWidth, dHeight);
+        // Draw the base webcam image for the difference operation
+        ctx.globalAlpha = Math.max(0.1, settings.brightCap * (0.85 + audioData.rms * 0.15));
+        ctx.drawImage(webcamFeed, sx, sy, sWidth, sHeight, 0, 0, width, height);
+        
         ctx.restore(); 
-
+        
+        // Apply difference blend for silhouette
         ctx.globalCompositeOperation = 'difference';
         const energyColor = (audioData.bassEnergy * 180 + audioData.midEnergy * 120 + audioData.trebleEnergy * 60 + performance.now()/50) % 360;
-        const differenceAlpha = Math.min(1, (0.95 + audioData.rms * 0.1 + (audioData.beat ? 0.05 : 0)) * settings.brightCap); // Stronger difference
+        const differenceAlpha = Math.min(1, (0.95 + audioData.rms * 0.1 + (audioData.beat ? 0.05 : 0)) * settings.brightCap);
         ctx.fillStyle = `hsla(${energyColor}, 90%, 70%, ${differenceAlpha})`;
         ctx.fillRect(0, 0, width, height);
+        ctx.globalCompositeOperation = 'source-over'; // Reset blend mode
 
-        ctx.globalCompositeOperation = 'source-over';
-        ctx.globalAlpha = 1.0;
-
+        // Treble glow effect
         if (audioData.trebleEnergy > 0.15 && settings.brightCap > 0.1) {
             ctx.save();
             if (settings.mirrorWebcam) {
               ctx.translate(width, 0);
               ctx.scale(-1, 1);
             }
-            ctx.globalCompositeOperation = 'lighter'; // Use 'lighter' for a better glow
-            ctx.globalAlpha = audioData.trebleEnergy * 0.5 * settings.brightCap; // Slightly reduced alpha for subtlety
-            ctx.filter = `blur(${2 + audioData.trebleEnergy * 4}px) brightness(1.3)`; // Slightly reduced blur
-            ctx.drawImage(webcamFeed, sx, sy, sWidth, sHeight, dx, dy, dWidth, dHeight);
+            ctx.globalCompositeOperation = 'lighter'; 
+            ctx.globalAlpha = audioData.trebleEnergy * 0.5 * settings.brightCap; 
+            ctx.filter = `blur(${2 + audioData.trebleEnergy * 4}px) brightness(1.3)`; 
+            ctx.drawImage(webcamFeed, sx, sy, sWidth, sHeight, 0, 0, width, height);
             ctx.filter = 'none';
-            ctx.restore(); // Restore composite operation and alpha implicitly
+            ctx.restore(); 
         }
+        ctx.globalAlpha = 1.0; // Reset global alpha
 
       } else {
         ctx.fillStyle = 'hsl(var(--muted-foreground))';
         ctx.textAlign = 'center';
         ctx.font = '16px var(--font-geist-sans)';
-        ctx.fillText('Webcam not enabled or available for this scene', width / 2, height / 2);
+        if (!settings.showWebcam) {
+          ctx.fillText('Webcam not enabled for this scene', width / 2, height / 2);
+        } else {
+          ctx.fillText('Waiting for webcam feed...', width / 2, height / 2);
+        }
       }
     },
   },
@@ -248,26 +234,28 @@ export const SCENES: SceneDefinition[] = [
     id: 'particle_finale',
     name: 'Particle Finale',
     thumbnailUrl: 'https://placehold.co/120x80/1f2937/f472b6.png?text=Finale',
-    dataAiHint: 'particle fireworks explosion',
+    dataAiHint: 'particle fireworks bright', // Updated hint
     draw: (ctx, audioData, settings) => {
       const { width, height } = ctx.canvas;
-      ctx.fillStyle = `hsla(var(--background), ${settings.sceneTransitionActive && settings.sceneTransitionDuration > 0 ? 0.15 : 0.12})`; 
+      // Slower fade for more prominent trails
+      ctx.fillStyle = `hsla(var(--background), ${settings.sceneTransitionActive && settings.sceneTransitionDuration > 0 ? 0.18 : 0.12})`; 
       ctx.fillRect(0, 0, width, height);
 
       const centerX = width / 2;
       const centerY = height / 2;
-      const MAX_AMBIENT_PARTICLES = 120; 
-      const MAX_BURST_PARTICLES = 300;  
+      // Capped particle counts for performance
+      const MAX_AMBIENT_PARTICLES = 100; 
+      const MAX_BURST_PARTICLES = 250;  
 
-      const ambientParticleCount = Math.min(MAX_AMBIENT_PARTICLES, 50 + Math.floor(audioData.rms * 100)); 
+      const ambientParticleCount = Math.min(MAX_AMBIENT_PARTICLES, 30 + Math.floor(audioData.rms * 70)); 
       for (let i = 0; i < ambientParticleCount; i++) {
-        if (Math.random() < audioData.rms * 0.7 + 0.05) { 
+        if (Math.random() < audioData.rms * 0.6 + 0.03) { // Slightly higher base chance
           const x = Math.random() * width;
           const y = Math.random() * height;
-          const size = (0.7 + Math.random() * 3.0 * (audioData.midEnergy + audioData.trebleEnergy * 0.5)) * settings.brightCap;
-          const hue = (150 + Math.random() * 220 + audioData.trebleEnergy * 60 + performance.now()/160) % 360; 
-          const lightness = 50 + Math.random() * 25; 
-          const alpha = (0.1 + Math.random() * 0.45 * audioData.rms) * settings.brightCap;
+          const size = (0.6 + Math.random() * 2.5 * (audioData.midEnergy + audioData.trebleEnergy * 0.4)) * settings.brightCap;
+          const hue = (150 + Math.random() * 220 + audioData.trebleEnergy * 60 + performance.now()/180) % 360; 
+          const lightness = 45 + Math.random() * 30; // Brighter ambient
+          const alpha = (0.08 + Math.random() * 0.4 * audioData.rms) * settings.brightCap;
           ctx.fillStyle = `hsla(${hue}, 90%, ${lightness}%, ${alpha})`;
           ctx.beginPath();
           ctx.arc(x, y, size, 0, Math.PI * 2);
@@ -276,17 +264,17 @@ export const SCENES: SceneDefinition[] = [
       }
 
       if (audioData.beat) {
-        const burstParticleCount = Math.min(MAX_BURST_PARTICLES, 150 + Math.floor(audioData.bassEnergy * 150 + audioData.rms * 100)); 
+        const burstParticleCount = Math.min(MAX_BURST_PARTICLES, 100 + Math.floor(audioData.bassEnergy * 120 + audioData.rms * 80)); 
         for (let i = 0; i < burstParticleCount; i++) {
           const angle = Math.random() * Math.PI * 2;
-          const radius = Math.random() * Math.min(width, height) * 0.55 * (0.4 + audioData.bassEnergy * 0.4 + audioData.rms * 0.25);
-          const x = centerX + Math.cos(angle) * radius * (Math.random() * 0.7 + 0.4); 
-          const y = centerY + Math.sin(angle) * radius * (Math.random() * 0.7 + 0.4);
-          const size = (1.5 + Math.random() * 7.0 * (audioData.bassEnergy * 1.1 + audioData.rms * 0.8)) * settings.brightCap; 
+          const radius = Math.random() * Math.min(width, height) * 0.50 * (0.3 + audioData.bassEnergy * 0.35 + audioData.rms * 0.2);
+          const x = centerX + Math.cos(angle) * radius * (Math.random() * 0.6 + 0.3); 
+          const y = centerY + Math.sin(angle) * radius * (Math.random() * 0.6 + 0.3);
+          const size = (1.2 + Math.random() * 6.0 * (audioData.bassEnergy * 1.0 + audioData.rms * 0.7)) * settings.brightCap; 
 
-          const hue = ((audioData.bassEnergy * 50) + (Math.random() * 90) - 35 + 360 + performance.now()/90) % 360; 
-          const lightness = 55 + Math.random() * 20;
-          const alpha = (0.55 + Math.random() * 0.35) * settings.brightCap; 
+          const hue = ((audioData.bassEnergy * 50) + (Math.random() * 90) - 35 + 360 + performance.now()/100) % 360; 
+          const lightness = 50 + Math.random() * 25; // Slightly brighter bursts
+          const alpha = (0.5 + Math.random() * 0.4) * settings.brightCap; // More opaque bursts
 
           ctx.fillStyle = `hsla(${hue}, 95%, ${lightness}%, ${alpha})`;
           ctx.beginPath();

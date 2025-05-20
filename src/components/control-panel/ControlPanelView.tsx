@@ -25,16 +25,15 @@ import { useSettings } from '@/providers/SettingsProvider';
 
 export function ControlPanelView() {
   const { initializeAudio, stopAudioAnalysis, isInitialized, error } = useAudioAnalysis();
-  const { settings } = useSettings();
+  const { settings, updateSetting } = useSettings();
   const [isTogglingAudio, setIsTogglingAudio] = useState(false);
 
 
   useEffect(() => {
     // Attempt to initialize audio automatically on mount
-    // The initializeAudio function has internal checks to prevent re-initialization if already active or if an error occurred.
     if (!isInitialized && !error) {
         console.log("ControlPanelView: Attempting initial audio initialization on mount.");
-        initializeAudio();
+        // initializeAudio(); // User will click button
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Run only once on mount
@@ -52,14 +51,20 @@ export function ControlPanelView() {
 
     setIsTogglingAudio(true);
     if (isInitialized) {
-      console.log("Calling stopAudioAnalysis...");
+      console.log("Calling stopAudioAnalysis and disabling webcam...");
       await stopAudioAnalysis();
+      updateSetting('showWebcam', false);
     } else {
-      console.log("Calling initializeAudio...");
+      console.log("Calling initializeAudio and enabling webcam...");
       await initializeAudio();
+      // Only turn on webcam if audio initializes successfully
+      // The isInitialized state might not update immediately after initializeAudio() resolves
+      // So, we rely on the fact that initializeAudio sets its internal state,
+      // and WebcamFeed will react to settings.showWebcam
+      updateSetting('showWebcam', true); 
     }
     setIsTogglingAudio(false);
-    console.log("handlePowerToggle finished. The 'isInitialized' state will update on the next render.");
+    console.log("handlePowerToggle finished. States will update on next render.");
   };
 
   return (
@@ -92,7 +97,7 @@ export function ControlPanelView() {
               </Button>
             </TooltipTrigger>
             <TooltipContent>
-              <p>{isTogglingAudio ? "Processing..." : isInitialized ? 'Stop Audio Processing' : (error ? 'Retry Audio Initialization' : 'Initialize Audio')}</p>
+              <p>{isTogglingAudio ? "Processing..." : isInitialized ? 'Stop Audio & Webcam' : (error ? 'Retry Audio & Webcam Initialization' : 'Initialize Audio & Webcam')}</p>
             </TooltipContent>
           </Tooltip>
 
@@ -108,7 +113,7 @@ export function ControlPanelView() {
             </TooltipContent>
           </Tooltip>
           
-          {settings.showWebcam && (
+          {settings.showWebcam && ( // This indicator reacts to the live settings.showWebcam
              <Tooltip>
               <TooltipTrigger asChild>
                 <div className="flex items-center text-sm text-sky-400 cursor-default">

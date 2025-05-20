@@ -31,7 +31,6 @@ export function AiVisualOverlayMixer({ value }: AiVisualOverlayMixerProps) {
 
   const [isLoading, setIsLoading] = useState(false);
   const [localPrompt, setLocalPrompt] = useState(settings.aiOverlayPrompt);
-  const initialGenerationAttempted = useRef(false);
 
   useEffect(() => {
     setLocalPrompt(settings.aiOverlayPrompt);
@@ -72,8 +71,8 @@ export function AiVisualOverlayMixer({ value }: AiVisualOverlayMixerProps) {
       let description = 'Could not generate overlay.';
       if (error instanceof Error) {
         description = error.message;
-        if (error.message.includes("500 Internal Server Error")) {
-          description += " This is often a temporary issue with the AI service. Please try again in a few moments.";
+        if (error.message.includes("500 Internal Server Error") || error.message.includes("internal error has occurred")) {
+          description = "AI service encountered an internal error. This is often temporary. Please try again in a few moments, or try a different prompt.";
         }
       }
       toast({ title: 'Overlay Generation Failed', description, variant: 'destructive' });
@@ -83,26 +82,7 @@ export function AiVisualOverlayMixer({ value }: AiVisualOverlayMixerProps) {
     }
   };
 
-  useEffect(() => {
-    const autoGenerateAndEnable = async () => {
-      if (!initialGenerationAttempted.current && currentScene) {
-        initialGenerationAttempted.current = true; 
-        console.log("Attempting initial AI overlay generation with prompt:", settings.aiOverlayPrompt || "vibrant abstract energy");
-        const success = await handleGenerateOverlay(settings.aiOverlayPrompt || "vibrant abstract energy");
-        if (success) {
-          console.log("Initial AI overlay generated successfully, enabling overlay.");
-          updateSetting('enableAiOverlay', true);
-        } else {
-          console.log("Initial AI overlay generation failed.");
-        }
-      }
-    };
-    
-    const timer = setTimeout(autoGenerateAndEnable, 3000);
-    return () => clearTimeout(timer);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentScene]);
-
+  // Removed automatic initial generation useEffect block to reduce frequent AI calls on load.
 
   return (
     <ControlPanelSection title="AI: Visual Overlay Mixer" value={value}>
