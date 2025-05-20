@@ -68,7 +68,13 @@ export function ControlPanelView() {
       </header>
       {error && !isInitialized && <p className="p-2 text-xs text-destructive bg-destructive/20 text-center">Audio Error: {error}. Please check microphone permissions.</p>}
       <ScrollArea className="flex-1 min-h-0">
-        <div className="overflow-x-hidden"> {/* Wrapper to clip horizontal overflow */}
+        <div 
+          className="overflow-x-hidden" 
+          style={{ 
+            maxWidth: 'var(--sidebar-width)', 
+            width: '100%' /* Ensure it tries to fill up to max-width */ 
+          }}
+        >
           <Accordion 
             type="multiple" 
             defaultValue={['presets', 'audio-engine', 'visual-output']} 
