@@ -11,25 +11,25 @@ export const DEFAULT_SETTINGS: Settings = {
   dither: 0.0,
   brightCap: 1.0,
   logoOpacity: 0.25,
-  showWebcam: false, // Webcam OFF by default, user explicitly enables via header toggle
+  showWebcam: false, 
   mirrorWebcam: false,
   currentSceneId: 'radial_burst',
   panicMode: false,
   logoBlackout: false,
   logoAnimationSettings: {
-    type: 'pulse', // Default animation type
-    speed: 1, // Default speed
+    type: 'pulse', 
+    speed: 1, 
     color: 'rgb(235, 26, 115)',
   },
   lastAISuggestedAssetPrompt: undefined,
-  sceneTransitionDuration: 500, // Default 0.5 second transition
-  sceneTransitionActive: true, // Transitions are active by default
+  sceneTransitionDuration: 500, 
+  sceneTransitionActive: true, 
 
   // AI Visual Overlay Mixer Defaults
   enableAiOverlay: false,
   aiGeneratedOverlayUri: null,
   aiOverlayOpacity: 0.5,
-  aiOverlayBlendMode: 'overlay', // A common blending mode for overlays
+  aiOverlayBlendMode: 'overlay', 
   aiOverlayPrompt: "Bioluminescent grapevine floating in space, star clusters on its branches, transparent background",
 };
 
@@ -58,28 +58,32 @@ export const SCENES: SceneDefinition[] = [
         const camWidth = webcamFeed.videoWidth;
         const camHeight = webcamFeed.videoHeight;
         
-        const canvasAspect = width / height;
-        const videoAspect = camWidth / camHeight;
-
         let sx = 0, sy = 0, sWidth = camWidth, sHeight = camHeight;
         let dx = 0, dy = 0, dWidth = width, dHeight = height;
 
-        if (videoAspect > canvasAspect) {
-          // Video is wider than canvas: fit height, crop width
-          dHeight = height;
-          dWidth = height * videoAspect;
-          dx = (width - dWidth) / 2;
-        } else {
-          // Video is taller than canvas (or same aspect): fit width, crop height
-          dWidth = width;
-          dHeight = width / videoAspect;
-          dy = (height - dHeight) / 2;
+        const canvasAspect = width / height;
+        const videoAspect = camWidth / camHeight;
+
+        if (videoAspect > canvasAspect) { // Video is wider than canvas, fit height, crop width
+            sHeight = camHeight;
+            sWidth = camHeight * canvasAspect;
+            sx = (camWidth - sWidth) / 2;
+            dWidth = width;
+            dHeight = height;
+        } else { // Video is taller or same aspect as canvas, fit width, crop height
+            sWidth = camWidth;
+            sHeight = camWidth / canvasAspect;
+            sy = (camHeight - sHeight) / 2;
+            dWidth = width;
+            dHeight = height;
         }
         
         ctx.save();
         if (settings.mirrorWebcam) {
           ctx.translate(width, 0);
           ctx.scale(-1, 1);
+          // Adjust dx for mirroring if it was calculated to center a non-mirrored crop
+          if (dx !== 0) dx = width - dWidth - dx; 
         }
 
         ctx.globalAlpha = Math.max(0.1, settings.brightCap * (0.85 + audioData.rms * 0.15));
@@ -98,6 +102,7 @@ export const SCENES: SceneDefinition[] = [
             if (settings.mirrorWebcam) {
               ctx.translate(width, 0);
               ctx.scale(-1, 1);
+              if (dx !== 0) dx = width - dWidth - dx;
             }
             ctx.globalCompositeOperation = 'lighter';
             ctx.globalAlpha = audioData.trebleEnergy * 0.5 * settings.brightCap;
@@ -128,25 +133,25 @@ export const SCENES: SceneDefinition[] = [
     draw: (ctx, audioData, settings) => {
       const { width, height } = ctx.canvas;
 
-      ctx.fillStyle = `hsla(var(--background-hsl), ${settings.sceneTransitionActive && settings.sceneTransitionDuration > 0 ? 0.07 : 0.04})`; 
+      ctx.fillStyle = `hsla(var(--background-hsl), ${settings.sceneTransitionActive && settings.sceneTransitionDuration > 0 ? 0.05 : 0.03})`; 
       ctx.fillRect(0, 0, width, height);
 
-      if (audioData.beat || audioData.rms > 0.05) { 
-        const numShapes = 5 + Math.floor(audioData.rms * 18 + audioData.bassEnergy * 12); 
+      if (audioData.beat || audioData.rms > 0.03) { 
+        const numShapes = 8 + Math.floor(audioData.rms * 25 + audioData.bassEnergy * 18); 
         for (let i = 0; i < numShapes; i++) {
-          const sizeBase = (15 + audioData.bassEnergy * 150 + Math.random() * 60); 
-          const size = sizeBase * settings.brightCap * (0.3 + audioData.midEnergy * 0.7);
-          if (size < 4) continue;
+          const sizeBase = (20 + audioData.bassEnergy * 180 + Math.random() * 80); 
+          const size = sizeBase * settings.brightCap * (0.4 + audioData.midEnergy * 0.6);
+          if (size < 5) continue;
 
           const x = Math.random() * width;
           const y = Math.random() * height;
-          const hue = (performance.now() / 10 + i * 35 + audioData.midEnergy * 180) % 360;
-          const alpha = (0.3 + audioData.trebleEnergy * 0.9 + audioData.rms * 0.5) * settings.brightCap;
+          const hue = (performance.now() / 15 + i * 30 + audioData.midEnergy * 200) % 360;
+          const alpha = (0.4 + audioData.trebleEnergy * 0.8 + audioData.rms * 0.6) * settings.brightCap;
 
-          ctx.fillStyle = `hsla(${hue}, 100%, ${60 + Math.random()*20}%, ${Math.min(1, alpha * 1.2)})`; 
+          ctx.fillStyle = `hsla(${hue}, 100%, ${65 + Math.random()*25}%, ${Math.min(1, alpha * 1.3)})`; 
           ctx.save();
           ctx.translate(x,y);
-          ctx.rotate( (performance.now() / 700 + i) * (audioData.trebleEnergy * 0.7 + 0.15) );
+          ctx.rotate( (performance.now() / 600 + i) * (audioData.trebleEnergy * 0.8 + 0.2) );
 
           const shapeType = Math.random();
           if (shapeType < 0.4) {
@@ -177,37 +182,37 @@ export const SCENES: SceneDefinition[] = [
       const { width, height } = ctx.canvas;
       const centerX = width / 2;
       const centerY = height / 2;
-      const maxRingRadius = Math.min(width, height) * 0.48; 
+      const maxRingRadius = Math.min(width, height) * 0.50; 
 
-      ctx.fillStyle = `hsla(var(--background-hsl), ${settings.sceneTransitionActive && settings.sceneTransitionDuration > 0 ? 0.15 : 0.1})`; 
+      ctx.fillStyle = `hsla(var(--background-hsl), ${settings.sceneTransitionActive && settings.sceneTransitionDuration > 0 ? 0.12 : 0.08})`; 
       ctx.fillRect(0, 0, width, height);
 
       const energies = [audioData.bassEnergy, audioData.midEnergy, audioData.trebleEnergy];
       const baseHues = [0, 120, 240]; 
-      const numSteps = 6 + Math.floor(audioData.rms * 7); 
+      const numSteps = 8 + Math.floor(audioData.rms * 10); 
 
       for (let i = 0; i < energies.length; i++) {
         const energy = energies[i];
-        if (energy < 0.005) continue;
+        if (energy < 0.003) continue;
 
         for (let j = 0; j < numSteps; j++) {
             const speedFactor = settings.enableAgc ? 1.0 : settings.gain;
-            const time = performance.now() / (800 / (speedFactor * 0.8 + 0.2)); 
-            const ringProgress = (time + j * (0.6 / numSteps) * (i + 1.3)) % 1;
+            const time = performance.now() / (700 / (speedFactor * 0.7 + 0.3)); 
+            const ringProgress = (time + j * (0.7 / numSteps) * (i + 1.5)) % 1;
 
-            const radius = ringProgress * maxRingRadius * (0.35 + energy * 0.65);
-            if (radius < 1) continue;
+            const radius = ringProgress * maxRingRadius * (0.3 + energy * 0.7);
+            if (radius < 1.5) continue;
 
-            const alpha = (1 - ringProgress) * energy * settings.brightCap * 2.5; 
-            if (alpha <= 0.01) continue;
+            const alpha = (1 - ringProgress) * energy * settings.brightCap * 2.8; 
+            if (alpha <= 0.005) continue;
 
-            const thickness = (2.5 + energy * 18 + (audioData.beat ? 5.0 : 0)) * settings.brightCap; 
-            const hue = (baseHues[i] + ringProgress * 50 + (audioData.spectrum[i * 10 % audioData.spectrum.length] / 255) * 50 + (audioData.beat ? 20 : 0)) % 360;
+            const thickness = (3 + energy * 22 + (audioData.beat ? 6.0 : 0)) * settings.brightCap; 
+            const hue = (baseHues[i] + ringProgress * 60 + (audioData.spectrum[i * 10 % audioData.spectrum.length] / 255) * 60 + (audioData.beat ? 25 : 0)) % 360;
 
             ctx.beginPath();
             ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
-            ctx.strokeStyle = `hsla(${hue}, ${100}%, ${65 + energy*15}%, ${Math.min(1, alpha)})`; 
-            ctx.lineWidth = Math.max(1.5, thickness); 
+            ctx.strokeStyle = `hsla(${hue}, ${100}%, ${70 + energy*10}%, ${Math.min(1, alpha)})`; 
+            ctx.lineWidth = Math.max(1.8, thickness); 
             ctx.stroke();
         }
       }
@@ -220,40 +225,40 @@ export const SCENES: SceneDefinition[] = [
     dataAiHint: 'neon grid pulse',
     draw: (ctx, audioData, settings) => {
       const { width, height } = ctx.canvas;
-      ctx.fillStyle = `hsla(var(--background-hsl), ${settings.sceneTransitionActive && settings.sceneTransitionDuration > 0 ? 0.35 : 0.3})`; 
+      ctx.fillStyle = `hsla(var(--background-hsl), ${settings.sceneTransitionActive && settings.sceneTransitionDuration > 0 ? 0.3 : 0.25})`; 
       ctx.fillRect(0, 0, width, height);
 
-      const gridSize = 8 + Math.floor(audioData.rms * 12); 
+      const gridSize = 10 + Math.floor(audioData.rms * 15); 
       const cellWidth = width / gridSize;
       const cellHeight = height / gridSize;
-      const maxRadiusBase = Math.min(cellWidth, cellHeight) / 1.5;
+      const maxRadiusBase = Math.min(cellWidth, cellHeight) / 1.4;
 
       for (let i = 0; i < gridSize; i++) {
         for (let j = 0; j < gridSize; j++) {
           const spectrumIndex = (i * gridSize + j) % audioData.spectrum.length;
           const energy = audioData.spectrum[spectrumIndex] / 255;
 
-          const beatFactor = audioData.beat ? 1.9 : 1.0; 
+          const beatFactor = audioData.beat ? 2.2 : 1.0; 
           const maxRadius = maxRadiusBase * beatFactor;
 
           const centerX = i * cellWidth + cellWidth / 2;
           const centerY = j * cellHeight + cellHeight / 2;
 
-          const radius = maxRadius * energy * settings.brightCap * (0.25 + audioData.rms * 0.7 + audioData.bassEnergy * 0.35); 
-          if (radius < 1.8) continue;
+          const radius = maxRadius * energy * settings.brightCap * (0.3 + audioData.rms * 0.75 + audioData.bassEnergy * 0.4); 
+          if (radius < 2.0) continue;
 
-          const hue = (energy * 130 + 170 + (performance.now()/70)*9 + (audioData.beat ? 20:0) ) % 360; 
-          const lightness = 45 + energy * 30; 
-          const alpha = 0.35 + energy * 0.65; 
+          const hue = (energy * 140 + 160 + (performance.now()/60)*10 + (audioData.beat ? 25:0) ) % 360; 
+          const lightness = 50 + energy * 25; 
+          const alpha = 0.4 + energy * 0.6; 
 
           ctx.beginPath();
-          ctx.arc(centerX, centerY, radius + 4 + energy * 6, 0, Math.PI * 2); 
-          ctx.fillStyle = `hsla(${hue}, 100%, ${lightness + 15}%, ${alpha * 0.45 * settings.brightCap})`; 
+          ctx.arc(centerX, centerY, radius + 5 + energy * 8, 0, Math.PI * 2); 
+          ctx.fillStyle = `hsla(${hue}, 100%, ${lightness + 18}%, ${alpha * 0.5 * settings.brightCap})`; 
           ctx.fill();
 
           ctx.beginPath();
           ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
-          ctx.fillStyle = `hsla(${hue}, 100%, ${lightness}%, ${alpha * settings.brightCap})`; 
+          ctx.fillStyle = `hsla(${hue}, 100%, ${lightness}%, ${alpha * settings.brightCap * 1.1})`; 
           ctx.fill();
         }
       }
@@ -266,7 +271,7 @@ export const SCENES: SceneDefinition[] = [
     dataAiHint: 'audio spectrum analysis',
     draw: (ctx, audioData, settings) => {
       const { width, height } = ctx.canvas;
-      ctx.fillStyle = `hsla(var(--background-hsl), ${settings.sceneTransitionActive && settings.sceneTransitionDuration > 0 ? 0.9 : 0.85})`; 
+      ctx.fillStyle = `hsla(var(--background-hsl), ${settings.sceneTransitionActive && settings.sceneTransitionDuration > 0 ? 0.88 : 0.82})`; 
       ctx.fillRect(0,0,width,height);
 
       const isAudioSilent = audioData.rms < 0.01 && audioData.spectrum.every(v => v < 5);
@@ -289,17 +294,17 @@ export const SCENES: SceneDefinition[] = [
       const barWidth = width / audioData.spectrum.length;
       audioData.spectrum.forEach((value, i) => {
         const normalizedValue = value / 255;
-        const barHeight = normalizedValue * height * settings.brightCap;
-        const hue = (i / audioData.spectrum.length) * 130 + 170 + (audioData.beat ? 35 : 0); 
-        const saturation = 75 + normalizedValue * 25; 
-        const lightness = 35 + normalizedValue * 45; 
+        const barHeight = normalizedValue * height * settings.brightCap * 1.1; // Slightly taller bars
+        const hue = (i / audioData.spectrum.length) * 140 + 160 + (audioData.beat ? 40 : 0); 
+        const saturation = 80 + normalizedValue * 20; 
+        const lightness = 40 + normalizedValue * 40; 
 
         ctx.fillStyle = `hsl(${hue % 360}, ${saturation}%, ${lightness}%)`;
-        ctx.fillRect(i * barWidth, height - barHeight, barWidth - 1.5, barHeight); 
+        ctx.fillRect(i * barWidth, height - barHeight, barWidth - 1.2, barHeight); 
 
-        if (normalizedValue > 0.25) { 
-          ctx.fillStyle = `hsla(${(hue + 25) % 360}, ${saturation + 15}%, ${lightness + 25}%, 0.45)`; 
-          ctx.fillRect(i * barWidth, height - barHeight * 1.12, barWidth - 1.5, barHeight * 0.22); 
+        if (normalizedValue > 0.2) { 
+          ctx.fillStyle = `hsla(${(hue + 30) % 360}, ${saturation + 10}%, ${lightness + 28}%, 0.5)`; 
+          ctx.fillRect(i * barWidth, height - barHeight * 1.15, barWidth - 1.2, barHeight * 0.25); 
         }
       });
     },
@@ -311,7 +316,7 @@ export const SCENES: SceneDefinition[] = [
     dataAiHint: 'abstract explosion particles',
     draw: (ctx, audioData, settings) => {
       const { width, height } = ctx.canvas;
-      ctx.fillStyle = `hsla(var(--background-hsl), ${settings.sceneTransitionActive && settings.sceneTransitionDuration > 0 ? 0.15 : 0.12})`;  // Slightly faster fade
+      ctx.fillStyle = `hsla(var(--background-hsl), ${settings.sceneTransitionActive && settings.sceneTransitionDuration > 0 ? 0.12 : 0.09})`;  // Slightly faster fade
       ctx.fillRect(0,0,width,height);
 
       const centerX = width / 2;
@@ -323,11 +328,11 @@ export const SCENES: SceneDefinition[] = [
         ctx.textAlign = 'center';
         ctx.font = '16px var(--font-geist-sans)';
         ctx.fillText('Low audio signal. Make some noise or check input gain.', width / 2, height / 2);
-        const numPlaceholderCircles = 10; 
-        ctx.strokeStyle = 'hsla(var(--muted-foreground-hsl), 0.18)';
-        ctx.lineWidth = 1.5; 
+        const numPlaceholderCircles = 12; 
+        ctx.strokeStyle = 'hsla(var(--muted-foreground-hsl), 0.15)';
+        ctx.lineWidth = 1.2; 
         for (let i = 0; i < numPlaceholderCircles; i++) {
-          const r = (Math.min(width, height) * 0.015) + (i * Math.min(width, height) * 0.055);
+          const r = (Math.min(width, height) * 0.012) + (i * Math.min(width, height) * 0.05);
           ctx.beginPath();
           ctx.arc(centerX, centerY, r, 0, Math.PI * 2);
           ctx.stroke();
@@ -335,33 +340,33 @@ export const SCENES: SceneDefinition[] = [
         return;
       }
 
-      const numStaticParticles = 50 + Math.floor(audioData.rms * 100); 
+      const numStaticParticles = 60 + Math.floor(audioData.rms * 120); 
       for (let i = 0; i < numStaticParticles; i++) {
-        const angle = (i / numStaticParticles) * Math.PI * 2 + (performance.now() / 3000) * (i%2 === 0 ? 1 : -1);
+        const angle = (i / numStaticParticles) * Math.PI * 2 + (performance.now() / 2800) * (i%2 === 0 ? 1 : -1);
         const spectrumIndex = i % audioData.spectrum.length;
         const energy = audioData.spectrum[spectrumIndex] / 255;
-        const maxRadius = Math.min(width, height) * (0.12 + audioData.midEnergy * 0.28); 
-        const currentRadius = maxRadius * (0.2 + energy * 0.8);
+        const maxRadius = Math.min(width, height) * (0.1 + audioData.midEnergy * 0.3); 
+        const currentRadius = maxRadius * (0.25 + energy * 0.75);
         const x = centerX + Math.cos(angle) * currentRadius;
         const y = centerY + Math.sin(angle) * currentRadius;
-        const particleSize = (1.2 + energy * 3.5) * settings.brightCap; 
-        const hue = (10 + audioData.bassEnergy * 60 + energy * 60 + (audioData.beat ? 30 : 0)) % 360; 
-        ctx.fillStyle = `hsla(${hue}, ${95 + energy*5}%, ${65 + energy*20}%, ${0.4 + energy * 0.6})`; 
+        const particleSize = (1.5 + energy * 4.0) * settings.brightCap; 
+        const hue = (20 + audioData.bassEnergy * 50 + energy * 70 + (audioData.beat ? 35 : 0)) % 360; 
+        ctx.fillStyle = `hsla(${hue}, ${90 + energy*10}%, ${60 + energy*25}%, ${0.45 + energy * 0.55})`; 
         ctx.beginPath();
         ctx.arc(x,y,particleSize,0, Math.PI*2);
         ctx.fill();
       }
 
       if (audioData.beat) {
-        const particleCount = 120 + Math.floor(audioData.rms * 300 + audioData.bassEnergy * 250); 
+        const particleCount = 150 + Math.floor(audioData.rms * 350 + audioData.bassEnergy * 300); 
         for (let i = 0; i < particleCount; i++) {
           const angle = Math.random() * Math.PI * 2;
-          const radius = (Math.random() * audioData.rms * Math.min(width, height) * 0.7) + (audioData.bassEnergy * Math.min(width,height) * 0.35);
-          const x = centerX + Math.cos(angle) * radius * (1 + Math.random() * 0.8);
-          const y = centerY + Math.sin(angle) * radius * (1 + Math.random() * 0.8);
-          const size = (2.8 + Math.random() * 9 * (audioData.rms + audioData.bassEnergy * 0.8)) * settings.brightCap; 
-          const hue = (audioData.bassEnergy * 90 + (Math.random() * 40 - 20) + 360) % 360; 
-          ctx.fillStyle = `hsla(${hue}, 100%, ${75 + audioData.trebleEnergy * 20}%, ${0.8 + audioData.midEnergy * 0.2})`; 
+          const radius = (Math.random() * audioData.rms * Math.min(width, height) * 0.75) + (audioData.bassEnergy * Math.min(width,height) * 0.4);
+          const x = centerX + Math.cos(angle) * radius * (1 + Math.random() * 0.9);
+          const y = centerY + Math.sin(angle) * radius * (1 + Math.random() * 0.9);
+          const size = (3.0 + Math.random() * 10 * (audioData.rms + audioData.bassEnergy * 0.9)) * settings.brightCap; 
+          const hue = (audioData.bassEnergy * 80 + (Math.random() * 50 - 25) + 360) % 360; 
+          ctx.fillStyle = `hsla(${hue}, 100%, ${70 + audioData.trebleEnergy * 25}%, ${0.75 + audioData.midEnergy * 0.25})`; 
           ctx.beginPath();
           ctx.arc(x, y, size, 0, Math.PI * 2);
           ctx.fill();
@@ -379,36 +384,36 @@ export const SCENES: SceneDefinition[] = [
       const centerX = width / 2;
       const centerY = height / 2;
 
-      ctx.fillStyle = `hsla(var(--background-hsl), ${settings.sceneTransitionActive && settings.sceneTransitionDuration > 0 ? 0.45 : 0.35})`; 
+      ctx.fillStyle = `hsla(var(--background-hsl), ${settings.sceneTransitionActive && settings.sceneTransitionDuration > 0 ? 0.4 : 0.3})`; 
       ctx.fillRect(0, 0, width, height);
 
-      const numLayers = 12 + Math.floor(audioData.rms * 15); 
-      const maxDepth = Math.min(width, height) * 2.2; 
+      const numLayers = 15 + Math.floor(audioData.rms * 18); 
+      const maxDepth = Math.min(width, height) * 2.5; 
 
       for (let i = 0; i < numLayers; i++) {
-        const timeFactor = performance.now() / (1600 - audioData.bpm * 8.0); 
-        const depthProgress = ((i / numLayers) + timeFactor * (0.08 + audioData.rms * 0.6 + audioData.bassEnergy * 0.35)) % 1;
+        const timeFactor = performance.now() / (1500 - audioData.bpm * 7.5); 
+        const depthProgress = ((i / numLayers) + timeFactor * (0.1 + audioData.rms * 0.65 + audioData.bassEnergy * 0.4)) % 1;
 
         const scale = depthProgress;
-        if (scale < 0.0005 || scale > 1) continue;
+        if (scale < 0.0003 || scale > 1) continue;
 
-        const shapeWidth = width * scale * (0.25 + audioData.bassEnergy * 0.75); 
-        const shapeHeight = height * scale * (0.25 + audioData.midEnergy * 0.75); 
+        const shapeWidth = width * scale * (0.3 + audioData.bassEnergy * 0.7); 
+        const shapeHeight = height * scale * (0.3 + audioData.midEnergy * 0.7); 
 
-        const alpha = (1 - depthProgress) * (0.35 + audioData.trebleEnergy * 0.65) * settings.brightCap * 2.0; 
-        if (alpha <= 0.003) continue;
+        const alpha = (1 - depthProgress) * (0.4 + audioData.trebleEnergy * 0.6) * settings.brightCap * 2.2; 
+        if (alpha <= 0.002) continue;
 
-        const hue = (depthProgress * 190 + 150 + audioData.rms * 130 + performance.now()/220) % 360; 
+        const hue = (depthProgress * 200 + 140 + audioData.rms * 140 + performance.now()/200) % 360; 
 
-        ctx.strokeStyle = `hsla(${hue}, 95%, ${60 + depthProgress * 20}%, ${alpha})`; 
-        ctx.lineWidth = Math.max(1.0, (1 - depthProgress) * (10 + (audioData.beat ? 6.5 : 0)) * settings.brightCap); 
+        ctx.strokeStyle = `hsla(${hue}, 98%, ${65 + depthProgress * 15}%, ${alpha})`; 
+        ctx.lineWidth = Math.max(1.2, (1 - depthProgress) * (12 + (audioData.beat ? 7.5 : 0)) * settings.brightCap); 
 
         ctx.save();
         ctx.translate(centerX, centerY);
-        const rotationSpeed = (audioData.trebleEnergy - 0.25) * 0.35; 
-        ctx.rotate( depthProgress * Math.PI * 1.3 + timeFactor * rotationSpeed );
+        const rotationSpeed = (audioData.trebleEnergy - 0.2) * 0.4; 
+        ctx.rotate( depthProgress * Math.PI * 1.4 + timeFactor * rotationSpeed );
 
-        const shapeTypeIndex = (i + Math.floor(timeFactor*2)) % 4; 
+        const shapeTypeIndex = (i + Math.floor(timeFactor*2.5)) % 4; 
         if (shapeTypeIndex === 0) {
              ctx.strokeRect(-shapeWidth / 2, -shapeHeight / 2, shapeWidth, shapeHeight);
         } else if (shapeTypeIndex === 1) {
@@ -443,7 +448,6 @@ export const SCENES: SceneDefinition[] = [
       const { width, height } = ctx.canvas;
 
       if (audioData.beat) {
-        // Flash primarily on beat
         const flashOpacity = settings.brightCap; 
         if (flashOpacity > 0.01) { 
             const hue = (performance.now() / 50) % 360; 
@@ -454,7 +458,6 @@ export const SCENES: SceneDefinition[] = [
             ctx.fillRect(0, 0, width, height);
         }
       } else {
-        // No beat, draw the normal background
         ctx.fillStyle = `hsl(var(--background-hsl))`;
         ctx.fillRect(0, 0, width, height);
       }
@@ -467,25 +470,25 @@ export const SCENES: SceneDefinition[] = [
     dataAiHint: 'grand particle explosion confetti',
     draw: (ctx, audioData, settings) => {
       const { width, height } = ctx.canvas;
-      ctx.fillStyle = `hsla(var(--background-hsl), ${settings.sceneTransitionActive && settings.sceneTransitionDuration > 0 ? 0.25 : 0.18})`;  // Slower fade for more trails
+      ctx.fillStyle = `hsla(var(--background-hsl), ${settings.sceneTransitionActive && settings.sceneTransitionDuration > 0 ? 0.22 : 0.15})`;  // Slower fade for more trails
       ctx.fillRect(0, 0, width, height);
 
       const centerX = width / 2;
       const centerY = height / 2;
 
-      const MAX_AMBIENT_PARTICLES = 50; // Capped
-      const MAX_BURST_PARTICLES = 150;  // Capped
+      const MAX_AMBIENT_PARTICLES = 80; // Increased cap
+      const MAX_BURST_PARTICLES = 300;  // Increased cap
 
-      const ambientParticleCount = Math.min(MAX_AMBIENT_PARTICLES, 20 + Math.floor(audioData.rms * 40)); 
+      const ambientParticleCount = Math.min(MAX_AMBIENT_PARTICLES, 30 + Math.floor(audioData.rms * 70)); 
       for (let i = 0; i < ambientParticleCount; i++) {
-        if (Math.random() < audioData.rms * 0.6 + 0.03) { 
+        if (Math.random() < audioData.rms * 0.7 + 0.05) { 
           const x = Math.random() * width;
           const y = Math.random() * height;
-          const size = (0.6 + Math.random() * 2.5 * (audioData.midEnergy + audioData.trebleEnergy * 0.4)) * settings.brightCap; 
-          const hue = (120 + Math.random() * 260 + audioData.trebleEnergy * 60 + performance.now()/170) % 360; 
-          const lightness = 45 + Math.random() * 25; 
-          const alpha = (0.08 + Math.random() * 0.35 * audioData.rms) * settings.brightCap * 1.05; 
-          ctx.fillStyle = `hsla(${hue}, 95%, ${lightness}%, ${alpha})`;
+          const size = (0.8 + Math.random() * 3.0 * (audioData.midEnergy + audioData.trebleEnergy * 0.5)) * settings.brightCap; 
+          const hue = (130 + Math.random() * 280 + audioData.trebleEnergy * 70 + performance.now()/160) % 360; 
+          const lightness = 50 + Math.random() * 28; 
+          const alpha = (0.1 + Math.random() * 0.4 * audioData.rms) * settings.brightCap * 1.1; 
+          ctx.fillStyle = `hsla(${hue}, 98%, ${lightness}%, ${alpha})`;
           ctx.beginPath();
           ctx.arc(x, y, size, 0, Math.PI * 2);
           ctx.fill();
@@ -493,17 +496,17 @@ export const SCENES: SceneDefinition[] = [
       }
 
       if (audioData.beat) {
-        const burstParticleCount = Math.min(MAX_BURST_PARTICLES, 40 + Math.floor(audioData.bassEnergy * 70 + audioData.rms * 60)); 
+        const burstParticleCount = Math.min(MAX_BURST_PARTICLES, 80 + Math.floor(audioData.bassEnergy * 150 + audioData.rms * 120)); 
         for (let i = 0; i < burstParticleCount; i++) {
           const angle = Math.random() * Math.PI * 2;
-          const radius = Math.random() * Math.min(width, height) * 0.50 * (0.2 + audioData.bassEnergy * 0.25 + audioData.rms * 0.2);
-          const x = centerX + Math.cos(angle) * radius * (Math.random() * 0.6 + 0.3);
-          const y = centerY + Math.sin(angle) * radius * (Math.random() * 0.6 + 0.3);
-          const size = (1.3 + Math.random() * 6.0 * (audioData.bassEnergy * 1.0 + audioData.rms * 0.7)) * settings.brightCap; 
+          const radius = Math.random() * Math.min(width, height) * 0.55 * (0.25 + audioData.bassEnergy * 0.3 + audioData.rms * 0.25);
+          const x = centerX + Math.cos(angle) * radius * (Math.random() * 0.7 + 0.4);
+          const y = centerY + Math.sin(angle) * radius * (Math.random() * 0.7 + 0.4);
+          const size = (1.8 + Math.random() * 8.0 * (audioData.bassEnergy * 1.1 + audioData.rms * 0.8)) * settings.brightCap; 
 
-          const hue = ((audioData.bassEnergy * 50) + (Math.random() * 90) - 45 + 360 + performance.now()/100) % 360; 
-          const lightness = 50 + Math.random() * 25; 
-          const alpha = (0.5 + Math.random() * 0.3) * settings.brightCap * 1.0; 
+          const hue = ((audioData.bassEnergy * 60) + (Math.random() * 100) - 50 + 360 + performance.now()/90) % 360; 
+          const lightness = 55 + Math.random() * 28; 
+          const alpha = (0.6 + Math.random() * 0.35) * settings.brightCap * 1.05; 
 
           ctx.fillStyle = `hsla(${hue}, 100%, ${lightness}%, ${alpha})`;
           ctx.beginPath();
@@ -516,4 +519,3 @@ export const SCENES: SceneDefinition[] = [
 ];
 
 export const CONTROL_PANEL_WIDTH_STRING = "280px";
-
