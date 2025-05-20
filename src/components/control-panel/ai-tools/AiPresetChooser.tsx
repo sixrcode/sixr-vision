@@ -25,10 +25,10 @@ export function AiPresetChooser({ value }: AiPresetChooserProps) {
   const [suggestedSceneInfo, setSuggestedSceneInfo] = useState<SuggestSceneFromAudioOutput | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
-  const [autoLoad, setAutoLoad] = useState(true); 
+  const [autoLoad, setAutoLoad] = useState(false); // Set to false by default
 
   const fetchSuggestion = useCallback(async (isAutoTrigger = false) => {
-    if (isLoading && isAutoTrigger) return; // Don't stack auto-triggered requests
+    if (isLoading && isAutoTrigger && autoLoad) return; // Don't stack auto-triggered requests if autoLoad is on
 
     setIsLoading(true);
     try {
@@ -54,7 +54,7 @@ export function AiPresetChooser({ value }: AiPresetChooserProps) {
       }
     } catch (error) {
       console.error('Error suggesting scene:', error);
-      // Only toast if manually triggered or if autoLoad is on (to inform about persistent issues like rate limits)
+      // Only toast if manually triggered or if autoLoad is on and it's not an auto-trigger (to inform about persistent issues)
       if (!isAutoTrigger || (isAutoTrigger && autoLoad)) { 
         toast({
           title: 'Error Suggesting Scene',
@@ -70,7 +70,7 @@ export function AiPresetChooser({ value }: AiPresetChooserProps) {
   useEffect(() => {
     let timer: NodeJS.Timeout | undefined;
     if (autoLoad) {
-      // Initial fetch shortly after component mounts if conditions are met
+      // Initial fetch shortly after component mounts if conditions are met and autoLoad is true
       if (audioData.bpm > 0 && (audioData.bassEnergy > 0.1 || audioData.midEnergy > 0.1 || audioData.trebleEnergy > 0.1)) {
         // Delay initial auto-fetch slightly to allow other initializations
         setTimeout(() => fetchSuggestion(true), 2000);
