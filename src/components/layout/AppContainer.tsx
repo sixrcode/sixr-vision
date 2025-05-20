@@ -5,6 +5,7 @@ import type { ReactNode } from 'react';
 import { useHotkeys } from '@/hooks/useHotkeys';
 import { Sidebar, SidebarInset, SidebarTrigger, useSidebar } from '@/components/ui/sidebar';
 import { cn } from '@/lib/utils';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 export function AppContainer({
   visualizer,
@@ -13,9 +14,7 @@ export function AppContainer({
   visualizer: ReactNode;
   controlPanel: ReactNode;
 }) {
-  useHotkeys(); // Initialize hotkeys listener
-  // useSidebar hook is not strictly needed here anymore for conditional rendering of the trigger's container
-  // as it will always be in the same position.
+  useHotkeys(); 
 
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-background">
@@ -29,9 +28,15 @@ export function AppContainer({
       <div
         className={cn(
           "absolute z-50 top-4 right-4"
-        )}
-      >
-        <SidebarTrigger />
+        )}>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <SidebarTrigger />
+          </TooltipTrigger>
+          <TooltipContent side="bottom" align="end">
+            <p>Toggle Control Panel (Ctrl+B)</p>
+          </TooltipContent>
+        </Tooltip>
       </div>
       
       <Sidebar side="right" collapsible="offcanvas">

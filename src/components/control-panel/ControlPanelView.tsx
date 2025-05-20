@@ -20,6 +20,7 @@ import { useSettings } from '@/providers/SettingsProvider';
 import { useEffect } from 'react';
 import { Power, Mic, Camera } from 'lucide-react';
 import { Accordion } from '@/components/ui/accordion';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 export function ControlPanelView() {
   const { initializeAudio, isInitialized, error } = useAudioAnalysis();
@@ -47,23 +48,37 @@ export function ControlPanelView() {
           </h2>
         </div>
 
-        <div className="flex items-center gap-3">
+        {/* Added mr-10 (40px) to this container to create visual space from the global SidebarTrigger */}
+        <div className="flex items-center gap-3 mr-10">
           {isInitialized && (
-            <div className="flex items-center text-sm text-green-400" title="Audio is active">
-              <Mic className="h-4 w-4" />
-            </div>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="flex items-center text-sm text-green-400 cursor-default">
+                  <Mic className="h-4 w-4" />
+                </div>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Audio input is active</p>
+              </TooltipContent>
+            </Tooltip>
           )}
           {settings.showWebcam && (
-            <div className="flex items-center text-sm text-sky-400" title="Webcam is active">
-              <Camera className="h-4 w-4" />
-            </div>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="flex items-center text-sm text-sky-400 cursor-default">
+                  <Camera className="h-4 w-4" />
+                </div>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Webcam is active</p>
+              </TooltipContent>
+            </Tooltip>
           )}
           {!isInitialized && (
             <Button
               size="sm"
               onClick={initializeAudio}
-              variant={error ? "destructive" : "default"}
-            >
+              variant={error ? "destructive" : "default"}>
               <Power className="mr-2 h-4 w-4" />
               {error ? "Retry Audio" : "Initialize Audio"}
             </Button>
