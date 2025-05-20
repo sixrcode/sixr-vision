@@ -11,7 +11,7 @@ export const DEFAULT_SETTINGS: Settings = {
   dither: 0.0,
   brightCap: 1.0,
   logoOpacity: 0.25,
-  showWebcam: true, // Changed to true to initiate video on load
+  showWebcam: true, 
   mirrorWebcam: false,
   currentSceneId: 'radial_burst',
   panicMode: false,
@@ -67,7 +67,7 @@ export const SCENES: SceneDefinition[] = [
         const barWidth = width / audioData.spectrum.length;
          ctx.strokeStyle = 'hsla(var(--muted-foreground), 0.2)';
          ctx.lineWidth = 1;
-         for(let i=0; i < audioData.spectrum.length; i++) { // Use actual spectrum length
+         for(let i=0; i < audioData.spectrum.length; i++) { 
             ctx.strokeRect(i * barWidth, height - height * 0.3, barWidth -2, height * 0.3);
          }
         return;
@@ -84,7 +84,6 @@ export const SCENES: SceneDefinition[] = [
         ctx.fillStyle = `hsl(${hue % 360}, ${saturation}%, ${lightness}%)`;
         ctx.fillRect(i * barWidth, height - barHeight, barWidth - 2, barHeight);
 
-        // Add a subtle inner glow for liveliness
         if (normalizedValue > 0.5) {
           ctx.fillStyle = `hsla(${hue % 360}, ${saturation}%, ${lightness + 15}%, 0.5)`;
           ctx.fillRect(i * barWidth + (barWidth-2)*0.25, height - barHeight*0.5, (barWidth-2)*0.5, barHeight*0.5);
@@ -99,14 +98,11 @@ export const SCENES: SceneDefinition[] = [
     dataAiHint: 'abstract explosion',
     draw: (ctx, audioData, settings) => {
       const { width, height } = ctx.canvas;
-      // Slower fade for more trails
       ctx.fillStyle = `hsla(var(--background), ${settings.sceneTransitionActive && settings.sceneTransitionDuration > 0 ? 0.2 : 0.1})`;
       ctx.fillRect(0,0,width,height);
 
-
       const centerX = width / 2;
       const centerY = height / 2;
-
       const isAudioSilent = audioData.rms < 0.01 && audioData.spectrum.every(v => v < 5) && !audioData.beat;
 
       if (isAudioSilent) {
@@ -114,7 +110,6 @@ export const SCENES: SceneDefinition[] = [
         ctx.textAlign = 'center';
         ctx.font = '16px var(--font-geist-sans)';
         ctx.fillText('Visualizer active. Waiting for audio input...', width / 2, height / 2);
-
         const numPlaceholderCircles = 10;
         ctx.strokeStyle = 'hsla(var(--muted-foreground), 0.1)';
         ctx.lineWidth = 1.5;
@@ -127,10 +122,9 @@ export const SCENES: SceneDefinition[] = [
         return;
       }
       
-      // More reactive static particles
       const numStaticParticles = 30 + Math.floor(audioData.rms * 20);
       for (let i = 0; i < numStaticParticles; i++) {
-        const angle = (i / numStaticParticles) * Math.PI * 2 + (performance.now() / 5000) * (i%2 === 0 ? 1 : -1); // slow rotation
+        const angle = (i / numStaticParticles) * Math.PI * 2 + (performance.now() / 5000) * (i%2 === 0 ? 1 : -1);
         const spectrumIndex = i % audioData.spectrum.length;
         const energy = audioData.spectrum[spectrumIndex] / 255;
         const maxRadius = Math.min(width, height) * (0.05 + audioData.midEnergy * 0.1);
@@ -145,20 +139,16 @@ export const SCENES: SceneDefinition[] = [
         ctx.fill();
       }
 
-
       if (audioData.beat) {
-        const particleCount = 70 + Math.floor(audioData.rms * 150 + audioData.bassEnergy * 100); // Increased count
+        const particleCount = 70 + Math.floor(audioData.rms * 150 + audioData.bassEnergy * 100);
         for (let i = 0; i < particleCount; i++) {
           const angle = Math.random() * Math.PI * 2;
-          // Particles travel further and faster
           const radius = (Math.random() * audioData.rms * Math.min(width, height) * 0.5) + (audioData.bassEnergy * Math.min(width,height) * 0.2);
-          const x = centerX + Math.cos(angle) * radius * (1 + Math.random() * 0.5); // more spread
+          const x = centerX + Math.cos(angle) * radius * (1 + Math.random() * 0.5);
           const y = centerY + Math.sin(angle) * radius * (1 + Math.random() * 0.5);
           const size = (1.5 + Math.random() * 5 * (audioData.rms + audioData.bassEnergy * 0.5)) * settings.brightCap;
-
-          //fftSize used to be settings.fftSize
           const hueBase = (audioData.spectrum.length === 64 ? 200 : audioData.spectrum.length === 128 ? 260 : 320) + (performance.now()/1000 * 10);
-          const hue = (hueBase + audioData.bassEnergy * 90 + Math.random()*60 - 30) % 360; // More dynamic hue
+          const hue = (hueBase + audioData.bassEnergy * 90 + Math.random()*60 - 30) % 360;
           ctx.fillStyle = `hsla(${hue}, 100%, ${60 + audioData.trebleEnergy * 40}%, ${0.6 + audioData.midEnergy * 0.4})`;
           ctx.beginPath();
           ctx.arc(x, y, size, 0, Math.PI * 2);
@@ -174,7 +164,8 @@ export const SCENES: SceneDefinition[] = [
     dataAiHint: 'silhouette reflection',
     draw: (ctx, audioData, settings, webcamFeed) => {
       const { width, height } = ctx.canvas;
-      ctx.fillStyle = 'hsla(var(--background))'; // Keep background clear each frame
+      // Always clear the canvas for this scene
+      ctx.fillStyle = 'hsl(var(--background))';
       ctx.fillRect(0,0,width,height);
 
       if (webcamFeed && settings.showWebcam) {
@@ -203,31 +194,40 @@ export const SCENES: SceneDefinition[] = [
           ctx.translate(width, 0);
           ctx.scale(-1, 1);
         }
-        // Webcam feed slightly more opaque and reactive
-        ctx.globalAlpha = Math.min(1, (0.7 + audioData.rms * 0.5) * settings.brightCap); 
+        
+        // Draw the webcam feed. Opacity controlled by brightCap.
+        ctx.globalAlpha = settings.brightCap; 
         ctx.drawImage(webcamFeed, x, y, drawWidth, drawHeight);
-        ctx.restore();
+        ctx.restore(); // Restore mirroring transform
 
+        // Apply the difference blend for silhouette
         ctx.globalCompositeOperation = 'difference';
-        // Color of difference blend is more dynamic
-        const energyColor = (audioData.bassEnergy * 200 + audioData.midEnergy * 120 + audioData.trebleEnergy * 60 + performance.now()/50) % 360;
-        // Opacity of difference blend more reactive
-        const differenceAlpha = Math.min(1, (0.15 + audioData.rms * 0.4 + audioData.beat * 0.2) * settings.brightCap);
-        ctx.fillStyle = `hsla(${energyColor}, 70%, 50%, ${differenceAlpha})`;
+        
+        const energyColor = (audioData.bassEnergy * 180 + audioData.midEnergy * 120 + audioData.trebleEnergy * 60 + performance.now()/60) % 360;
+        // Make the difference blend more opaque and reactive
+        const differenceAlpha = Math.min(1, (0.6 + audioData.rms * 0.4 + (audioData.beat ? 0.2 : 0)) * settings.brightCap);
+        
+        ctx.fillStyle = `hsla(${energyColor}, 80%, 60%, ${differenceAlpha})`; // Increased saturation and lightness
         ctx.fillRect(0, 0, width, height);
-        ctx.globalCompositeOperation = 'source-over';
+        
+        ctx.globalCompositeOperation = 'source-over'; // Reset composite operation
 
-        // Add subtle pulsing outline based on treble energy
-        if (audioData.trebleEnergy > 0.3) {
+        // Refined treble glow effect
+        if (audioData.trebleEnergy > 0.25 && settings.brightCap > 0.1) {
             ctx.save();
-            if (settings.mirrorWebcam) {
+            if (settings.mirrorWebcam) { // Apply mirror again for the glow if needed
               ctx.translate(width, 0);
               ctx.scale(-1, 1);
             }
-            ctx.filter = `blur(${audioData.trebleEnergy * 5}px) opacity(${audioData.trebleEnergy * 0.5})`;
-            ctx.drawImage(webcamFeed, x, y, drawWidth, drawHeight);
-            ctx.filter = 'none';
-            ctx.restore();
+            ctx.globalCompositeOperation = 'lighter'; // 'lighter' is good for glows
+            ctx.globalAlpha = audioData.trebleEnergy * 0.5 * settings.brightCap; // Control glow intensity
+            ctx.filter = `blur(${2 + audioData.trebleEnergy * 4}px)`; // Apply blur
+            ctx.drawImage(webcamFeed, x, y, drawWidth, drawHeight); // Draw blurred webcam for glow
+            
+            ctx.filter = 'none'; // Reset filter
+            ctx.globalAlpha = 1.0; // Reset global alpha
+            ctx.globalCompositeOperation = 'source-over'; // Reset composite operation
+            ctx.restore(); 
         }
 
       } else {
@@ -242,27 +242,25 @@ export const SCENES: SceneDefinition[] = [
     id: 'particle_finale',
     name: 'Particle Finale',
     thumbnailUrl: 'https://placehold.co/120x80/1f2937/fb7185.png', 
-    dataAiHint: 'particle explosion fireworks',
+    dataAiHint: 'particle fireworks',
     draw: (ctx, audioData, settings) => {
       const { width, height } = ctx.canvas;
       
-      // Slower fade for more prominent trails
       ctx.fillStyle = `hsla(var(--background), ${settings.sceneTransitionActive && settings.sceneTransitionDuration > 0 ? 0.1 : 0.03})`; 
       ctx.fillRect(0, 0, width, height);
 
       const centerX = width / 2;
       const centerY = height / 2;
 
-      // Ambient particles: increased count and more dynamic
       const ambientParticleCount = 80 + Math.floor(audioData.rms * 200); 
       for (let i = 0; i < ambientParticleCount; i++) {
         if (Math.random() < audioData.rms * 0.8) { 
           const x = Math.random() * width;
           const y = Math.random() * height;
-          const size = (0.5 + Math.random() * 3.5 * (audioData.midEnergy + audioData.trebleEnergy * 0.7)) * settings.brightCap; // Slightly larger
-          const hue = (180 + Math.random() * 180 + audioData.trebleEnergy * 60 + performance.now()/200) % 360; // Slowly shifting hues
+          const size = (0.5 + Math.random() * 3.5 * (audioData.midEnergy + audioData.trebleEnergy * 0.7)) * settings.brightCap;
+          const hue = (180 + Math.random() * 180 + audioData.trebleEnergy * 60 + performance.now()/200) % 360;
           const lightness = 60 + Math.random() * 25; 
-          const alpha = (0.1 + Math.random() * 0.5 * audioData.rms) * settings.brightCap; // More responsive alpha
+          const alpha = (0.1 + Math.random() * 0.5 * audioData.rms) * settings.brightCap;
           ctx.fillStyle = `hsla(${hue}, 90%, ${lightness}%, ${alpha})`; 
           ctx.beginPath();
           ctx.arc(x, y, size, 0, Math.PI * 2);
@@ -270,22 +268,18 @@ export const SCENES: SceneDefinition[] = [
         }
       }
 
-      // Beat-triggered bursts: more particles, wider spread, varied color
       if (audioData.beat) {
-        const burstParticleCount = 200 + Math.floor(audioData.bassEnergy * 300 + audioData.rms * 200); // Increased count
+        const burstParticleCount = 200 + Math.floor(audioData.bassEnergy * 300 + audioData.rms * 200);
         for (let i = 0; i < burstParticleCount; i++) {
           const angle = Math.random() * Math.PI * 2;
-          // Wider spread
           const radius = Math.random() * Math.min(width, height) * 0.60 * (0.5 + audioData.rms * 0.8); 
           const x = centerX + Math.cos(angle) * radius * (Math.random() * 0.8 + 0.5); 
           const y = centerY + Math.sin(angle) * radius * (Math.random() * 0.8 + 0.5);
-          // Slightly larger and more reactive size
           const size = (2 + Math.random() * 8 * (audioData.bassEnergy * 1.2 + audioData.rms)) * settings.brightCap; 
           
-          // More varied fiery hues
           const hue = ( (audioData.bassEnergy * 50) + (Math.random() * 90) - 30 + 360 + performance.now()/100) % 360; 
           const lightness = 55 + Math.random() * 25; 
-          const alpha = (0.6 + Math.random() * 0.4) * settings.brightCap; // Consistently brighter burst
+          const alpha = (0.6 + Math.random() * 0.4) * settings.brightCap;
           
           ctx.fillStyle = `hsla(${hue}, 100%, ${lightness}%, ${alpha})`;
           ctx.beginPath();
@@ -365,10 +359,6 @@ export const SCENES: SceneDefinition[] = [
         if (energy < 0.03) continue;
 
         for (let j = 0; j < numSteps; j++) {
-            // When AGC is on, settings.gain might not be the actual current gain.
-            // However, for visual animation speed, using settings.gain here (the user's base preference)
-            // or a fixed value might be more predictable than a rapidly changing AGC-driven gain.
-            // Let's use a combination, or simplify to be less dependent on actual gain value for speed.
             const speedFactor = settings.enableAgc ? 1.0 : settings.gain;
             const time = performance.now() / (1500 / (speedFactor * 0.8 + 0.2));
             const ringProgress = (time + j * (0.4 / numSteps) * (i + 1)) % 1; 
@@ -515,5 +505,3 @@ export const SCENES: SceneDefinition[] = [
 ];
 
 export const CONTROL_PANEL_WIDTH_STRING = "280px";
-
-    
