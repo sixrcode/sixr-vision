@@ -11,6 +11,7 @@ import { PresetSelector } from './PresetSelector';
 import { PaletteGenie } from './ai-tools/PaletteGenie';
 import { ProceduralAssetsGenerator } from './ai-tools/ProceduralAssetsGenerator';
 import { AiPresetChooser } from './ai-tools/AiPresetChooser';
+import { LogoAnimationControls } from './LogoAnimationControls'; // Added
 import { OtherControls } from './OtherControls';
 import { useAudioAnalysis } from '@/hooks/useAudioAnalysis';
 import { useEffect } from 'react';
@@ -20,9 +21,8 @@ import { Accordion } from '@/components/ui/accordion';
 export function ControlPanelView() {
   const { initializeAudio, isInitialized, error } = useAudioAnalysis();
 
-  // Attempt to initialize audio on mount
   useEffect(() => {
-    if (!isInitialized && !error) { // Only attempt if not already initialized and no prior error
+    if (!isInitialized && !error) { 
       initializeAudio();
     }
   }, [isInitialized, initializeAudio, error]);
@@ -44,7 +44,6 @@ export function ControlPanelView() {
   const xColor = "rgb(235, 26, 115)";
   const rColor = "rgb(91, 185, 70)";
   const torusFontFamily = "'Torus Variations', var(--font-geist-mono), monospace";
-
 
   return (
     <div className="h-full flex flex-col text-[hsl(var(--control-panel-foreground))]">
@@ -72,7 +71,7 @@ export function ControlPanelView() {
           className="overflow-x-hidden" 
           style={{ 
             maxWidth: 'var(--sidebar-width)', 
-            width: '100%' /* Ensure it tries to fill up to max-width */ 
+            width: '100%' 
           }}
         >
           <Accordion 
@@ -83,6 +82,7 @@ export function ControlPanelView() {
             <PresetSelector value="presets" />
             <AudioControls value="audio-engine" />
             <VisualControls value="visual-output" />
+            <LogoAnimationControls value="logo-animation" /> 
             <WebcamControls value="webcam-layer" />
             <AiPresetChooser value="ai-preset-chooser" />
             <PaletteGenie value="ai-palette-genie" />

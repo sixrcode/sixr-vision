@@ -1,3 +1,13 @@
+
+export type LogoAnimationType = 'none' | 'solid' | 'blink' | 'pulse'; // Added 'rainbowCycle' for future
+
+export type LogoAnimationSettings = {
+  type: LogoAnimationType;
+  speed: number; // General speed multiplier (e.g., 0.5 to 2)
+  color: string; // For solid color, blink color
+  // Future: brightness, specific palettes, etc.
+};
+
 export type SceneDefinition = {
   id: string;
   name: string;
@@ -9,6 +19,7 @@ export type SceneDefinition = {
     webcamFeed?: HTMLVideoElement
   ) => void;
   thumbnailUrl?: string; // For preset selector
+  dataAiHint?: string;
 };
 
 export type AudioData = {
@@ -34,6 +45,7 @@ export type Settings = {
   currentSceneId: string;
   panicMode: boolean; // Visualizer black
   logoBlackout: boolean; // Logo black/hidden
+  logoAnimationSettings: LogoAnimationSettings; // Added
 };
 
 export type PaletteGenieColor = {

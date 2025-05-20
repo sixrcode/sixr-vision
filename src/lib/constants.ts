@@ -16,6 +16,11 @@ export const DEFAULT_SETTINGS: Settings = {
   currentSceneId: 'spectrum_bars',
   panicMode: false,
   logoBlackout: false,
+  logoAnimationSettings: { // Added default logo animation settings
+    type: 'none',
+    speed: 1, // Middle speed
+    color: 'rgb(235, 26, 115)', // Default to X color
+  },
 };
 
 export const INITIAL_AUDIO_DATA: AudioData = {
