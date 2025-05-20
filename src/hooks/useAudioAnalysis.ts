@@ -287,7 +287,7 @@ export function useAudioAnalysis() {
       animationFrameIdRef.current = requestAnimationFrame(analyze);
     } catch (err) {
       console.error("Error initializing audio:", err);
-      setError(err instanceof Error ? err.message : JSON.stringify(err));
+      setError(err instanceof Error ? err.message : `Unknown error: ${err}`);
       setIsInitialized(false);
       setAudioData(INITIAL_AUDIO_DATA); 
       if (mediaStreamRef.current) {
