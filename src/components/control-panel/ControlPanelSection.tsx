@@ -13,7 +13,7 @@ type ControlPanelSectionProps = {
 
 export function ControlPanelSection({ title, children, className, value }: ControlPanelSectionProps) {
   return (
-    <AccordionItem value={value} className={cn("border-b-0 px-2", className)}>
+    <AccordionItem value={value} className={cn("border-b-0", className)}>
       <AccordionTrigger className="py-2 text-sm font-semibold text-[hsl(var(--control-panel-foreground))] opacity-90 hover:opacity-100 hover:no-underline justify-start [&[data-state=open]>svg]:ml-auto">
         <span className="px-2">{title.toUpperCase()}</span>
       </AccordionTrigger>
@@ -25,3 +25,4 @@ export function ControlPanelSection({ title, children, className, value }: Contr
     </AccordionItem>
   );
 }
+
