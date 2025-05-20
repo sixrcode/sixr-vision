@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { GeistSans } from 'geist/font/sans';
 import { GeistMono } from 'geist/font/mono';
 import './globals.css';
+import './fonts.css'; // Import the new font definitions
 import { Toaster } from '@/components/ui/toaster';
 import { AppProviders } from '@/providers/AppProviders';
 
