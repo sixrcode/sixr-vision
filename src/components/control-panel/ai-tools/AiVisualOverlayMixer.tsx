@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -31,19 +31,20 @@ export function AiVisualOverlayMixer({ value }: AiVisualOverlayMixerProps) {
 
   const [isLoading, setIsLoading] = useState(false);
   const [localPrompt, setLocalPrompt] = useState(settings.aiOverlayPrompt);
+  const initialGenerationAttempted = useRef(false);
 
   useEffect(() => {
     setLocalPrompt(settings.aiOverlayPrompt);
   }, [settings.aiOverlayPrompt]);
 
-  const handleGenerateOverlay = async () => {
+  const handleGenerateOverlay = async (promptToUse: string = localPrompt) => {
     if (!currentScene) {
       toast({ title: 'No Scene Active', description: 'Please select a scene first to provide context for the overlay.', variant: 'destructive' });
-      return;
+      return false;
     }
-    if (!localPrompt.trim()) {
+    if (!promptToUse.trim()) {
       toast({ title: 'Prompt Required', description: 'Please enter a prompt for the overlay.', variant: 'destructive' });
-      return;
+      return false;
     }
 
     setIsLoading(true);
@@ -57,21 +58,45 @@ export function AiVisualOverlayMixer({ value }: AiVisualOverlayMixerProps) {
         bpm: audioData.bpm,
       };
       const input: GenerateVisualOverlayInput = {
-        prompt: localPrompt,
+        prompt: promptToUse,
         audioContext: serializableAudioData,
         currentSceneName: currentScene.name,
       };
       const result: GenerateVisualOverlayOutput = await generateVisualOverlay(input);
       updateSetting('aiGeneratedOverlayUri', result.overlayImageDataUri);
-      updateSetting('aiOverlayPrompt', localPrompt); // Save the successful prompt
+      updateSetting('aiOverlayPrompt', promptToUse); // Save the successful prompt
       toast({ title: 'AI Overlay Generated', description: 'Visual overlay created!' });
+      return true;
     } catch (error) {
       console.error('Error generating AI overlay:', error);
       toast({ title: 'Overlay Generation Failed', description: error instanceof Error ? error.message : 'Could not generate overlay.', variant: 'destructive' });
+      return false;
     } finally {
       setIsLoading(false);
     }
   };
+
+  useEffect(() => {
+    const autoGenerateAndEnable = async () => {
+      if (!initialGenerationAttempted.current && currentScene) {
+        initialGenerationAttempted.current = true; // Mark as attempted
+        // Use default prompt for initial auto-generation
+        const success = await handleGenerateOverlay(settings.aiOverlayPrompt || "ethereal wisps of light");
+        if (success) {
+          // Small delay to ensure URI is propagated before enabling
+          setTimeout(() => {
+            updateSetting('enableAiOverlay', true);
+          }, 100);
+        }
+      }
+    };
+    
+    // Wait a bit for other things to potentially initialize, like currentScene
+    const timer = setTimeout(autoGenerateAndEnable, 2000); 
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentScene]); // Depend on currentScene to ensure it's available
+
 
   return (
     <ControlPanelSection title="AI: Visual Overlay Mixer" value={value}>
@@ -130,7 +155,7 @@ export function AiVisualOverlayMixer({ value }: AiVisualOverlayMixerProps) {
            )}
         </div>
         
-        <Button onClick={handleGenerateOverlay} disabled={isLoading || !currentScene} className="w-full">
+        <Button onClick={() => handleGenerateOverlay()} disabled={isLoading || !currentScene} className="w-full">
           <Layers className="mr-2 h-4 w-4" />
           {isLoading ? 'Generating Overlay...' : 'Generate Overlay'}
         </Button>
