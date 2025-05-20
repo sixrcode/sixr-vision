@@ -5,6 +5,10 @@
 
 body {
   font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+  /* Ensure body directly uses the theme background */
+  @apply bg-background text-foreground; 
+  min-height: 100vh;
+  overflow-x: hidden;
 }
 
 @layer base {
@@ -72,9 +76,10 @@ body {
 
 
     /* Sidebar variables (mapped from control panel or theme) */
-    --sidebar-background: var(--control-panel-background);
-    --sidebar-foreground: var(--control-panel-foreground);
-    --sidebar-border: var(--control-panel-border);
+    /* Directly use HSL var for sidebar background to remove indirection */
+    --sidebar-background: hsl(var(--control-panel-background-hsl)); 
+    --sidebar-foreground: hsl(var(--control-panel-foreground-hsl));
+    --sidebar-border: hsl(var(--control-panel-border-hsl));
     --sidebar-accent: var(--accent);
     --sidebar-accent-foreground: var(--accent-foreground);
     --sidebar-primary: var(--primary);
@@ -96,7 +101,7 @@ body {
   }
 
   .dark {
-    /* Dark theme is default, these vars ensure consistency if .dark is explicitly used */
+    /* Ensure dark theme applies these variables */
     --background-hsl: 270 50% 10%; 
     --foreground-hsl: 210 20% 98%; 
     --card-hsl: 270 50% 15%; 
@@ -114,19 +119,13 @@ body {
     --destructive-hsl: 0 72.2% 50.6%; 
     --destructive-foreground-hsl: 210 20% 98%; 
     --border-hsl: 270 40% 22%; 
-    --input-hsl: 270 35% 35%; /* Input background - Purple-ish, increased lightness */
+    --input-hsl: 270 35% 35%; 
     --ring-hsl: 180 70% 55%;
 
     --control-panel-background-hsl: 270 50% 8%; 
     --control-panel-foreground-hsl: 210 20% 90%;
     --control-panel-border-hsl: 270 40% 18%;
-
-    --chart-1-hsl: 270 70% 60%;
-    --chart-2-hsl: 180 65% 55%;
-    --chart-3-hsl: 300 75% 65%;
-    --chart-4-hsl: 210 70% 50%;
-    --chart-5-hsl: 330 80% 70%;
-
+    
     /* Ensure non-HSL suffixed variables are also updated for dark if needed */
     --background: hsl(var(--background-hsl));
     --foreground: hsl(var(--foreground-hsl));
@@ -152,14 +151,20 @@ body {
     --control-panel-foreground: hsl(var(--control-panel-foreground-hsl));
     --control-panel-border: hsl(var(--control-panel-border-hsl));
     
-    --sidebar-background: var(--control-panel-background);
-    --sidebar-foreground: var(--control-panel-foreground);
-    --sidebar-border: var(--control-panel-border);
+    --sidebar-background: hsl(var(--control-panel-background-hsl)); /* Use HSL var directly */
+    --sidebar-foreground: hsl(var(--control-panel-foreground-hsl));
+    --sidebar-border: hsl(var(--control-panel-border-hsl));
     --sidebar-accent: var(--accent);
     --sidebar-accent-foreground: var(--accent-foreground);
     --sidebar-primary: var(--primary);
     --sidebar-primary-foreground: var(--primary-foreground);
     --sidebar-ring: var(--ring);
+
+    --chart-1-hsl: 270 70% 60%;
+    --chart-2-hsl: 180 65% 55%;
+    --chart-3-hsl: 300 75% 65%;
+    --chart-4-hsl: 210 70% 50%;
+    --chart-5-hsl: 330 80% 70%;
 
     --chart-1: hsl(var(--chart-1-hsl));
     --chart-2: hsl(var(--chart-2-hsl));
@@ -173,9 +178,5 @@ body {
   * {
     @apply border-border;
   }
-  body {
-    @apply bg-background text-foreground;
-    min-height: 100vh;
-    overflow-x: hidden;
-  }
+  /* body is already styled above to use bg-background text-foreground */
 }
