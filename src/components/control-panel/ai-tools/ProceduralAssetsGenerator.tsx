@@ -10,8 +10,9 @@ import { useToast } from '@/hooks/use-toast';
 import { generateAssets, type GenerateAssetsInput, type GenerateAssetsOutput } from '@/ai/flows/generate-assets-from-prompt';
 import type { ProceduralAsset } from '@/types';
 import { ControlPanelSection } from '../ControlPanelSection';
-import { ImageIcon, Cuboid, Sparkles, Loader2 } from 'lucide-react'; // Added Loader2
-import { useSettings } from '@/providers/SettingsProvider'; 
+import { ImageIcon, Cuboid, Sparkles, Loader2 } from 'lucide-react';
+import { useSettings } from '@/providers/SettingsProvider';
+import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 
 type ProceduralAssetsGeneratorProps = {
   value: string; // For AccordionItem
@@ -22,7 +23,7 @@ export function ProceduralAssetsGenerator({ value }: ProceduralAssetsGeneratorPr
   const [generatedAssets, setGeneratedAssets] = useState<ProceduralAsset | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
-  const { settings } = useSettings(); 
+  const { settings } = useSettings();
 
   const handleSubmit = async () => {
     if (!prompt.trim()) {
@@ -54,7 +55,14 @@ export function ProceduralAssetsGenerator({ value }: ProceduralAssetsGeneratorPr
   return (
     <ControlPanelSection title="AI: Procedural Assets" value={value}>
       <div className="space-y-3">
-        <Label htmlFor="asset-prompt-input">Prompt</Label>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Label htmlFor="asset-prompt-input">Prompt</Label>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Describe the texture or mesh you want the AI to generate. e.g., 'glowing alien crystal', 'rusty metal plate'.</p>
+          </TooltipContent>
+        </Tooltip>
         <Input
           id="asset-prompt-input"
           placeholder="e.g., 'glowing alien crystal'"
@@ -72,7 +80,7 @@ export function ProceduralAssetsGenerator({ value }: ProceduralAssetsGeneratorPr
               AI suggestion: <em className="text-primary/90">"{settings.lastAISuggestedAssetPrompt}"</em>
             </p>
             <Button
-              size="xs" 
+              size="xs"
               variant="outline"
               onClick={() => setPrompt(settings.lastAISuggestedAssetPrompt!)}
               className="px-2 py-1 h-auto text-xs"
@@ -83,18 +91,21 @@ export function ProceduralAssetsGenerator({ value }: ProceduralAssetsGeneratorPr
           </div>
         </div>
       )}
-
-      <Button onClick={handleSubmit} disabled={isLoading} className="w-full mt-2">
-         {isLoading ? (
-          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-        ) : (
-          // Potentially keep an icon here or remove for space if text is "Generating..."
-          // For consistency with other AI buttons, an icon could be kept.
-          // <Sparkles className="mr-2 h-4 w-4" /> // Or another icon like ImageIcon/Cuboid
-          null 
-        )}
-        {isLoading ? 'Generating Assets...' : 'Generate Assets'}
-      </Button>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button onClick={handleSubmit} disabled={isLoading} className="w-full mt-2">
+            {isLoading ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <Sparkles className="mr-2 h-4 w-4" />
+            )}
+            {isLoading ? 'Generating Assets...' : 'Generate Assets'}
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>
+          <p>Generates a texture image and a mesh preview image based on your text prompt.</p>
+        </TooltipContent>
+      </Tooltip>
 
       {generatedAssets && (
         <div className="mt-4 space-y-3">
@@ -115,7 +126,7 @@ export function ProceduralAssetsGenerator({ value }: ProceduralAssetsGeneratorPr
             <div>
               <Label className="flex items-center"><Cuboid className="mr-2 h-4 w-4" />Generated Mesh (Preview):</Label>
               <Image
-                src={generatedAssets.meshDataUri} 
+                src={generatedAssets.meshDataUri}
                 alt="Generated Mesh Preview"
                 width={100}
                 height={100}
@@ -131,4 +142,3 @@ export function ProceduralAssetsGenerator({ value }: ProceduralAssetsGeneratorPr
     </ControlPanelSection>
   );
 }
-
