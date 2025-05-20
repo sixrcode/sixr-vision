@@ -1,6 +1,7 @@
 
 "use client";
 
+import { useEffect, useState } from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import { SixrLogo } from '@/components/icons/SixrLogo';
@@ -16,17 +17,16 @@ import { AiVisualOverlayMixer } from './ai-tools/AiVisualOverlayMixer';
 import { LogoAnimationControls } from './LogoAnimationControls';
 import { OtherControls } from './OtherControls';
 import { useAudioAnalysis } from '@/hooks/useAudioAnalysis';
-import { useEffect, useState } from 'react';
 import { Mic, MicOff, Camera, CameraOff, Loader2 } from 'lucide-react';
 import { Accordion } from '@/components/ui/accordion';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { useSettings } from '@/providers/SettingsProvider';
 
-
 export function ControlPanelView() {
-  const { initializeAudio, stopAudioAnalysis, isInitialized, error } = useAudioAnalysis();
+  const { initializeAudio, stopAudioAnalysis, isInitialized, error: audioError } = useAudioAnalysis();
   const { settings, updateSetting } = useSettings();
   const [isTogglingAudio, setIsTogglingAudio] = useState(false);
+  const [isTogglingWebcam, setIsTogglingWebcam] = useState(false); // Not strictly needed if just updating setting, but good for consistency if actions were async
 
   const sColor = "rgb(254, 190, 15)";
   const iColor = "rgb(51, 197, 244)";
@@ -34,15 +34,34 @@ export function ControlPanelView() {
   const rColor = "rgb(91, 185, 70)";
   const torusFontFamily = "'Torus Variations', var(--font-geist-mono), monospace";
 
+  useEffect(() => {
+    const autoInit = async () => {
+      if (!isInitialized && !audioError) {
+        console.log("ControlPanelView: Auto-initializing audio on load.");
+        setIsTogglingAudio(true);
+        await initializeAudio();
+        setIsTogglingAudio(false);
+      }
+      if (!settings.showWebcam) {
+        console.log("ControlPanelView: Auto-enabling webcam on load.");
+        // No async action needed for webcam toggle, just update setting
+        updateSetting('showWebcam', true);
+      }
+    };
+    autoInit();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Run once on mount
+
+
   const handleAudioToggle = async () => {
-    if (isTogglingAudio) return; 
+    if (isTogglingAudio) return;
 
     setIsTogglingAudio(true);
     if (isInitialized) {
-      console.log("ControlPanelView: Calling stopAudioAnalysis.");
+      console.log("ControlPanelView: Calling stopAudioAnalysis via toggle.");
       await stopAudioAnalysis();
     } else {
-      console.log("ControlPanelView: Calling initializeAudio.");
+      console.log("ControlPanelView: Calling initializeAudio via toggle.");
       await initializeAudio();
     }
     setIsTogglingAudio(false);
@@ -50,11 +69,10 @@ export function ControlPanelView() {
   };
 
   const handleWebcamToggle = () => {
-    console.log("ControlPanelView: Toggling webcam. Current state:", settings.showWebcam);
+    // If webcam toggle involved async operations, we'd use isTogglingWebcam
+    console.log("ControlPanelView: Toggling webcam via button. Current state:", settings.showWebcam);
     updateSetting('showWebcam', !settings.showWebcam);
-    console.log("ControlPanelView: Webcam toggle finished. New state:", !settings.showWebcam);
   };
-
 
   return (
     <div className="h-full flex flex-col text-[hsl(var(--control-panel-foreground))]">
@@ -67,7 +85,7 @@ export function ControlPanelView() {
         </div>
 
         <div className="flex items-center gap-3 mr-10">
-           <Tooltip>
+          <Tooltip>
             <TooltipTrigger asChild>
               <Button
                 size="icon"
@@ -75,26 +93,26 @@ export function ControlPanelView() {
                 onClick={handleAudioToggle}
                 className="h-7 w-7 text-sm"
                 disabled={isTogglingAudio}
-                aria-label={isInitialized ? "Stop Audio Input" : "Start Audio Input"}
+                aria-label={isInitialized ? "Stop Audio Input" : (audioError ? "Retry Audio Initialization" : "Start Audio Input")}
               >
                 {isTogglingAudio ? (
                   <Loader2 className="animate-spin" />
                 ) : isInitialized ? (
-                  <Mic className="text-green-400" /> 
+                  <Mic className="text-green-400" />
                 ) : (
                   <MicOff className="text-destructive" />
                 )}
               </Button>
             </TooltipTrigger>
             <TooltipContent>
-              <p>{isTogglingAudio ? "Processing..." : isInitialized ? 'Stop Audio Input' : (error ? 'Retry Audio Initialization' : 'Start Audio Input')}</p>
-              {error && !isInitialized && <p className="text-destructive mt-1">Error: {error}</p>}
+              <p>{isTogglingAudio ? "Processing..." : isInitialized ? 'Stop Audio Input' : (audioError ? 'Retry Audio Initialization' : 'Start Audio Input')}</p>
+              {audioError && !isInitialized && <p className="text-destructive mt-1">Error: {audioError}</p>}
             </TooltipContent>
           </Tooltip>
 
           <Tooltip>
             <TooltipTrigger asChild>
-               <Button
+              <Button
                 size="icon"
                 variant="ghost"
                 onClick={handleWebcamToggle}
@@ -105,12 +123,12 @@ export function ControlPanelView() {
               </Button>
             </TooltipTrigger>
             <TooltipContent>
-              <p>{settings.showWebcam ? 'Stop Webcam' : 'Start Webcam'}</p> 
+              <p>{settings.showWebcam ? 'Stop Webcam' : 'Start Webcam'}</p>
             </TooltipContent>
           </Tooltip>
         </div>
       </header>
-      {error && !isInitialized && <p className="p-2 text-xs text-destructive bg-destructive/20 text-center">Audio Error: {error}. Please check microphone permissions.</p>}
+      {audioError && !isInitialized && <p className="p-2 text-xs text-destructive bg-destructive/20 text-center">Audio Error: {audioError}. Please check microphone permissions.</p>}
       <ScrollArea className="flex-1 min-h-0">
         <div
           className="overflow-x-hidden"
@@ -153,4 +171,3 @@ export function ControlPanelView() {
     </div>
   );
 }
-
