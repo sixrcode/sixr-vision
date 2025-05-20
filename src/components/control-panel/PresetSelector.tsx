@@ -43,7 +43,12 @@ export function PresetSelector({ value }: PresetSelectorProps) {
                     data-ai-hint={scene.dataAiHint || "abstract visual"}
                   />
                 )}
-                <p className="text-xs font-medium p-1.5 truncate w-full text-center text-[hsl(var(--card-foreground))]">
+                <p className={cn(
+                  "text-xs p-1.5 truncate w-full text-center",
+                  settings.currentSceneId === scene.id 
+                    ? "text-primary font-semibold" 
+                    : "text-[hsl(var(--card-foreground))] font-medium"
+                )}>
                   {scene.name}
                 </p>
               </CardContent>
