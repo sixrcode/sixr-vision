@@ -119,6 +119,15 @@ export function useAudioAnalysis() {
     }
 
     analyserRef.current.getByteFrequencyData(dataArrayRef.current);
+    // DEBUG LOG: Check raw spectrum data
+    if (Math.random() < 0.05) { // Log roughly once per second (assuming ~20fps for this log)
+      // console.log('useAudioAnalysis - Raw Spectrum Sample:', dataArrayRef.current.slice(0, 10));
+      const sum = dataArrayRef.current.reduce((a, b) => a + b, 0);
+      if (sum > 0) {
+        console.log('useAudioAnalysis - Raw Spectrum has energy. Sum:', sum, 'First 5 bins:', dataArrayRef.current.slice(0,5));
+      }
+    }
+
     const energyAndRms = calculateEnergy(dataArrayRef.current);
     const bpm = estimateBPM();
 
@@ -205,16 +214,25 @@ export function useAudioAnalysis() {
     setLastBeatTime(0);
     setBeatTimestamps([]);
     console.log("Audio analysis stopped and state reset. isInitialized set to false.");
-  }, [isInitialized, setAudioData]); // Removed settings from deps, they are read via useSettings()
+  }, [isInitialized, setAudioData]); 
 
   const initializeAudio = useCallback(async () => {
     console.log("initializeAudio called. Current state - isInitialized:", isInitialized, "AudioContext:", audioContextRef.current?.state);
-    if (isInitialized || (audioContextRef.current && audioContextRef.current.state === 'running')) {
+    if (isInitialized && audioContextRef.current && audioContextRef.current.state === 'running') {
       console.log("Audio already initialized and running. Aborting initializeAudio.");
       return;
     }
     setError(null);
 
+    // Comprehensive cleanup before re-initialization
+    if (animationFrameIdRef.current) cancelAnimationFrame(animationFrameIdRef.current);
+    animationFrameIdRef.current = null;
+    if (sourceNodeRef.current) sourceNodeRef.current.disconnect();
+    sourceNodeRef.current = null;
+    if (gainNodeRef.current) gainNodeRef.current.disconnect();
+    gainNodeRef.current = null;
+    analyserRef.current = null;
+    dataArrayRef.current = null;
     if (mediaStreamRef.current) {
       mediaStreamRef.current.getTracks().forEach(track => track.stop());
       mediaStreamRef.current = null;
@@ -223,12 +241,6 @@ export function useAudioAnalysis() {
       await audioContextRef.current.close().catch(e => console.warn("Error closing existing audio context during re-init", e));
     }
     audioContextRef.current = null; 
-    if (sourceNodeRef.current) sourceNodeRef.current.disconnect();
-    sourceNodeRef.current = null;
-    if (gainNodeRef.current) gainNodeRef.current.disconnect();
-    gainNodeRef.current = null;
-    analyserRef.current = null;
-    dataArrayRef.current = null;
 
 
     try {
@@ -290,11 +302,11 @@ export function useAudioAnalysis() {
       gainNodeRef.current = null;
       analyserRef.current = null;
     }
-  }, [isInitialized, settings.fftSize, settings.gain, settings.enableAgc, analyze, setAudioData]); // Moved analyze here
+  }, [isInitialized, settings.fftSize, settings.gain, settings.enableAgc, analyze, setAudioData]); 
 
   // Effect for managing gain based on settings
   useEffect(() => {
-    if (!isInitialized || !audioContextRef.current || !gainNodeRef.current || audioContextRef.current.state !== 'running') return;
+    if (!isInitialized || !gainNodeRef.current || !audioContextRef.current || audioContextRef.current.state !== 'running') return;
 
     if (settings.enableAgc) {
       // AGC logic is handled in analyze()
@@ -305,7 +317,7 @@ export function useAudioAnalysis() {
             0.05 
         );
     }
-  }, [settings.enableAgc, settings.gain, isInitialized]); // Removed audioContextRef.current from deps
+  }, [settings.enableAgc, settings.gain, isInitialized]);
 
   // Effect for managing FFT size
   useEffect(() => {
@@ -314,48 +326,78 @@ export function useAudioAnalysis() {
     if (settings.fftSize !== analyserRef.current.fftSize) {
       analyserRef.current.fftSize = settings.fftSize;
       const newFrequencyBinCount = analyserRef.current.frequencyBinCount;
-      // Ensure dataArrayRef is updated or that analyze loop can handle this change
       dataArrayRef.current = new Uint8Array(newFrequencyBinCount); 
       setAudioData(prev => ({ 
         ...prev, 
         spectrum: new Uint8Array(newFrequencyBinCount).fill(0) 
       }));
     }
-  }, [settings.fftSize, isInitialized, setAudioData]); // Removed dataArrayRef.current from deps
+  }, [settings.fftSize, isInitialized, setAudioData]);
 
-  // Central cleanup effect
+  // Central cleanup effect for the hook itself
   useEffect(() => {
-    // This effect now only runs on mount and unmount of the component using the hook.
+    console.log("useAudioAnalysis hook mounted/re-evaluated main effect.");
     return () => {
-      console.log("useAudioAnalysis hook is unmounting, calling stopAudioAnalysis.");
-      // We need to ensure stopAudioAnalysis is stable or its dependencies are minimal
-      // Forcing a call to a locally defined stop function might be safer if stopAudioAnalysis from useCallback has stale closure
-      
-      // Local stop function to avoid useCallback complexities in cleanup for this specific case
+      console.log("useAudioAnalysis hook is unmounting, calling localStop logic.");
       const localStop = async () => {
-        console.log("Local stop called from cleanup effect.");
-        if (animationFrameIdRef.current) {
-            cancelAnimationFrame(animationFrameIdRef.current);
-            animationFrameIdRef.current = null;
-        }
-        if (sourceNodeRef.current) sourceNodeRef.current.disconnect();
-        if (gainNodeRef.current) gainNodeRef.current.disconnect();
-        
-        if (mediaStreamRef.current) {
-            mediaStreamRef.current.getTracks().forEach(track => track.stop());
-        }
-        if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
-            try {
-                await audioContextRef.current.close();
-                console.log("AudioContext closed via local stop.");
-            } catch (e) { console.error("Error closing AC in local stop", e); }
-        }
-        // Reset non-ref states only if truly unmounting, not handled here directly
-        // This cleanup mainly focuses on browser resources.
+          if (animationFrameIdRef.current) {
+              cancelAnimationFrame(animationFrameIdRef.current);
+              animationFrameIdRef.current = null;
+              console.log("Unmount: Animation frame cancelled.");
+          }
+          if (sourceNodeRef.current) {
+            sourceNodeRef.current.disconnect();
+            console.log("Unmount: Source node disconnected.");
+          }
+          if (gainNodeRef.current) {
+            gainNodeRef.current.disconnect();
+            console.log("Unmount: Gain node disconnected.");
+          }
+          if (mediaStreamRef.current) {
+              mediaStreamRef.current.getTracks().forEach(track => track.stop());
+              console.log("Unmount: MediaStream tracks stopped.");
+          }
+          if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
+              try {
+                  await audioContextRef.current.close();
+                  console.log("Unmount: AudioContext closed.");
+              } catch (e) { console.error("Unmount: Error closing AudioContext", e); }
+          }
+          // Resetting refs, isInitialized might be reset by a new instance of the hook anyway
+          sourceNodeRef.current = null;
+          gainNodeRef.current = null;
+          analyserRef.current = null;
+          mediaStreamRef.current = null;
+          audioContextRef.current = null;
       };
       localStop();
     };
-  }, []); // Empty dependency array: runs only on mount and unmount
+  }, []); // Empty dependency array: runs only on mount and unmount of the component consuming the hook
+
+  // Effect for starting/stopping the analysis loop based on initialization status
+  useEffect(() => {
+    if (isInitialized && audioContextRef.current && audioContextRef.current.state === 'running') {
+      if (animationFrameIdRef.current) { // Ensure no duplicate loops
+        cancelAnimationFrame(animationFrameIdRef.current);
+      }
+      console.log("Starting audio analysis loop.");
+      animationFrameIdRef.current = requestAnimationFrame(analyze);
+    } else if (!isInitialized && animationFrameIdRef.current) {
+      console.log("Stopping audio analysis loop because !isInitialized.");
+      cancelAnimationFrame(animationFrameIdRef.current);
+      animationFrameIdRef.current = null;
+    }
+
+    // Cleanup specific to this effect: just the animation frame
+    return () => {
+      if (animationFrameIdRef.current) {
+        cancelAnimationFrame(animationFrameIdRef.current);
+        animationFrameIdRef.current = null;
+        console.log("Audio analysis loop's animationFrame cancelled by its own effect cleanup.");
+      }
+    };
+  }, [isInitialized, analyze]);
+
 
   return { initializeAudio, stopAudioAnalysis, isInitialized, error };
 }

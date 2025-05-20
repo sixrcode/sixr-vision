@@ -93,6 +93,16 @@ export function VisualizerView() {
       lastFrameTimeRef.current = now;
     }
 
+    // DEBUG LOG: Check received audioData
+    if (Math.random() < 0.05) { // Log roughly once per second
+        // console.log('VisualizerView - Received RMS:', audioData.rms, 'Spectrum Sample:', audioData.spectrum.slice(0,10));
+        const spectrumSum = audioData.spectrum.reduce((a,b) => a+b, 0);
+        if (audioData.rms > 0.001 || spectrumSum > 0) {
+             console.log('VisualizerView - Received active audioData. RMS:', audioData.rms.toFixed(3), 'Spectrum Sum:', spectrumSum, 'First 5 bins:', audioData.spectrum.slice(0,5));
+        }
+    }
+
+
     try {
       ctx.clearRect(0, 0, canvas.width, canvas.height); 
 
@@ -165,6 +175,7 @@ export function VisualizerView() {
         ctx.globalAlpha = settings.aiOverlayOpacity;
         ctx.globalCompositeOperation = settings.aiOverlayBlendMode;
         ctx.drawImage(aiOverlayImageRef.current, 0, 0, canvas.width, canvas.height);
+        // console.log('AI Overlay Drawn'); // Already added this one
 
         ctx.globalAlpha = originalAlpha; 
         ctx.globalCompositeOperation = originalCompositeOperation; 
@@ -211,6 +222,9 @@ export function VisualizerView() {
 
   useEffect(() => {
     lastSceneIdRef.current = settings.currentSceneId;
+    // The drawLoop is started/managed by its own useEffect in useAudioAnalysis now based on isInitialized
+    // This effect ensures the animationFrameIdRef is cleared if the component unmounts
+    // or if drawLoop itself changes (which it shouldn't often if dependencies are stable)
     animationFrameIdRef.current = requestAnimationFrame(drawLoop);
     return () => {
       if (animationFrameIdRef.current) {
@@ -218,7 +232,7 @@ export function VisualizerView() {
         animationFrameIdRef.current = null;
       }
     };
-  }, [drawLoop, settings.currentSceneId]);
+  }, [drawLoop, settings.currentSceneId]); // drawLoop is a dependency
 
   return (
     <div className="w-full h-full relative">
