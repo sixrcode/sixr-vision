@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from 'react';
@@ -11,7 +12,11 @@ import type { PaletteGenieColor } from '@/types';
 import { ControlPanelSection } from '../ControlPanelSection';
 import { Wand2 } from 'lucide-react';
 
-export function PaletteGenie() {
+type PaletteGenieProps = {
+  value: string; // For AccordionItem
+};
+
+export function PaletteGenie({ value }: PaletteGenieProps) {
   const [baseHue, setBaseHue] = useState(180); // Default to a nice blue/cyan
   const [numColors, setNumColors] = useState(5);
   const [generatedPalette, setGeneratedPalette] = useState<PaletteGenieColor[]>([]);
@@ -45,7 +50,7 @@ export function PaletteGenie() {
   };
 
   return (
-    <ControlPanelSection title="AI: Palette Genie">
+    <ControlPanelSection title="AI: Palette Genie" value={value}>
       <div className="space-y-3">
         <Label htmlFor="base-hue-slider">Base Hue ({baseHue}°)</Label>
         <Slider
@@ -54,7 +59,7 @@ export function PaletteGenie() {
           max={360}
           step={1}
           value={[baseHue]}
-          onValueChange={([value]) => setBaseHue(value)}
+          onValueChange={([val]) => setBaseHue(val)}
           disabled={isLoading}
         />
       </div>

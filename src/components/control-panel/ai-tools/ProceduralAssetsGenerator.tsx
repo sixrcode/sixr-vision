@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from 'react';
@@ -11,7 +12,11 @@ import type { ProceduralAsset } from '@/types';
 import { ControlPanelSection } from '../ControlPanelSection';
 import { ImageIcon, Cuboid } from 'lucide-react';
 
-export function ProceduralAssetsGenerator() {
+type ProceduralAssetsGeneratorProps = {
+  value: string; // For AccordionItem
+};
+
+export function ProceduralAssetsGenerator({ value }: ProceduralAssetsGeneratorProps) {
   const [prompt, setPrompt] = useState('');
   const [generatedAssets, setGeneratedAssets] = useState<ProceduralAsset | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -45,7 +50,7 @@ export function ProceduralAssetsGenerator() {
   };
 
   return (
-    <ControlPanelSection title="AI: Procedural Assets">
+    <ControlPanelSection title="AI: Procedural Assets" value={value}>
       <div className="space-y-3">
         <Label htmlFor="asset-prompt-input">Prompt</Label>
         <Input

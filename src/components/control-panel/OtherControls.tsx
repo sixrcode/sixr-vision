@@ -1,3 +1,4 @@
+
 "use client";
 
 import { Button } from '@/components/ui/button';
@@ -5,10 +6,14 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { useSettings } from '@/providers/SettingsProvider';
 import { ControlPanelSection } from './ControlPanelSection';
-import { AlertTriangle, ZapOff, ListMusic, FileJson, Database } from 'lucide-react';
+import { AlertTriangle, ZapOff, FileJson, Database } from 'lucide-react'; // Removed ListMusic as it's not used
 import { toast } from '@/hooks/use-toast';
 
-export function OtherControls() {
+type OtherControlsProps = {
+  value: string; // For AccordionItem
+};
+
+export function OtherControls({ value }: OtherControlsProps) {
   const { settings, updateSetting } = useSettings();
 
   const handleExportLog = () => {
@@ -25,7 +30,7 @@ export function OtherControls() {
 
 
   return (
-    <ControlPanelSection title="System & Safety">
+    <ControlPanelSection title="System & Safety" value={value}>
       <div className="flex items-center justify-between">
         <Label htmlFor="panic-mode-switch" className="flex items-center text-destructive">
           <AlertTriangle className="mr-2 h-4 w-4" /> Panic Mode (Blackout)

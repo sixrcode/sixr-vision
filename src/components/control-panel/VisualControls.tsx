@@ -1,3 +1,4 @@
+
 "use client";
 
 import { Label } from '@/components/ui/label';
@@ -5,11 +6,15 @@ import { Slider } from '@/components/ui/slider';
 import { useSettings } from '@/providers/SettingsProvider';
 import { ControlPanelSection } from './ControlPanelSection';
 
-export function VisualControls() {
+type VisualControlsProps = {
+  value: string; // For AccordionItem
+};
+
+export function VisualControls({ value }: VisualControlsProps) {
   const { settings, updateSetting } = useSettings();
 
   return (
-    <ControlPanelSection title="Visual Output">
+    <ControlPanelSection title="Visual Output" value={value}>
       <div className="space-y-3">
         <Label htmlFor="gamma-slider">Gamma ({settings.gamma.toFixed(2)})</Label>
         <Slider
@@ -18,7 +23,7 @@ export function VisualControls() {
           max={3}
           step={0.05}
           value={[settings.gamma]}
-          onValueChange={([value]) => updateSetting('gamma', value)}
+          onValueChange={([val]) => updateSetting('gamma', val)}
         />
       </div>
       <div className="space-y-3">
@@ -29,7 +34,7 @@ export function VisualControls() {
           max={1}
           step={0.01}
           value={[settings.dither]}
-          onValueChange={([value]) => updateSetting('dither', value)}
+          onValueChange={([val]) => updateSetting('dither', val)}
         />
       </div>
       <div className="space-y-3">
@@ -40,7 +45,7 @@ export function VisualControls() {
           max={1}
           step={0.01}
           value={[settings.brightCap]}
-          onValueChange={([value]) => updateSetting('brightCap', value)}
+          onValueChange={([val]) => updateSetting('brightCap', val)}
         />
       </div>
       <div className="space-y-3">
@@ -51,7 +56,7 @@ export function VisualControls() {
           max={1}
           step={0.01}
           value={[settings.logoOpacity]}
-          onValueChange={([value]) => updateSetting('logoOpacity', value)}
+          onValueChange={([val]) => updateSetting('logoOpacity', val)}
         />
       </div>
     </ControlPanelSection>

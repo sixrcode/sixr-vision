@@ -1,3 +1,4 @@
+
 "use client";
 
 import { Label } from '@/components/ui/label';
@@ -8,16 +9,20 @@ import { useSettings } from '@/providers/SettingsProvider';
 import { FFT_SIZES } from '@/lib/constants';
 import { ControlPanelSection } from './ControlPanelSection';
 
-export function AudioControls() {
+type AudioControlsProps = {
+  value: string; // For AccordionItem
+};
+
+export function AudioControls({ value }: AudioControlsProps) {
   const { settings, updateSetting } = useSettings();
 
   return (
-    <ControlPanelSection title="Audio Engine">
+    <ControlPanelSection title="Audio Engine" value={value}>
       <div className="space-y-3">
         <Label htmlFor="fftSize-select">FFT Bins</Label>
         <Select
           value={String(settings.fftSize)}
-          onValueChange={(value) => updateSetting('fftSize', Number(value) as typeof settings.fftSize)}
+          onValueChange={(val) => updateSetting('fftSize', Number(val) as typeof settings.fftSize)}
         >
           <SelectTrigger id="fftSize-select">
             <SelectValue placeholder="Select FFT size" />
@@ -38,7 +43,7 @@ export function AudioControls() {
           max={2}
           step={0.05}
           value={[settings.gain]}
-          onValueChange={([value]) => updateSetting('gain', value)}
+          onValueChange={([val]) => updateSetting('gain', val)}
         />
       </div>
       

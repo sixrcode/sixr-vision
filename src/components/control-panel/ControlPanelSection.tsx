@@ -1,24 +1,27 @@
+
 "use client";
 import type { ReactNode } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
+import { AccordionItem, AccordionTrigger, AccordionContent } from '@/components/ui/accordion';
+import { cn } from '@/lib/utils';
 
 type ControlPanelSectionProps = {
   title: string;
   children: ReactNode;
   className?: string;
-  defaultOpen?: boolean; // For potential future accordion use
+  value: string; // Required for AccordionItem
 };
 
-export function ControlPanelSection({ title, children, className }: ControlPanelSectionProps) {
-  // Using Card for styling, can be replaced with Accordion for collapsibility
+export function ControlPanelSection({ title, children, className, value }: ControlPanelSectionProps) {
   return (
-    <div className={className}>
-      <h3 className="text-sm font-semibold mb-2 px-4 text-[hsl(var(--control-panel-foreground))] opacity-70">{title.toUpperCase()}</h3>
-      <div className="px-4 py-3 space-y-4 bg-[hsl(var(--background))] rounded-md shadow-sm mx-2">
-         {children}
-      </div>
-      <Separator className="my-4 bg-[hsl(var(--control-panel-border))] opacity-50 mx-2" />
-    </div>
+    <AccordionItem value={value} className={cn("border-b-0 px-2", className)}>
+      <AccordionTrigger className="py-2 text-sm font-semibold text-[hsl(var(--control-panel-foreground))] opacity-90 hover:opacity-100 hover:no-underline justify-start [&[data-state=open]>svg]:ml-auto">
+        <span className="px-2">{title.toUpperCase()}</span>
+      </AccordionTrigger>
+      <AccordionContent className="pb-0">
+        <div className="px-2 py-3 space-y-4 bg-[hsl(var(--background))] rounded-md shadow-sm">
+           {children}
+        </div>
+      </AccordionContent>
+    </AccordionItem>
   );
 }

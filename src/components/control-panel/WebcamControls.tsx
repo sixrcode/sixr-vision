@@ -1,3 +1,4 @@
+
 "use client";
 
 import { Label } from '@/components/ui/label';
@@ -5,11 +6,15 @@ import { Switch } from '@/components/ui/switch';
 import { useSettings } from '@/providers/SettingsProvider';
 import { ControlPanelSection } from './ControlPanelSection';
 
-export function WebcamControls() {
+type WebcamControlsProps = {
+  value: string; // For AccordionItem
+};
+
+export function WebcamControls({ value }: WebcamControlsProps) {
   const { settings, updateSetting } = useSettings();
 
   return (
-    <ControlPanelSection title="Webcam Layer">
+    <ControlPanelSection title="Webcam Layer" value={value}>
       <div className="flex items-center justify-between">
         <Label htmlFor="show-webcam-switch">Show Webcam</Label>
         <Switch

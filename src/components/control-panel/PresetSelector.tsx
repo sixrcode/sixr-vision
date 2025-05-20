@@ -1,20 +1,24 @@
+
 "use client";
 
 import Image from 'next/image';
 import { useScene } from '@/providers/SceneProvider';
 import { useSettings } from '@/providers/SettingsProvider';
-import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { ControlPanelSection } from './ControlPanelSection';
 
-export function PresetSelector() {
+type PresetSelectorProps = {
+  value: string; // For AccordionItem
+};
+
+export function PresetSelector({ value }: PresetSelectorProps) {
   const { scenes, setCurrentSceneById } = useScene();
   const { settings } = useSettings();
 
   return (
-    <ControlPanelSection title="Presets">
+    <ControlPanelSection title="Presets" value={value}>
       <ScrollArea className="w-full whitespace-nowrap">
         <div className="flex space-x-3 pb-3">
           {scenes.map((scene) => (

@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect, useCallback } from 'react';
@@ -9,7 +10,11 @@ import { suggestSceneFromAudio, type SuggestSceneFromAudioInput, type SuggestSce
 import { ControlPanelSection } from '../ControlPanelSection';
 import { Brain } from 'lucide-react';
 
-export function AiPresetChooser() {
+type AiPresetChooserProps = {
+  value: string; // For AccordionItem
+};
+
+export function AiPresetChooser({ value }: AiPresetChooserProps) {
   const { audioData } = useAudioData();
   const { setCurrentSceneById, scenes } = useScene();
   const [suggestedScene, setSuggestedScene] = useState<SuggestSceneFromAudioOutput | null>(null);
@@ -68,7 +73,7 @@ export function AiPresetChooser() {
   };
 
   return (
-    <ControlPanelSection title="AI: Preset Chooser">
+    <ControlPanelSection title="AI: Preset Chooser" value={value}>
       <Button onClick={fetchSuggestion} disabled={isLoading} className="w-full">
         <Brain className="mr-2 h-4 w-4" /> {isLoading ? 'Analyzing...' : 'Suggest Scene'}
       </Button>

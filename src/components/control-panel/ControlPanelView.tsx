@@ -1,3 +1,4 @@
+
 "use client";
 
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -14,6 +15,7 @@ import { OtherControls } from './OtherControls';
 import { useAudioAnalysis } from '@/hooks/useAudioAnalysis';
 import { useEffect } from 'react';
 import { Power } from 'lucide-react';
+import { Accordion } from '@/components/ui/accordion';
 
 export function ControlPanelView() {
   const { initializeAudio, isInitialized, error } = useAudioAnalysis();
@@ -41,16 +43,20 @@ export function ControlPanelView() {
       </header>
       {error && <p className="p-2 text-xs text-destructive bg-destructive/20 text-center">{error}</p>}
       <ScrollArea className="flex-1">
-        <div className="py-4 space-y-1"> {/* Reduced space-y for denser packing if needed */}
-          <PresetSelector />
-          <AudioControls />
-          <VisualControls />
-          <WebcamControls />
-          <AiPresetChooser />
-          <PaletteGenie />
-          <ProceduralAssetsGenerator />
-          <OtherControls />
-        </div>
+        <Accordion 
+          type="multiple" 
+          defaultValue={['presets', 'audio-engine', 'visual-output']} 
+          className="w-full py-4 space-y-1" 
+        > {/* Reduced space-y for denser packing if needed */}
+          <PresetSelector value="presets" />
+          <AudioControls value="audio-engine" />
+          <VisualControls value="visual-output" />
+          <WebcamControls value="webcam-layer" />
+          <AiPresetChooser value="ai-preset-chooser" />
+          <PaletteGenie value="ai-palette-genie" />
+          <ProceduralAssetsGenerator value="ai-procedural-assets" />
+          <OtherControls value="system-safety" />
+        </Accordion>
       </ScrollArea>
       <footer className="p-2 border-t border-[hsl(var(--control-panel-border))] text-center">
         <p className="text-xs text-[hsl(var(--muted-foreground))]">&copy; SIXR Systems {new Date().getFullYear()}</p>
