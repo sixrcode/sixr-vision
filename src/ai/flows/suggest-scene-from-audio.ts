@@ -1,3 +1,4 @@
+
 // The below code is auto-generated. Do not edit this code manually.
 'use server';
 
@@ -70,8 +71,15 @@ const suggestSceneFromAudioFlow = ai.defineFlow(
     outputSchema: SuggestSceneFromAudioOutputSchema,
   },
   async input => {
-    const {output} = await prompt(input);
-    return output!;
+    const response = await prompt(input);
+    if (!response.output) {
+        // This case should ideally be caught by Genkit if the output schema is defined 
+        // and the model fails to produce it, or if the API call itself failed.
+        // Adding an explicit check for robustness.
+        console.error('AI prompt for scene suggestion returned no output despite a successful API call.');
+        throw new Error('AI failed to suggest a scene (no output returned from model).');
+    }
+    return response.output;
   }
 );
 
