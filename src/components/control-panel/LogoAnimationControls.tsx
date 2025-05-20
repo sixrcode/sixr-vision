@@ -15,9 +15,9 @@ type LogoAnimationControlsProps = {
 
 export function LogoAnimationControls({ value }: LogoAnimationControlsProps) {
   const { settings, updateSetting } = useSettings();
-  const { logoAnimationSettings } = settings;
+  const { logoAnimationSettings, logoOpacity } = settings;
 
-  const handleSettingChange = <K extends keyof typeof logoAnimationSettings>(
+  const handleAnimationSettingChange = <K extends keyof typeof logoAnimationSettings>(
     key: K,
     val: (typeof logoAnimationSettings)[K]
   ) => {
@@ -27,10 +27,22 @@ export function LogoAnimationControls({ value }: LogoAnimationControlsProps) {
   return (
     <ControlPanelSection title="Logo & Watermark Animation" value={value}>
       <div className="space-y-3">
+        <Label htmlFor="logoopacity-slider">Overall Opacity ({logoOpacity.toFixed(2)})</Label>
+        <Slider
+          id="logoopacity-slider"
+          min={0}
+          max={1}
+          step={0.01}
+          value={[logoOpacity]}
+          onValueChange={([val]) => updateSetting('logoOpacity', val)}
+        />
+      </div>
+
+      <div className="space-y-3 mt-4"> {/* Added mt-4 for spacing */}
         <Label htmlFor="logo-animation-type-select">Animation Type</Label>
         <Select
           value={logoAnimationSettings.type}
-          onValueChange={(val) => handleSettingChange('type', val as LogoAnimationType)}
+          onValueChange={(val) => handleAnimationSettingChange('type', val as LogoAnimationType)}
         >
           <SelectTrigger id="logo-animation-type-select">
             <SelectValue placeholder="Select animation type" />
@@ -52,7 +64,7 @@ export function LogoAnimationControls({ value }: LogoAnimationControlsProps) {
             id="logo-animation-color"
             type="color"
             value={logoAnimationSettings.color}
-            onChange={(e) => handleSettingChange('color', e.target.value)}
+            onChange={(e) => handleAnimationSettingChange('color', e.target.value)}
             className="h-10" // Ensure consistent height with other inputs
           />
         </div>
@@ -69,7 +81,7 @@ export function LogoAnimationControls({ value }: LogoAnimationControlsProps) {
             max={3}   // Faster
             step={0.1}
             value={[logoAnimationSettings.speed]}
-            onValueChange={([val]) => handleSettingChange('speed', val)}
+            onValueChange={([val]) => handleAnimationSettingChange('speed', val)}
           />
           <p className="text-xs text-[hsl(var(--muted-foreground))]">
             {logoAnimationSettings.type === 'blink' ? 'Higher is faster blinking.' : 'Higher is faster pulsing.'}
@@ -80,3 +92,4 @@ export function LogoAnimationControls({ value }: LogoAnimationControlsProps) {
     </ControlPanelSection>
   );
 }
+

@@ -48,17 +48,7 @@ export function VisualControls({ value }: VisualControlsProps) {
           onValueChange={([val]) => updateSetting('brightCap', val)}
         />
       </div>
-      <div className="space-y-3">
-        <Label htmlFor="logoopacity-slider">Logo Opacity ({settings.logoOpacity.toFixed(2)})</Label>
-        <Slider
-          id="logoopacity-slider"
-          min={0}
-          max={1}
-          step={0.01}
-          value={[settings.logoOpacity]}
-          onValueChange={([val]) => updateSetting('logoOpacity', val)}
-        />
-      </div>
     </ControlPanelSection>
   );
 }
+
