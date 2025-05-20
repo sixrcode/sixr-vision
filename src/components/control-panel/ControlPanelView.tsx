@@ -11,7 +11,8 @@ import { PresetSelector } from './PresetSelector';
 import { PaletteGenie } from './ai-tools/PaletteGenie';
 import { ProceduralAssetsGenerator } from './ai-tools/ProceduralAssetsGenerator';
 import { AiPresetChooser } from './ai-tools/AiPresetChooser';
-import { AmbianceGenerator } from './ai-tools/AmbianceGenerator'; // Import new component
+import { AmbianceGenerator } from './ai-tools/AmbianceGenerator';
+import { AiVisualOverlayMixer } from './ai-tools/AiVisualOverlayMixer'; // Import new component
 import { LogoAnimationControls } from './LogoAnimationControls';
 import { OtherControls } from './OtherControls';
 import { useAudioAnalysis } from '@/hooks/useAudioAnalysis';
@@ -92,8 +93,9 @@ export function ControlPanelView() {
             <WebcamControls value="webcam-layer" />
             <AiPresetChooser value="ai-preset-chooser" />
             <PaletteGenie value="ai-palette-genie" />
-            <AmbianceGenerator value="ai-ambiance-generator" /> {/* Add new component */}
+            <AmbianceGenerator value="ai-ambiance-generator" />
             <ProceduralAssetsGenerator value="ai-procedural-assets" />
+            <AiVisualOverlayMixer value="ai-visual-overlay-mixer" /> {/* Add new component */}
             <OtherControls value="system-safety" />
           </Accordion>
         </div>

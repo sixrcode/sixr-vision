@@ -49,6 +49,13 @@ export type Settings = {
   lastAISuggestedAssetPrompt?: string;
   sceneTransitionDuration: number; // milliseconds for crossfade
   sceneTransitionActive: boolean; // whether crossfade is enabled
+
+  // AI Visual Overlay Mixer Settings
+  enableAiOverlay: boolean;
+  aiGeneratedOverlayUri: string | null;
+  aiOverlayOpacity: number; // 0-1
+  aiOverlayBlendMode: CanvasRenderingContext2D['globalCompositeOperation'];
+  aiOverlayPrompt: string;
 };
 
 export type PaletteGenieColor = {
@@ -77,3 +84,12 @@ export type RehearsalLogEntry = {
   event: string;
   details: Record<string, any>;
 };
+
+// Valid Canvas GlobalCompositeOperation values
+export const VALID_BLEND_MODES: CanvasRenderingContext2D['globalCompositeOperation'][] = [
+  'source-over', 'source-in', 'source-out', 'source-atop',
+  'destination-over', 'destination-in', 'destination-out', 'destination-atop',
+  'lighter', 'copy', 'xor', 'multiply', 'screen', 'overlay', 'darken',
+  'lighten', 'color-dodge', 'color-burn', 'hard-light', 'soft-light',
+  'difference', 'exclusion', 'hue', 'saturation', 'color', 'luminosity'
+];
