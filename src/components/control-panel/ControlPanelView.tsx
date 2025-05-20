@@ -16,7 +16,7 @@ import { OtherControls } from './OtherControls';
 import { useAudioAnalysis } from '@/hooks/useAudioAnalysis';
 import { useSettings } from '@/providers/SettingsProvider';
 import { useEffect } from 'react';
-import { Power, Mic, Camera } from 'lucide-react';
+import { Power, Mic, Camera } from 'lucide-react'; // Ensure Camera is imported
 import { Accordion } from '@/components/ui/accordion';
 
 export function ControlPanelView() {
@@ -46,13 +46,14 @@ export function ControlPanelView() {
         </div>
 
         <div className="flex items-center gap-3"> {/* Container for right-side elements */}
-          {/* Status Indicators */}
+          {/* Audio Status Indicator */}
           {isInitialized && (
             <div className="flex items-center text-sm text-green-400" title="Audio is active">
               <Mic className="mr-1 h-4 w-4" />
               <span>Audio</span>
             </div>
           )}
+          {/* Webcam Status Indicator */}
           {settings.showWebcam && (
             <div className="flex items-center text-sm text-sky-400" title="Webcam is active">
               <Camera className="mr-1 h-4 w-4" />
