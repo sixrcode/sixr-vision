@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import type { AudioData, Settings } from '@/types';
+import type { AudioData } from '@/types';
 import { useAudioData } from '@/providers/AudioDataProvider';
 import { useSettings } from '@/providers/SettingsProvider';
 import { INITIAL_AUDIO_DATA } from '@/lib/constants';
@@ -21,12 +21,13 @@ const AGC_RELEASE_TIME_CONSTANT = 0.4; // Time constant for gain increase (secon
 
 export function useAudioAnalysis() {
   const { settings } = useSettings();
-  const { audioData: currentGlobalAudioData, setAudioData } = useAudioData(); // Renamed to avoid conflict
+  const { audioData: currentGlobalAudioData, setAudioData } = useAudioData(); 
   
   const audioContextRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const gainNodeRef = useRef<GainNode | null>(null);
   const sourceNodeRef = useRef<MediaStreamAudioSourceNode | null>(null);
+  const mediaStreamRef = useRef<MediaStream | null>(null); // Keep track of the stream
   const dataArrayRef = useRef<Uint8Array | null>(null);
   const animationFrameIdRef = useRef<number | null>(null);
   
@@ -112,8 +113,8 @@ export function useAudioAnalysis() {
   }, [beatTimestamps, currentGlobalAudioData.bpm]);
 
   const analyze = useCallback(() => {
-    if (!analyserRef.current || !dataArrayRef.current || !audioContextRef.current) {
-      animationFrameIdRef.current = requestAnimationFrame(analyze); // Keep trying
+    if (!analyserRef.current || !dataArrayRef.current || !audioContextRef.current || !isInitialized) {
+      if (isInitialized) animationFrameIdRef.current = requestAnimationFrame(analyze); // Keep trying if init
       return;
     }
 
@@ -154,14 +155,16 @@ export function useAudioAnalysis() {
         }
     }
     animationFrameIdRef.current = requestAnimationFrame(analyze);
-  }, [settings.enableAgc, calculateEnergy, estimateBPM, setAudioData]);
+  }, [settings.enableAgc, calculateEnergy, estimateBPM, setAudioData, isInitialized]);
 
 
   const initializeAudio = useCallback(async () => {
-    if (isInitialized || audioContextRef.current?.state === 'running') return;
+    if (isInitialized || (audioContextRef.current && audioContextRef.current.state === 'running')) return;
     setError(null);
+
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+      mediaStreamRef.current = stream; // Store the stream
       audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
       
       sourceNodeRef.current = audioContextRef.current.createMediaStreamSource(stream);
@@ -178,56 +181,94 @@ export function useAudioAnalysis() {
       
       // Initial gain setting
       if (settings.enableAgc) {
-        // If AGC is on by default, start with a neutral gain. AGC will adjust it.
         gainNodeRef.current.gain.setValueAtTime(1.0, audioContextRef.current.currentTime);
       } else {
         gainNodeRef.current.gain.setValueAtTime(settings.gain, audioContextRef.current.currentTime);
       }
 
       setIsInitialized(true);
-      setError(null); // Clear any previous error
-      if (animationFrameIdRef.current) cancelAnimationFrame(animationFrameIdRef.current); // Ensure no duplicates
+      setError(null); 
+      if (animationFrameIdRef.current) cancelAnimationFrame(animationFrameIdRef.current); 
       analyze();
     } catch (err) {
       console.error("Error initializing audio:", err);
       setError(err instanceof Error ? err.message : String(err));
       setIsInitialized(false);
-      setAudioData(INITIAL_AUDIO_DATA); // Reset audio data on error
+      setAudioData(INITIAL_AUDIO_DATA); 
+      if (mediaStreamRef.current) {
+        mediaStreamRef.current.getTracks().forEach(track => track.stop());
+        mediaStreamRef.current = null;
+      }
     }
   }, [isInitialized, settings.fftSize, settings.gain, settings.enableAgc, analyze, setAudioData]);
 
+  const stopAudioAnalysis = useCallback(async () => {
+    if (!isInitialized && !audioContextRef.current) return;
+
+    if (animationFrameIdRef.current) {
+      cancelAnimationFrame(animationFrameIdRef.current);
+      animationFrameIdRef.current = null;
+    }
+
+    if (sourceNodeRef.current) {
+      sourceNodeRef.current.disconnect();
+      sourceNodeRef.current = null;
+    }
+    if (gainNodeRef.current) {
+      gainNodeRef.current.disconnect();
+      gainNodeRef.current = null;
+    }
+    if(analyserRef.current){
+      analyserRef.current.disconnect();
+      analyserRef.current = null;
+    }
+    
+    if (mediaStreamRef.current) {
+      mediaStreamRef.current.getTracks().forEach(track => track.stop());
+      mediaStreamRef.current = null;
+    }
+
+    if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
+      try {
+        await audioContextRef.current.close();
+      } catch (e) {
+        console.error("Error closing audio context", e);
+      }
+    }
+    audioContextRef.current = null;
+    
+    setIsInitialized(false);
+    setAudioData(INITIAL_AUDIO_DATA); // Reset audio data to initial state
+    setError(null); // Clear any errors
+    setPreviousRms(0);
+    setLastBeatTime(0);
+    setBeatTimestamps([]);
+  }, [isInitialized, setAudioData]);
+
 
   useEffect(() => {
-    // Effect to handle enabling/disabling AGC and manual gain changes
     if (!isInitialized || !audioContextRef.current || !gainNodeRef.current) return;
 
     if (settings.enableAgc) {
-        // AGC is enabled. The `analyze` function handles dynamic gain adjustments.
-        // If gain was previously set manually, AGC will now take over.
-        // It might be good to ensure a smooth transition if AGC is toggled ON.
-        // For now, analyze() will start adjusting from current gain value.
+      // AGC logic is handled in analyze()
     } else {
-        // AGC is disabled. Set gain to the manual `settings.gain` value.
         if (audioContextRef.current.state === 'running') {
             gainNodeRef.current.gain.setTargetAtTime(
                 settings.gain,
                 audioContextRef.current.currentTime,
-                0.05 // A small time constant for a smooth transition back to manual
+                0.05 
             );
         } else {
-             // If context is not running (e.g., suspended), set value directly.
             gainNodeRef.current.gain.value = settings.gain;
         }
     }
   }, [settings.enableAgc, settings.gain, isInitialized]);
 
   useEffect(() => {
-    // Effect to handle FFT size changes
     if (analyserRef.current && dataArrayRef.current && settings.fftSize !== analyserRef.current.fftSize) {
       analyserRef.current.fftSize = settings.fftSize;
       const newFrequencyBinCount = analyserRef.current.frequencyBinCount;
       dataArrayRef.current = new Uint8Array(newFrequencyBinCount);
-      // Update global audioData with new spectrum array size, filled with 0
       setAudioData(prev => ({ 
         ...prev, 
         spectrum: new Uint8Array(newFrequencyBinCount).fill(0) 
@@ -235,33 +276,13 @@ export function useAudioAnalysis() {
     }
   }, [settings.fftSize, setAudioData]);
 
-  // Cleanup
+  // Cleanup on component unmount
   useEffect(() => {
     return () => {
-      if (animationFrameIdRef.current) {
-        cancelAnimationFrame(animationFrameIdRef.current);
-      }
-      if (sourceNodeRef.current) {
-        sourceNodeRef.current.mediaStream?.getTracks().forEach(track => track.stop());
-        sourceNodeRef.current.disconnect();
-      }
-      if (gainNodeRef.current) {
-        gainNodeRef.current.disconnect();
-      }
-      if(analyserRef.current){
-        analyserRef.current.disconnect();
-      }
-      if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
-        audioContextRef.current.close().catch(e => console.error("Error closing audio context", e));
-      }
-      audioContextRef.current = null; // Ensure it's nulled for re-initialization checks
-      analyserRef.current = null;
-      gainNodeRef.current = null;
-      sourceNodeRef.current = null;
-      setIsInitialized(false);
+      stopAudioAnalysis();
     };
-  }, []);
+  }, [stopAudioAnalysis]);
 
-  return { initializeAudio, isInitialized, error };
+  return { initializeAudio, stopAudioAnalysis, isInitialized, error };
 }
 

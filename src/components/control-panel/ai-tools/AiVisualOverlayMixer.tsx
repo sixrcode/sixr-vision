@@ -15,7 +15,7 @@ import { useAudioData } from '@/providers/AudioDataProvider';
 import { useScene } from '@/providers/SceneProvider';
 import { generateVisualOverlay, type GenerateVisualOverlayInput, type GenerateVisualOverlayOutput } from '@/ai/flows/generate-visual-overlay';
 import { ControlPanelSection } from '../ControlPanelSection';
-import { Layers, Wand2 } from 'lucide-react';
+import { Layers, Wand2, Loader2 } from 'lucide-react'; // Added Loader2
 import { VALID_BLEND_MODES } from '@/types';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
@@ -48,7 +48,7 @@ export function AiVisualOverlayMixer({ value }: AiVisualOverlayMixerProps) {
     }
 
     setIsLoading(true);
-    updateSetting('aiGeneratedOverlayUri', null); // Clear previous overlay
+    updateSetting('aiGeneratedOverlayUri', null); 
     try {
       const serializableAudioData = {
         bassEnergy: audioData.bassEnergy,
@@ -64,7 +64,7 @@ export function AiVisualOverlayMixer({ value }: AiVisualOverlayMixerProps) {
       };
       const result: GenerateVisualOverlayOutput = await generateVisualOverlay(input);
       updateSetting('aiGeneratedOverlayUri', result.overlayImageDataUri);
-      updateSetting('aiOverlayPrompt', promptToUse); // Save the successful prompt
+      updateSetting('aiOverlayPrompt', promptToUse); 
       toast({ title: 'AI Overlay Generated', description: 'Visual overlay created!' });
       return true;
     } catch (error) {
@@ -78,12 +78,10 @@ export function AiVisualOverlayMixer({ value }: AiVisualOverlayMixerProps) {
 
   useEffect(() => {
     const autoGenerateAndEnable = async () => {
-      if (!initialGenerationAttempted.current && currentScene) {
-        initialGenerationAttempted.current = true; // Mark as attempted
-        // Use default prompt for initial auto-generation
+      if (!initialGenerationAttempted.current && currentScene && settings.showWebcam) { // Also wait for webcam to be active for context
+        initialGenerationAttempted.current = true; 
         const success = await handleGenerateOverlay(settings.aiOverlayPrompt || "ethereal wisps of light");
         if (success) {
-          // Small delay to ensure URI is propagated before enabling
           setTimeout(() => {
             updateSetting('enableAiOverlay', true);
           }, 100);
@@ -91,11 +89,10 @@ export function AiVisualOverlayMixer({ value }: AiVisualOverlayMixerProps) {
       }
     };
     
-    // Wait a bit for other things to potentially initialize, like currentScene
-    const timer = setTimeout(autoGenerateAndEnable, 2000); 
+    const timer = setTimeout(autoGenerateAndEnable, 3000); // Increased delay
     return () => clearTimeout(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentScene]); // Depend on currentScene to ensure it's available
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentScene, settings.showWebcam]); 
 
 
   return (
@@ -114,7 +111,7 @@ export function AiVisualOverlayMixer({ value }: AiVisualOverlayMixerProps) {
             id="enable-ai-overlay-switch"
             checked={settings.enableAiOverlay}
             onCheckedChange={(checked) => updateSetting('enableAiOverlay', checked)}
-            disabled={!settings.aiGeneratedOverlayUri}
+            disabled={!settings.aiGeneratedOverlayUri || isLoading}
           />
         </div>
 
@@ -147,6 +144,7 @@ export function AiVisualOverlayMixer({ value }: AiVisualOverlayMixerProps) {
                     variant="outline"
                     onClick={() => setLocalPrompt(settings.lastAISuggestedAssetPrompt!)}
                     className="px-2 py-1 h-auto text-xs"
+                    disabled={isLoading}
                 >
                     Use
                 </Button>
@@ -156,7 +154,11 @@ export function AiVisualOverlayMixer({ value }: AiVisualOverlayMixerProps) {
         </div>
         
         <Button onClick={() => handleGenerateOverlay()} disabled={isLoading || !currentScene} className="w-full">
-          <Layers className="mr-2 h-4 w-4" />
+          {isLoading ? (
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          ) : (
+            <Layers className="mr-2 h-4 w-4" />
+          )}
           {isLoading ? 'Generating Overlay...' : 'Generate Overlay'}
         </Button>
         {!currentScene && <p className="text-xs text-destructive text-center">Select a scene first to generate an overlay.</p>}
@@ -193,6 +195,7 @@ export function AiVisualOverlayMixer({ value }: AiVisualOverlayMixerProps) {
                 step={0.01}
                 value={[settings.aiOverlayOpacity]}
                 onValueChange={([val]) => updateSetting('aiOverlayOpacity', val)}
+                disabled={isLoading}
               />
             </div>
 
@@ -208,6 +211,7 @@ export function AiVisualOverlayMixer({ value }: AiVisualOverlayMixerProps) {
               <Select
                 value={settings.aiOverlayBlendMode}
                 onValueChange={(val) => updateSetting('aiOverlayBlendMode', val as CanvasRenderingContext2D['globalCompositeOperation'])}
+                disabled={isLoading}
               >
                 <SelectTrigger id="ai-overlay-blend-mode-select">
                   <SelectValue placeholder="Select blend mode" />
@@ -225,3 +229,4 @@ export function AiVisualOverlayMixer({ value }: AiVisualOverlayMixerProps) {
     </ControlPanelSection>
   );
 }
+

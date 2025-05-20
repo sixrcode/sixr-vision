@@ -24,6 +24,11 @@ export function VisualizerView() {
   const transitionStartTimeRef = useRef<number>(0);
   const lastSceneIdRef = useRef<string | undefined>(settings.currentSceneId);
 
+  // FPS Counter states
+  const lastFrameTimeRef = useRef(performance.now());
+  const frameCountRef = useRef(0);
+  const [fps, setFps] = useState(0);
+
   useEffect(() => {
     if (settings.currentSceneId !== lastSceneIdRef.current) {
       if (settings.sceneTransitionActive && settings.sceneTransitionDuration > 0) {
@@ -53,11 +58,10 @@ export function VisualizerView() {
       img.onerror = () => {
         console.error("Failed to load AI overlay image.");
         aiOverlayImageRef.current = null;
-        // Optionally, inform the user via toast or clear the setting
       };
       img.src = settings.aiGeneratedOverlayUri;
     } else {
-      aiOverlayImageRef.current = null; // Clear image if overlay is disabled or URI is null
+      aiOverlayImageRef.current = null; 
     }
   }, [settings.enableAiOverlay, settings.aiGeneratedOverlayUri]);
 
@@ -77,6 +81,16 @@ export function VisualizerView() {
       setLastError("Failed to get 2D context. Visualizer cannot draw.");
       animationFrameIdRef.current = requestAnimationFrame(drawLoop);
       return;
+    }
+
+    // FPS Calculation
+    const now = performance.now();
+    const delta = now - lastFrameTimeRef.current;
+    frameCountRef.current++;
+    if (delta >= 1000) {
+      setFps(frameCountRef.current);
+      frameCountRef.current = 0;
+      lastFrameTimeRef.current = now;
     }
 
     try {
@@ -144,7 +158,6 @@ export function VisualizerView() {
         if (lastError) setLastError(null);
       }
 
-      // Draw AI Generated Overlay
       if (settings.enableAiOverlay && aiOverlayImageRef.current && !settings.panicMode && !lastError) {
         const originalAlpha = ctx.globalAlpha;
         const originalCompositeOperation = ctx.globalCompositeOperation;
@@ -153,8 +166,16 @@ export function VisualizerView() {
         ctx.globalCompositeOperation = settings.aiOverlayBlendMode;
         ctx.drawImage(aiOverlayImageRef.current, 0, 0, canvas.width, canvas.height);
 
-        ctx.globalAlpha = originalAlpha; // Restore
-        ctx.globalCompositeOperation = originalCompositeOperation; // Restore
+        ctx.globalAlpha = originalAlpha; 
+        ctx.globalCompositeOperation = originalCompositeOperation; 
+      }
+
+      // Draw FPS counter
+      if (!settings.panicMode && !lastError) {
+        ctx.font = '12px var(--font-geist-sans)';
+        ctx.fillStyle = 'hsl(var(--foreground))';
+        ctx.textAlign = 'left';
+        ctx.fillText(`FPS: ${fps}`, 10, 20);
       }
 
     } catch (error) {
@@ -166,7 +187,7 @@ export function VisualizerView() {
     }
 
     animationFrameIdRef.current = requestAnimationFrame(drawLoop);
-  }, [audioData, currentScene, settings, webcamElement, lastError, isTransitioning]);
+  }, [audioData, currentScene, settings, webcamElement, lastError, isTransitioning, fps]); // Added fps to dependency
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -207,3 +228,4 @@ export function VisualizerView() {
     </div>
   );
 }
+

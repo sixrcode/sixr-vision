@@ -10,19 +10,19 @@ import { useToast } from '@/hooks/use-toast';
 import { generateAssets, type GenerateAssetsInput, type GenerateAssetsOutput } from '@/ai/flows/generate-assets-from-prompt';
 import type { ProceduralAsset } from '@/types';
 import { ControlPanelSection } from '../ControlPanelSection';
-import { ImageIcon, Cuboid, Sparkles } from 'lucide-react'; // Added Sparkles for suggestion
-import { useSettings } from '@/providers/SettingsProvider'; // Import useSettings
+import { ImageIcon, Cuboid, Sparkles, Loader2 } from 'lucide-react'; // Added Loader2
+import { useSettings } from '@/providers/SettingsProvider'; 
+
+type ProceduralAssetsGeneratorProps = {
+  value: string; // For AccordionItem
+};
 
 export function ProceduralAssetsGenerator({ value }: ProceduralAssetsGeneratorProps) {
   const [prompt, setPrompt] = useState('');
   const [generatedAssets, setGeneratedAssets] = useState<ProceduralAsset | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
-  const { settings } = useSettings(); // Get settings
-
-  type ProceduralAssetsGeneratorProps = {
-    value: string; // For AccordionItem
-  };
+  const { settings } = useSettings(); 
 
   const handleSubmit = async () => {
     if (!prompt.trim()) {
@@ -72,10 +72,11 @@ export function ProceduralAssetsGenerator({ value }: ProceduralAssetsGeneratorPr
               AI suggestion: <em className="text-primary/90">"{settings.lastAISuggestedAssetPrompt}"</em>
             </p>
             <Button
-              size="xs" // Using a hypothetical "xs" size, or "sm" and adjust padding if needed
+              size="xs" 
               variant="outline"
               onClick={() => setPrompt(settings.lastAISuggestedAssetPrompt!)}
-              className="px-2 py-1 h-auto text-xs" // More compact button
+              className="px-2 py-1 h-auto text-xs"
+              disabled={isLoading}
             >
               Use
             </Button>
@@ -84,7 +85,15 @@ export function ProceduralAssetsGenerator({ value }: ProceduralAssetsGeneratorPr
       )}
 
       <Button onClick={handleSubmit} disabled={isLoading} className="w-full mt-2">
-        {isLoading ? 'Generating...' : 'Generate Assets'}
+         {isLoading ? (
+          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+        ) : (
+          // Potentially keep an icon here or remove for space if text is "Generating..."
+          // For consistency with other AI buttons, an icon could be kept.
+          // <Sparkles className="mr-2 h-4 w-4" /> // Or another icon like ImageIcon/Cuboid
+          null 
+        )}
+        {isLoading ? 'Generating Assets...' : 'Generate Assets'}
       </Button>
 
       {generatedAssets && (
@@ -105,7 +114,6 @@ export function ProceduralAssetsGenerator({ value }: ProceduralAssetsGeneratorPr
           {generatedAssets.meshDataUri && (
             <div>
               <Label className="flex items-center"><Cuboid className="mr-2 h-4 w-4" />Generated Mesh (Preview):</Label>
-               {/* Displaying mesh data URI as an image is a placeholder. True 3D rendering is complex. */}
               <Image
                 src={generatedAssets.meshDataUri} 
                 alt="Generated Mesh Preview"
@@ -123,3 +131,4 @@ export function ProceduralAssetsGenerator({ value }: ProceduralAssetsGeneratorPr
     </ControlPanelSection>
   );
 }
+

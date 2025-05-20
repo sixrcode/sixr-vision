@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { generateSceneAmbiance, type GenerateSceneAmbianceInput, type GenerateSceneAmbianceOutput } from '@/ai/flows/generate-scene-ambiance';
 import { ControlPanelSection } from '../ControlPanelSection';
-import { Sparkles, MessageSquareText } from 'lucide-react';
+import { MessageSquareText, Loader2 } from 'lucide-react'; // Added Loader2
 import { useAudioData } from '@/providers/AudioDataProvider';
 import { useScene } from '@/providers/SceneProvider';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
@@ -37,7 +37,6 @@ export function AmbianceGenerator({ value }: AmbianceGeneratorProps) {
     setIsLoading(true);
     setAmbianceText('');
     try {
-      // We need to pass only the serializable parts of audioData
       const serializableAudioData = {
         bassEnergy: audioData.bassEnergy,
         midEnergy: audioData.midEnergy,
@@ -76,7 +75,12 @@ export function AmbianceGenerator({ value }: AmbianceGeneratorProps) {
         <Tooltip>
           <TooltipTrigger asChild>
             <Button onClick={handleSubmit} disabled={isLoading || !currentScene} className="w-full">
-              <MessageSquareText className="mr-2 h-4 w-4" /> {isLoading ? 'Generating...' : 'Describe Current Vibe'}
+              {isLoading ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <MessageSquareText className="mr-2 h-4 w-4" />
+              )}
+              {isLoading ? 'Generating Vibe...' : 'Describe Current Vibe'}
             </Button>
           </TooltipTrigger>
           <TooltipContent>
@@ -105,3 +109,4 @@ export function AmbianceGenerator({ value }: AmbianceGeneratorProps) {
     </ControlPanelSection>
   );
 }
+

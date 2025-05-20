@@ -11,7 +11,7 @@ import { useScene } from '@/providers/SceneProvider';
 import { useSettings } from '@/providers/SettingsProvider';
 import { suggestSceneFromAudio, type SuggestSceneFromAudioInput, type SuggestSceneFromAudioOutput } from '@/ai/flows/suggest-scene-from-audio';
 import { ControlPanelSection } from '../ControlPanelSection';
-import { Brain } from 'lucide-react';
+import { Brain, Loader2 } from 'lucide-react'; // Added Loader2 for loading state
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 
 type AiPresetChooserProps = {
@@ -25,10 +25,11 @@ export function AiPresetChooser({ value }: AiPresetChooserProps) {
   const [suggestedSceneInfo, setSuggestedSceneInfo] = useState<SuggestSceneFromAudioOutput | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
-  const [autoLoad, setAutoLoad] = useState(false); // Set to false by default
+  const [autoLoad, setAutoLoad] = useState(false); 
 
   const fetchSuggestion = useCallback(async (isAutoTrigger = false) => {
-    if (isLoading && isAutoTrigger && autoLoad) return; // Don't stack auto-triggered requests if autoLoad is on
+    if (isLoading && !isAutoTrigger) return; // Prevent manual trigger if already loading
+    if (isLoading && isAutoTrigger && autoLoad) return;
 
     setIsLoading(true);
     try {
@@ -54,7 +55,6 @@ export function AiPresetChooser({ value }: AiPresetChooserProps) {
       }
     } catch (error) {
       console.error('Error suggesting scene:', error);
-      // Only toast if manually triggered or if autoLoad is on and it's not an auto-trigger (to inform about persistent issues)
       if (!isAutoTrigger || (isAutoTrigger && autoLoad)) { 
         toast({
           title: 'Error Suggesting Scene',
@@ -70,17 +70,14 @@ export function AiPresetChooser({ value }: AiPresetChooserProps) {
   useEffect(() => {
     let timer: NodeJS.Timeout | undefined;
     if (autoLoad) {
-      // Initial fetch shortly after component mounts if conditions are met and autoLoad is true
       if (audioData.bpm > 0 && (audioData.bassEnergy > 0.1 || audioData.midEnergy > 0.1 || audioData.trebleEnergy > 0.1)) {
-        // Delay initial auto-fetch slightly to allow other initializations
         setTimeout(() => fetchSuggestion(true), 2000);
       }
-      // Then set up periodic checks
       timer = setInterval(() => { 
         if (audioData.bpm > 0 && (audioData.bassEnergy > 0.1 || audioData.midEnergy > 0.1 || audioData.trebleEnergy > 0.1)) {
            fetchSuggestion(true); 
         }
-      }, 30000); // Check every 30 seconds
+      }, 30000); 
     }
     return () => {
       if (timer) clearInterval(timer); 
@@ -101,7 +98,12 @@ export function AiPresetChooser({ value }: AiPresetChooserProps) {
       <Tooltip>
         <TooltipTrigger asChild>
           <Button onClick={() => fetchSuggestion(false)} disabled={isLoading} className="w-full">
-            <Brain className="mr-2 h-4 w-4" /> {isLoading && !autoLoad ? 'Analyzing...' : 'Suggest Scene & Assets'}
+            {isLoading && !autoLoad ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <Brain className="mr-2 h-4 w-4" />
+            )}
+            {isLoading && !autoLoad ? 'Analyzing Audio...' : 'Suggest Scene & Assets'}
           </Button>
         </TooltipTrigger>
         <TooltipContent>
@@ -116,7 +118,7 @@ export function AiPresetChooser({ value }: AiPresetChooserProps) {
             <p className="text-xs text-[hsl(var(--muted-foreground))] mt-1">Asset idea: <em className="text-primary/90">"{suggestedSceneInfo.suggestedAssetPrompt}"</em> (use in Procedural Assets)</p>
           )}
           {scenes.find(s => s.id === suggestedSceneInfo.sceneId) && !autoLoad && (
-            <Button onClick={handleLoadSuggested} size="sm" className="mt-2 w-full">
+            <Button onClick={handleLoadSuggested} size="sm" className="mt-2 w-full" disabled={isLoading}>
               Load Suggested Scene
             </Button>
           )}
@@ -131,9 +133,10 @@ export function AiPresetChooser({ value }: AiPresetChooserProps) {
             <p>If enabled, the AI will periodically analyze audio and automatically load the suggested scene.</p>
           </TooltipContent>
         </Tooltip>
-        <Switch id="auto-load-switch" checked={autoLoad} onCheckedChange={setAutoLoad} aria-label="Toggle auto-load scene suggestions" />
+        <Switch id="auto-load-switch" checked={autoLoad} onCheckedChange={setAutoLoad} aria-label="Toggle auto-load scene suggestions" disabled={isLoading} />
       </div>
       <p className="text-xs text-[hsl(var(--muted-foreground))] mt-1">When active, AI will periodically suggest & load scenes (every 30s).</p>
     </ControlPanelSection>
   );
 }
+

@@ -12,25 +12,31 @@ import { PaletteGenie } from './ai-tools/PaletteGenie';
 import { ProceduralAssetsGenerator } from './ai-tools/ProceduralAssetsGenerator';
 import { AiPresetChooser } from './ai-tools/AiPresetChooser';
 import { AmbianceGenerator } from './ai-tools/AmbianceGenerator';
-import { AiVisualOverlayMixer } from './ai-tools/AiVisualOverlayMixer'; // Import new component
+import { AiVisualOverlayMixer } from './ai-tools/AiVisualOverlayMixer';
 import { LogoAnimationControls } from './LogoAnimationControls';
 import { OtherControls } from './OtherControls';
 import { useAudioAnalysis } from '@/hooks/useAudioAnalysis';
-import { useSettings } from '@/providers/SettingsProvider';
-import { useEffect } from 'react';
-import { Power, Mic, Camera } from 'lucide-react';
+import { useEffect, useRef } from 'react'; // Added useRef here
+import { Power, Mic, MicOff, Camera } from 'lucide-react';
 import { Accordion } from '@/components/ui/accordion';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { useSettings } from '@/providers/SettingsProvider';
+
 
 export function ControlPanelView() {
-  const { initializeAudio, isInitialized, error } = useAudioAnalysis();
+  const { initializeAudio, stopAudioAnalysis, isInitialized, error } = useAudioAnalysis();
   const { settings } = useSettings();
+  const audioInitializationAttempted = useRef(false);
+
 
   useEffect(() => {
-    if (!isInitialized && !error) {
+    // Attempt initial audio and webcam activation
+    if (!isInitialized && !error && !audioInitializationAttempted.current) {
+      audioInitializationAttempted.current = true; // Mark as attempted
       initializeAudio();
     }
   }, [isInitialized, initializeAudio, error]);
+
 
   const sColor = "rgb(254, 190, 15)";
   const iColor = "rgb(51, 197, 244)";
@@ -38,30 +44,53 @@ export function ControlPanelView() {
   const rColor = "rgb(91, 185, 70)";
   const torusFontFamily = "'Torus Variations', var(--font-geist-mono), monospace";
 
+  const handlePowerToggle = () => {
+    if (isInitialized) {
+      stopAudioAnalysis();
+    } else {
+      initializeAudio();
+    }
+  };
+
   return (
     <div className="h-full flex flex-col text-[hsl(var(--control-panel-foreground))]">
       <header className="p-4 border-b border-[hsl(var(--control-panel-border))] flex justify-between items-center">
         <div className="flex items-center">
           <SixrLogo className="h-6 w-auto mr-2" />
-          <h2 className="text-lg font-semibold">
+          <h2 className="text-lg font-semibold" style={{ fontFamily: torusFontFamily }}>
             Vision
           </h2>
         </div>
 
-        {/* Added mr-10 (40px) to this container to create visual space from the global SidebarTrigger */}
         <div className="flex items-center gap-3 mr-10">
-          {isInitialized && (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <div className="flex items-center text-sm text-green-400 cursor-default">
-                  <Mic className="h-4 w-4" />
-                </div>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Audio input is active</p>
-              </TooltipContent>
-            </Tooltip>
-          )}
+           <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                size="icon"
+                variant="ghost"
+                onClick={handlePowerToggle}
+                className="h-7 w-7 text-sm"
+              >
+                {isInitialized ? <Power className="text-green-400" /> : <Power className="text-destructive" />}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>{isInitialized ? 'Stop Audio Processing' : (error ? 'Retry Audio Initialization' : 'Initialize Audio')}</p>
+            </TooltipContent>
+          </Tooltip>
+
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div className="flex items-center text-sm cursor-default">
+                {isInitialized ? <Mic className="h-4 w-4 text-green-400" /> : <MicOff className="h-4 w-4 text-muted-foreground" />}
+              </div>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>{isInitialized ? 'Audio input is active' : 'Audio input is inactive'}</p>
+              {error && !isInitialized && <p className="text-destructive">Error: {error}</p>}
+            </TooltipContent>
+          </Tooltip>
+          
           {settings.showWebcam && (
             <Tooltip>
               <TooltipTrigger asChild>
@@ -73,15 +102,6 @@ export function ControlPanelView() {
                 <p>Webcam is active</p>
               </TooltipContent>
             </Tooltip>
-          )}
-          {!isInitialized && (
-            <Button
-              size="sm"
-              onClick={initializeAudio}
-              variant={error ? "destructive" : "default"}>
-              <Power className="mr-2 h-4 w-4" />
-              {error ? "Retry Audio" : "Initialize Audio"}
-            </Button>
           )}
         </div>
       </header>

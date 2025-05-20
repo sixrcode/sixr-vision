@@ -10,7 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import { generateHarmoniousPalettes, type GenerateHarmoniousPalettesInput, type GenerateHarmoniousPalettesOutput } from '@/ai/flows/generate-harmonious-palettes';
 import type { PaletteGenieColor } from '@/types';
 import { ControlPanelSection } from '../ControlPanelSection';
-import { Wand2 } from 'lucide-react';
+import { Wand2, Loader2 } from 'lucide-react'; // Added Loader2
 
 type PaletteGenieProps = {
   value: string; // For AccordionItem
@@ -76,7 +76,12 @@ export function PaletteGenie({ value }: PaletteGenieProps) {
         />
       </div>
       <Button onClick={handleSubmit} disabled={isLoading} className="w-full mt-2">
-        <Wand2 className="mr-2 h-4 w-4" /> {isLoading ? 'Generating...' : 'Generate Palette'}
+        {isLoading ? (
+          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+        ) : (
+          <Wand2 className="mr-2 h-4 w-4" />
+        )}
+        {isLoading ? 'Generating Palette...' : 'Generate Palette'}
       </Button>
 
       {generatedPalette.length > 0 && (
@@ -99,3 +104,4 @@ export function PaletteGenie({ value }: PaletteGenieProps) {
     </ControlPanelSection>
   );
 }
+
