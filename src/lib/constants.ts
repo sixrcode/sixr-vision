@@ -40,11 +40,10 @@ export const SCENES: SceneDefinition[] = [
   {
     id: 'spectrum_bars',
     name: 'Spectrum Bars',
-    thumbnailUrl: 'https://placehold.co/120x80/1f2937/ffffff.png',
+    thumbnailUrl: 'https://placehold.co/120x80/1f2937/93c5fd.png',
     dataAiHint: 'audio spectrum',
     draw: (ctx, audioData, _settings) => {
       const { width, height } = ctx.canvas;
-      // ctx.clearRect(0, 0, width, height); // Clearing is handled by VisualizerView during transitions
       ctx.fillStyle = 'hsla(var(--background))';
       ctx.fillRect(0,0,width,height);
 
@@ -59,7 +58,7 @@ export const SCENES: SceneDefinition[] = [
         const barWidth = width / audioData.spectrum.length;
          ctx.strokeStyle = 'hsla(var(--muted-foreground), 0.2)';
          ctx.lineWidth = 1;
-         for(let i=0; i < audioData.spectrum.length; i++) {
+         for(let i=0; i < audioData.spectrum.length; i++) { // Use current spectrum length
             ctx.strokeRect(i * barWidth, height - height * 0.3, barWidth -2, height * 0.3);
          }
         return;
@@ -76,20 +75,19 @@ export const SCENES: SceneDefinition[] = [
   {
     id: 'radial_burst',
     name: 'Radial Burst',
-    thumbnailUrl: 'https://placehold.co/120x80/1f2937/eab308.png',
+    thumbnailUrl: 'https://placehold.co/120x80/1f2937/fde047.png',
     dataAiHint: 'abstract explosion',
     draw: (ctx, audioData, settings) => {
       const { width, height } = ctx.canvas;
-      // ctx.clearRect(0, 0, width, height);
       ctx.fillStyle = 'hsla(var(--background))';
       ctx.fillRect(0,0,width,height);
 
       const centerX = width / 2;
       const centerY = height / 2;
 
-      const isAudioSilent = audioData.rms < 0.01 && audioData.spectrum.every(v => v < 5);
+      const isAudioSilent = audioData.rms < 0.01 && audioData.spectrum.every(v => v < 5) && !audioData.beat;
 
-      if (isAudioSilent && !audioData.beat) {
+      if (isAudioSilent) {
         ctx.fillStyle = 'hsl(var(--muted-foreground))';
         ctx.textAlign = 'center';
         ctx.font = '16px var(--font-geist-sans)';
@@ -142,11 +140,10 @@ export const SCENES: SceneDefinition[] = [
   {
     id: 'mirror_silhouette',
     name: 'Mirror Silhouette',
-    thumbnailUrl: 'https://placehold.co/120x80/1f2937/a78bfa.png',
+    thumbnailUrl: 'https://placehold.co/120x80/1f2937/d8b4fe.png',
     dataAiHint: 'silhouette reflection',
     draw: (ctx, audioData, settings, webcamFeed) => {
       const { width, height } = ctx.canvas;
-      // ctx.clearRect(0, 0, width, height);
       ctx.fillStyle = 'hsla(var(--background))';
       ctx.fillRect(0,0,width,height);
 
@@ -197,25 +194,56 @@ export const SCENES: SceneDefinition[] = [
   {
     id: 'particle_finale',
     name: 'Particle Finale',
-    thumbnailUrl: 'https://placehold.co/120x80/1f2937/f472b6.png',
-    dataAiHint: 'fireworks celebration',
-    draw: (ctx, audioData, _settings) => {
+    thumbnailUrl: 'https://placehold.co/120x80/1f2937/fb7185.png',
+    dataAiHint: 'particle explosion',
+    draw: (ctx, audioData, settings) => {
       const { width, height } = ctx.canvas;
-      // ctx.clearRect(0, 0, width, height); // Fade effect handled by VisualizerView
-      ctx.fillStyle = 'hsla(var(--background), 0.1)'; // Make particle trails fade
-      ctx.fillRect(0,0,width,height);
+      
+      // Slower fade for more prominent trails, adjust based on transition activity
+      ctx.fillStyle = `hsla(var(--background), ${settings.sceneTransitionActive && settings.sceneTransitionDuration > 0 ? 0.15 : 0.05})`;
+      ctx.fillRect(0, 0, width, height);
 
-      const particleCount = 100 + Math.floor(audioData.rms * 400);
-      for (let i = 0; i < particleCount * audioData.rms; i++) {
-        const x = Math.random() * width;
-        const y = Math.random() * height;
-        const size = 1 + Math.random() * 5 * (audioData.bassEnergy + audioData.midEnergy);
-        const hue = (200 + Math.random() * 160 + audioData.trebleEnergy * 60) % 360;
-        const lightness = 50 + Math.random() * 30 + audioData.rms * 20;
-        ctx.fillStyle = `hsla(${hue}, 100%, ${lightness}%, ${0.3 + Math.random() * 0.7})`;
-        ctx.beginPath();
-        ctx.arc(x, y, size, 0, Math.PI * 2);
-        ctx.fill();
+      const centerX = width / 2;
+      const centerY = height / 2;
+
+      // Ambient particles
+      const ambientParticleCount = 50 + Math.floor(audioData.rms * 150); // Increased potential ambient count
+      for (let i = 0; i < ambientParticleCount; i++) {
+        if (Math.random() < audioData.rms * 0.7) { // Higher chance to spawn with higher RMS
+          const x = Math.random() * width;
+          const y = Math.random() * height;
+          const size = 1 + Math.random() * 3 * (audioData.midEnergy + audioData.trebleEnergy * 0.5);
+          // Wider hue range for variety, leaning towards blues/purples/pinks for ambient
+          const hue = (180 + Math.random() * 180 + audioData.trebleEnergy * 40) % 360; 
+          const lightness = 55 + Math.random() * 25; // Slightly brighter ambient
+          const alpha = 0.15 + Math.random() * 0.4 * audioData.rms;
+          ctx.fillStyle = `hsla(${hue}, 90%, ${lightness}%, ${alpha})`; // Slightly less saturation for ambient
+          ctx.beginPath();
+          ctx.arc(x, y, size, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+
+      // Beat-triggered burst
+      if (audioData.beat) {
+        const burstParticleCount = 150 + Math.floor(audioData.bassEnergy * 250 + audioData.rms * 150);
+        for (let i = 0; i < burstParticleCount; i++) {
+          const angle = Math.random() * Math.PI * 2;
+          const radius = Math.random() * Math.min(width, height) * 0.55 * (0.6 + audioData.rms); 
+          const x = centerX + Math.cos(angle) * radius * (Math.random() * 0.6 + 0.7); 
+          const y = centerY + Math.sin(angle) * radius * (Math.random() * 0.6 + 0.7);
+          const size = 2.5 + Math.random() * 7 * (audioData.bassEnergy + audioData.rms); // Larger burst particles
+          
+          // Colors more towards warm/fiery for a "finale" - Oranges, Reds, Yellows, Pinks
+          const hue = ( (audioData.bassEnergy * 40) + (Math.random() * 60) - 20 + 360) % 360; 
+          const lightness = 50 + Math.random() * 20; // Keep them vibrant
+          const alpha = 0.65 + Math.random() * 0.35; // Brighter alpha for bursts
+          
+          ctx.fillStyle = `hsla(${hue}, 100%, ${lightness}%, ${alpha})`;
+          ctx.beginPath();
+          ctx.arc(x, y, size, 0, Math.PI * 2);
+          ctx.fill();
+        }
       }
     },
   },
