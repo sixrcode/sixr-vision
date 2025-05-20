@@ -14,14 +14,14 @@ import { AiPresetChooser } from './ai-tools/AiPresetChooser';
 import { LogoAnimationControls } from './LogoAnimationControls';
 import { OtherControls } from './OtherControls';
 import { useAudioAnalysis } from '@/hooks/useAudioAnalysis';
-import { useSettings } from '@/providers/SettingsProvider'; // Added
+import { useSettings } from '@/providers/SettingsProvider';
 import { useEffect } from 'react';
-import { Power, Mic, Camera } from 'lucide-react'; // Added Camera
+import { Power, Mic, Camera } from 'lucide-react';
 import { Accordion } from '@/components/ui/accordion';
 
 export function ControlPanelView() {
   const { initializeAudio, isInitialized, error } = useAudioAnalysis();
-  const { settings } = useSettings(); // Added
+  const { settings } = useSettings();
 
   useEffect(() => {
     if (!isInitialized && !error) {
@@ -102,11 +102,11 @@ export function ControlPanelView() {
       <footer className="p-2 border-t border-[hsl(var(--control-panel-border))] text-center">
         <p className="text-xs text-[hsl(var(--muted-foreground))]">
           &copy;{' '}
-          <span>
-            <span style={{ color: sColor, fontFamily: torusFontFamily }}>S</span>
-            <span style={{ color: iColor, fontFamily: torusFontFamily }}>I</span>
-            <span style={{ color: xColor, fontFamily: torusFontFamily }}>X</span>
-            <span style={{ color: rColor, fontFamily: torusFontFamily }}>R</span>
+          <span style={{ fontFamily: torusFontFamily }}>
+            <span style={{ color: sColor }}>S</span>
+            <span style={{ color: iColor }}>I</span>
+            <span style={{ color: xColor }}>X</span>
+            <span style={{ color: rColor }}>R</span>
           </span>{' '}
           Immersive Storytelling Lab {new Date().getFullYear()}
         </p>
