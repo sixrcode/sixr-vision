@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { useSettings } from '@/providers/SettingsProvider';
 import type { LogoAnimationType } from '@/types';
 import { ControlPanelSection } from './ControlPanelSection';
+import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 
 type LogoAnimationControlsProps = {
   value: string; // For AccordionItem
@@ -28,8 +29,15 @@ export function LogoAnimationControls({ value }: LogoAnimationControlsProps) {
 
   return (
     <ControlPanelSection title="Logo & Watermark Animation" value={value}>
-      <div className="space-y-3">
-        <Label htmlFor="logoopacity-slider">Overall Opacity ({logoOpacity.toFixed(2)})</Label>
+      <div className="space-y-1">
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Label htmlFor="logoopacity-slider">Overall Opacity ({logoOpacity.toFixed(2)})</Label>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Controls the maximum visibility of all logo and watermark elements.</p>
+          </TooltipContent>
+        </Tooltip>
         <Slider
           id="logoopacity-slider"
           min={0}
@@ -40,8 +48,15 @@ export function LogoAnimationControls({ value }: LogoAnimationControlsProps) {
         />
       </div>
 
-      <div className="space-y-3 mt-4">
-        <Label htmlFor="logo-animation-type-select">Animation Type</Label>
+      <div className="space-y-1 mt-4">
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Label htmlFor="logo-animation-type-select">Animation Type</Label>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Selects the style of animation for the logo elements.</p>
+          </TooltipContent>
+        </Tooltip>
         <Select
           value={logoAnimationSettings.type}
           onValueChange={(val) => handleAnimationSettingChange('type', val as LogoAnimationType)}
@@ -60,8 +75,15 @@ export function LogoAnimationControls({ value }: LogoAnimationControlsProps) {
       </div>
 
       {(currentAnimType === 'solid' || currentAnimType === 'blink') && (
-        <div className="space-y-3 mt-3">
-          <Label htmlFor="logo-animation-color">Color</Label>
+        <div className="space-y-1 mt-3">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Label htmlFor="logo-animation-color">Color</Label>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Sets the color for 'Solid' or 'Blink' animations.</p>
+            </TooltipContent>
+          </Tooltip>
           <Input
             id="logo-animation-color"
             type="color"
@@ -73,10 +95,17 @@ export function LogoAnimationControls({ value }: LogoAnimationControlsProps) {
       )}
 
       {(currentAnimType === 'blink' || currentAnimType === 'pulse' || currentAnimType === 'rainbowCycle') && (
-        <div className="space-y-3 mt-3">
-          <Label htmlFor="logo-animation-speed-slider">
-            Speed ({logoAnimationSettings.speed.toFixed(1)})
-          </Label>
+        <div className="space-y-1 mt-3">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Label htmlFor="logo-animation-speed-slider">
+                Speed ({logoAnimationSettings.speed.toFixed(1)})
+              </Label>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Adjusts the speed of 'Blink', 'Pulse', or 'Rainbow Cycle' animations.</p>
+            </TooltipContent>
+          </Tooltip>
           <Slider
             id="logo-animation-speed-slider"
             min={0.2}

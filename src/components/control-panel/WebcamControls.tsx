@@ -5,6 +5,7 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { useSettings } from '@/providers/SettingsProvider';
 import { ControlPanelSection } from './ControlPanelSection';
+import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 
 type WebcamControlsProps = {
   value: string; // For AccordionItem
@@ -16,7 +17,15 @@ export function WebcamControls({ value }: WebcamControlsProps) {
   return (
     <ControlPanelSection title="Webcam Layer" value={value}>
       <div className="flex items-center justify-between">
-        <Label htmlFor="show-webcam-switch" className="flex-1 min-w-0 mr-2">Show Webcam</Label>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Label htmlFor="show-webcam-switch" className="flex-1 min-w-0 mr-2">Show Webcam</Label>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Toggles the webcam feed visibility in compatible scenes.</p>
+            <p className="text-xs text-[hsl(var(--muted-foreground))]">Requires camera permission.</p>
+          </TooltipContent>
+        </Tooltip>
         <Switch
           id="show-webcam-switch"
           checked={settings.showWebcam}
@@ -25,7 +34,14 @@ export function WebcamControls({ value }: WebcamControlsProps) {
       </div>
       {settings.showWebcam && (
         <div className="flex items-center justify-between mt-3">
-          <Label htmlFor="mirror-webcam-switch" className="flex-1 min-w-0 mr-2">Mirror Webcam</Label>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Label htmlFor="mirror-webcam-switch" className="flex-1 min-w-0 mr-2">Mirror Webcam</Label>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Flips the webcam image horizontally.</p>
+            </TooltipContent>
+          </Tooltip>
           <Switch
             id="mirror-webcam-switch"
             checked={settings.mirrorWebcam}

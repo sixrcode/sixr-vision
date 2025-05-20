@@ -6,8 +6,9 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { useSettings } from '@/providers/SettingsProvider';
 import { ControlPanelSection } from './ControlPanelSection';
-import { AlertTriangle, ZapOff, FileJson, Database } from 'lucide-react'; // Removed ListMusic as it's not used
+import { AlertTriangle, ZapOff, FileJson, Database } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 
 type OtherControlsProps = {
   value: string; // For AccordionItem
@@ -17,24 +18,28 @@ export function OtherControls({ value }: OtherControlsProps) {
   const { settings, updateSetting } = useSettings();
 
   const handleExportLog = () => {
-    // Placeholder for CSV export from IndexedDB
     console.log("Export rehearsal log (placeholder)");
     toast({ title: "Export Log", description: "CSV export from IndexedDB is a placeholder." });
   };
   
   const handleLoadCueList = () => {
-    // Placeholder for JSON Cue-list player
     console.log("Load JSON cue-list (placeholder)");
     toast({ title: "Load Cue List", description: "JSON cue-list player is a placeholder." });
   };
 
-
   return (
     <ControlPanelSection title="System & Safety" value={value}>
       <div className="flex items-center justify-between">
-        <Label htmlFor="panic-mode-switch" className="flex items-center text-destructive flex-1 min-w-0 mr-2">
-          <AlertTriangle className="mr-2 h-4 w-4" /> Panic Mode (Blackout)
-        </Label>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Label htmlFor="panic-mode-switch" className="flex items-center text-destructive flex-1 min-w-0 mr-2">
+              <AlertTriangle className="mr-2 h-4 w-4" /> Panic Mode (Blackout)
+            </Label>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Immediately blacks out the main visualizer output. Useful for emergencies.</p>
+          </TooltipContent>
+        </Tooltip>
         <Switch
           id="panic-mode-switch"
           checked={settings.panicMode}
@@ -43,9 +48,16 @@ export function OtherControls({ value }: OtherControlsProps) {
         />
       </div>
       <div className="flex items-center justify-between mt-3">
-        <Label htmlFor="logo-blackout-switch" className="flex items-center flex-1 min-w-0 mr-2">
-          <ZapOff className="mr-2 h-4 w-4" /> Logo Blackout
-        </Label>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Label htmlFor="logo-blackout-switch" className="flex items-center flex-1 min-w-0 mr-2">
+              <ZapOff className="mr-2 h-4 w-4" /> Logo Blackout
+            </Label>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Hides all logo and watermark elements from the visualizer.</p>
+          </TooltipContent>
+        </Tooltip>
         <Switch
           id="logo-blackout-switch"
           checked={settings.logoBlackout}
@@ -53,15 +65,29 @@ export function OtherControls({ value }: OtherControlsProps) {
         />
       </div>
       
-      <div className="mt-4 space-y-2">
-        <Button variant="outline" size="sm" className="w-full" onClick={handleLoadCueList}>
-          <FileJson className="mr-2 h-4 w-4" /> Load Cue List (JSON)
-        </Button>
+      <div className="mt-4 space-y-1">
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button variant="outline" size="sm" className="w-full" onClick={handleLoadCueList}>
+              <FileJson className="mr-2 h-4 w-4" /> Load Cue List (JSON)
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Loads a predefined sequence of scene changes and setting adjustments. (Placeholder)</p>
+          </TooltipContent>
+        </Tooltip>
         <p className="text-xs text-[hsl(var(--muted-foreground))]">Cue list player is a placeholder.</p>
         
-        <Button variant="outline" size="sm" className="w-full" onClick={handleExportLog}>
-          <Database className="mr-2 h-4 w-4" /> Export Rehearsal Log (CSV)
-        </Button>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button variant="outline" size="sm" className="w-full" onClick={handleExportLog}>
+              <Database className="mr-2 h-4 w-4" /> Export Rehearsal Log (CSV)
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Exports a log of events and settings changes during the session. (Placeholder)</p>
+          </TooltipContent>
+        </Tooltip>
         <p className="text-xs text-[hsl(var(--muted-foreground))]">IndexedDB logging & export are placeholders.</p>
       </div>
 

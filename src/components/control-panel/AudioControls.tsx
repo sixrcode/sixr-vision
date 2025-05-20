@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useSettings } from '@/providers/SettingsProvider';
 import { FFT_SIZES } from '@/lib/constants';
 import { ControlPanelSection } from './ControlPanelSection';
+import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 
 type AudioControlsProps = {
   value: string; // For AccordionItem
@@ -18,8 +19,15 @@ export function AudioControls({ value }: AudioControlsProps) {
 
   return (
     <ControlPanelSection title="Audio Engine" value={value}>
-      <div className="space-y-3">
-        <Label htmlFor="fftSize-select">FFT Bins</Label>
+      <div className="space-y-1">
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Label htmlFor="fftSize-select">FFT Bins</Label>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Number of frequency bands for audio analysis. More bins offer greater detail but may affect performance.</p>
+          </TooltipContent>
+        </Tooltip>
         <Select
           value={String(settings.fftSize)}
           onValueChange={(val) => updateSetting('fftSize', Number(val) as typeof settings.fftSize)}
@@ -33,10 +41,18 @@ export function AudioControls({ value }: AudioControlsProps) {
             ))}
           </SelectContent>
         </Select>
+        <p className="text-xs text-[hsl(var(--muted-foreground))]">Controls the resolution of audio frequency analysis.</p>
       </div>
 
-      <div className="space-y-3">
-        <Label htmlFor="gain-slider">Gain ({settings.gain.toFixed(2)})</Label>
+      <div className="space-y-1">
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Label htmlFor="gain-slider">Gain ({settings.gain.toFixed(2)})</Label>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Amplifies or reduces the incoming audio signal level before analysis.</p>
+          </TooltipContent>
+        </Tooltip>
         <Slider
           id="gain-slider"
           min={0}
@@ -47,8 +63,15 @@ export function AudioControls({ value }: AudioControlsProps) {
         />
       </div>
       
-      <div className="flex items-center justify-between space-y-1">
-        <Label htmlFor="agc-switch" className="flex-1 min-w-0 mr-2">Automatic Gain Control (AGC)</Label>
+      <div className="flex items-center justify-between">
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Label htmlFor="agc-switch" className="flex-1 min-w-0 mr-2">Automatic Gain Control (AGC)</Label>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Automatically adjusts gain to maintain a consistent audio level. (Currently a placeholder feature)</p>
+          </TooltipContent>
+        </Tooltip>
         <Switch
           id="agc-switch"
           checked={settings.enableAgc}

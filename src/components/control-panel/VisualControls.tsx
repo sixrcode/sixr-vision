@@ -5,6 +5,7 @@ import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
 import { useSettings } from '@/providers/SettingsProvider';
 import { ControlPanelSection } from './ControlPanelSection';
+import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 
 type VisualControlsProps = {
   value: string; // For AccordionItem
@@ -15,8 +16,15 @@ export function VisualControls({ value }: VisualControlsProps) {
 
   return (
     <ControlPanelSection title="Visual Output" value={value}>
-      <div className="space-y-3">
-        <Label htmlFor="gamma-slider">Gamma ({settings.gamma.toFixed(2)})</Label>
+      <div className="space-y-1">
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Label htmlFor="gamma-slider">Gamma ({settings.gamma.toFixed(2)})</Label>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Adjusts the brightness curve. Higher values make mid-tones brighter.</p>
+          </TooltipContent>
+        </Tooltip>
         <Slider
           id="gamma-slider"
           min={0.1}
@@ -26,8 +34,15 @@ export function VisualControls({ value }: VisualControlsProps) {
           onValueChange={([val]) => updateSetting('gamma', val)}
         />
       </div>
-      <div className="space-y-3">
-        <Label htmlFor="dither-slider">Dither ({settings.dither.toFixed(2)})</Label>
+      <div className="space-y-1">
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Label htmlFor="dither-slider">Dither ({settings.dither.toFixed(2)})</Label>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Adds noise to reduce color banding, creating smoother gradients. (Effect depends on scene implementation)</p>
+          </TooltipContent>
+        </Tooltip>
         <Slider
           id="dither-slider"
           min={0}
@@ -37,8 +52,15 @@ export function VisualControls({ value }: VisualControlsProps) {
           onValueChange={([val]) => updateSetting('dither', val)}
         />
       </div>
-      <div className="space-y-3">
-        <Label htmlFor="brightcap-slider">Brightness Cap ({settings.brightCap.toFixed(2)})</Label>
+      <div className="space-y-1">
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Label htmlFor="brightcap-slider">Brightness Cap ({settings.brightCap.toFixed(2)})</Label>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Limits the maximum overall brightness of the visualizer output.</p>
+          </TooltipContent>
+        </Tooltip>
         <Slider
           id="brightcap-slider"
           min={0}
@@ -51,4 +73,3 @@ export function VisualControls({ value }: VisualControlsProps) {
     </ControlPanelSection>
   );
 }
-
