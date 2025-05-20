@@ -94,11 +94,10 @@ export function VisualizerView() {
     }
 
     // DEBUG LOG: Check received audioData
-    if (Math.random() < 0.05) { // Log roughly once per second
-        // console.log('VisualizerView - Received RMS:', audioData.rms, 'Spectrum Sample:', audioData.spectrum.slice(0,10));
+    if (Math.random() < 0.05) { 
         const spectrumSum = audioData.spectrum.reduce((a,b) => a+b, 0);
-        if (audioData.rms > 0.001 || spectrumSum > 0) {
-             console.log('VisualizerView - Received active audioData. RMS:', audioData.rms.toFixed(3), 'Spectrum Sum:', spectrumSum, 'First 5 bins:', audioData.spectrum.slice(0,5));
+        if (audioData.rms > 0.001 || spectrumSum > 0 || audioData.beat) { // Added audioData.beat
+             console.log('VisualizerView - Received active audioData. RMS:', audioData.rms.toFixed(3), 'Beat:', audioData.beat, 'Spectrum Sum:', spectrumSum, 'First 5 bins:', audioData.spectrum.slice(0,5));
         }
     }
 
@@ -107,7 +106,7 @@ export function VisualizerView() {
       ctx.clearRect(0, 0, canvas.width, canvas.height); 
 
       if (lastError && !settings.panicMode) {
-        ctx.fillStyle = 'hsl(var(--background))';
+        ctx.fillStyle = 'hsl(var(--background-hsl))';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         ctx.font = '14px var(--font-geist-sans)';
         ctx.fillStyle = 'red';
@@ -159,9 +158,9 @@ export function VisualizerView() {
         currentScene.draw(ctx, audioData, settings, webcamElement ?? undefined);
         if (lastError) setLastError(null);
       } else {
-        ctx.fillStyle = 'hsl(var(--background))';
+        ctx.fillStyle = 'hsl(var(--background-hsl))';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.fillStyle = 'hsl(var(--muted-foreground))';
+        ctx.fillStyle = 'hsl(var(--muted-foreground-hsl))';
         ctx.textAlign = 'center';
         ctx.font = '20px var(--font-geist-sans)';
         ctx.fillText('No scene selected', canvas.width / 2, canvas.height / 2);
@@ -175,7 +174,7 @@ export function VisualizerView() {
         ctx.globalAlpha = settings.aiOverlayOpacity;
         ctx.globalCompositeOperation = settings.aiOverlayBlendMode;
         ctx.drawImage(aiOverlayImageRef.current, 0, 0, canvas.width, canvas.height);
-        // console.log('AI Overlay Drawn'); // Already added this one
+        // console.log('AI Overlay Drawn');
 
         ctx.globalAlpha = originalAlpha; 
         ctx.globalCompositeOperation = originalCompositeOperation; 
@@ -198,7 +197,7 @@ export function VisualizerView() {
     }
 
     animationFrameIdRef.current = requestAnimationFrame(drawLoop);
-  }, [audioData, currentScene, settings, webcamElement, lastError, isTransitioning, fps]); // Added fps to dependency
+  }, [audioData, currentScene, settings, webcamElement, lastError, isTransitioning, fps, scenes]); // Added scenes to deps
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -222,9 +221,6 @@ export function VisualizerView() {
 
   useEffect(() => {
     lastSceneIdRef.current = settings.currentSceneId;
-    // The drawLoop is started/managed by its own useEffect in useAudioAnalysis now based on isInitialized
-    // This effect ensures the animationFrameIdRef is cleared if the component unmounts
-    // or if drawLoop itself changes (which it shouldn't often if dependencies are stable)
     animationFrameIdRef.current = requestAnimationFrame(drawLoop);
     return () => {
       if (animationFrameIdRef.current) {
@@ -232,7 +228,7 @@ export function VisualizerView() {
         animationFrameIdRef.current = null;
       }
     };
-  }, [drawLoop, settings.currentSceneId]); // drawLoop is a dependency
+  }, [drawLoop, settings.currentSceneId]); 
 
   return (
     <div className="w-full h-full relative">
