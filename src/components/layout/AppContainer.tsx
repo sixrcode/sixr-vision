@@ -1,8 +1,9 @@
+
 "use client";
 
 import type { ReactNode } from 'react';
-import { CONTROL_PANEL_WIDTH } from '@/lib/constants';
 import { useHotkeys } from '@/hooks/useHotkeys';
+import { Sidebar, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
 
 export function AppContainer({
   visualizer,
@@ -15,15 +16,18 @@ export function AppContainer({
 
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-background">
-      <main className="flex-1 h-full relative overflow-hidden">
-        {visualizer}
-      </main>
-      <aside
-        className="h-full shadow-2xl bg-[hsl(var(--control-panel-background))] text-[hsl(var(--control-panel-foreground))] border-l border-[hsl(var(--control-panel-border))]"
-        style={{ width: `${CONTROL_PANEL_WIDTH}px` }}
-      >
+      <SidebarInset>
+        {/* SidebarTrigger for mobile */}
+        <div className="absolute top-4 left-4 z-50 md:hidden">
+          <SidebarTrigger />
+        </div>
+        <main className="flex-1 h-full relative overflow-hidden">
+          {visualizer}
+        </main>
+      </SidebarInset>
+      <Sidebar side="right" collapsible="offcanvas">
         {controlPanel}
-      </aside>
+      </Sidebar>
     </div>
   );
 }

@@ -10,7 +10,7 @@ export const DEFAULT_SETTINGS: Settings = {
   gamma: 1.0,
   dither: 0.0,
   brightCap: 1.0,
-  logoOpacity: 0.2, // Adjusted back up for visibility
+  logoOpacity: 0.2,
   showWebcam: false,
   mirrorWebcam: false,
   currentSceneId: 'spectrum_bars',
@@ -40,8 +40,7 @@ export const SCENES: SceneDefinition[] = [
       ctx.fillStyle = 'hsla(var(--background))';
       ctx.fillRect(0,0,width,height);
 
-      // Check if audio data is essentially zero (RMS very low and spectrum is flat)
-      const isAudioSilent = audioData.rms < 0.01 && audioData.spectrum.every(v => v < 5); // Allow for tiny noise
+      const isAudioSilent = audioData.rms < 0.01 && audioData.spectrum.every(v => v < 5);
 
       if (isAudioSilent) {
         ctx.fillStyle = 'hsl(var(--muted-foreground))';
@@ -49,7 +48,6 @@ export const SCENES: SceneDefinition[] = [
         ctx.font = '16px var(--font-geist-sans)';
         ctx.fillText('Waiting for audio input...', width / 2, height / 2);
         
-        // Optionally, draw faint bar outlines
         const barWidth = width / (DEFAULT_SETTINGS.fftSize / 2);
          ctx.strokeStyle = 'hsla(var(--muted-foreground), 0.2)';
          ctx.lineWidth = 1;
@@ -97,7 +95,6 @@ export const SCENES: SceneDefinition[] = [
           ctx.fill();
         }
       }
-       // Persistent subtle effect
        const numStaticParticles = 20;
        for (let i = 0; i < numStaticParticles; i++) {
          const angle = (i / numStaticParticles) * Math.PI * 2;
@@ -149,11 +146,10 @@ export const SCENES: SceneDefinition[] = [
           ctx.translate(width, 0);
           ctx.scale(-1, 1);
         }
-        ctx.globalAlpha = 0.8 + audioData.rms * 0.2; // Modulate alpha slightly by RMS
+        ctx.globalAlpha = 0.8 + audioData.rms * 0.2; 
         ctx.drawImage(webcamFeed, x, y, drawWidth, drawHeight);
         ctx.restore();
 
-        // Add a silhouette effect based on energy
         ctx.globalCompositeOperation = 'difference';
         const energyColor = Math.floor(audioData.bassEnergy * 100 + audioData.midEnergy * 80 + audioData.trebleEnergy * 75);
         ctx.fillStyle = `hsla(${energyColor % 360}, 70%, 50%, ${0.2 + audioData.rms * 0.3})`;
@@ -175,16 +171,15 @@ export const SCENES: SceneDefinition[] = [
     dataAiHint: 'fireworks celebration',
     draw: (ctx, audioData, _settings) => {
       const { width, height } = ctx.canvas;
-      // Don't clear rect fully, let particles fade
-      ctx.fillStyle = 'hsla(var(--background), 0.1)'; // Lower alpha for trails
+      ctx.fillStyle = 'hsla(var(--background), 0.1)'; 
       ctx.fillRect(0,0,width,height);
 
-      const particleCount = 100 + Math.floor(audioData.rms * 400); // More particles for finale
-      for (let i = 0; i < particleCount * audioData.rms; i++) { // Modulate by RMS
+      const particleCount = 100 + Math.floor(audioData.rms * 400); 
+      for (let i = 0; i < particleCount * audioData.rms; i++) { 
         const x = Math.random() * width;
         const y = Math.random() * height;
         const size = 1 + Math.random() * 5 * (audioData.bassEnergy + audioData.midEnergy);
-        const hue = (200 + Math.random() * 160 + audioData.trebleEnergy * 60) % 360; // Wider color range
+        const hue = (200 + Math.random() * 160 + audioData.trebleEnergy * 60) % 360; 
         const lightness = 50 + Math.random() * 30 + audioData.rms * 20;
         ctx.fillStyle = `hsla(${hue}, 100%, ${lightness}%, ${0.3 + Math.random() * 0.7})`;
         ctx.beginPath();
@@ -195,5 +190,4 @@ export const SCENES: SceneDefinition[] = [
   },
 ];
 
-export const CONTROL_PANEL_WIDTH = 320; // in pixels
-
+export const CONTROL_PANEL_WIDTH_STRING = "320px";
