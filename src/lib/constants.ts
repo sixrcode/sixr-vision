@@ -10,7 +10,7 @@ export const DEFAULT_SETTINGS: Settings = {
   gamma: 1.0,
   dither: 0.0,
   brightCap: 1.0,
-  logoOpacity: 0.15,
+  logoOpacity: 0.1, // Lowered default opacity
   showWebcam: false,
   mirrorWebcam: false,
   currentSceneId: 'spectrum_bars',

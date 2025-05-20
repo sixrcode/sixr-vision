@@ -1,3 +1,4 @@
+
 "use client";
 
 import { SixrLogo } from '@/components/icons/SixrLogo';
@@ -23,7 +24,7 @@ export function BrandingOverlay() {
   // Calculate glow based on RMS. Max glow at RMS >= 0.5
   const rmsGlowIntensity = Math.min(1, audioData.rms * 2); 
   const textStrokeGlowStyle = {
-    opacity: 0.5 + audioData.rms * 0.5, // Text itself becomes more opaque with RMS
+    opacity: 0.2 + audioData.rms * 0.5, // Reduced base opacity, still reactive
     textShadow: `
       0 0 ${5 * rmsGlowIntensity}px hsl(var(--primary-foreground)),
       0 0 ${10 * rmsGlowIntensity}px hsl(var(--primary-foreground)),
@@ -62,7 +63,7 @@ export function BrandingOverlay() {
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
         <h1
           className="text-6xl md:text-8xl font-mono font-bold text-transparent transition-opacity duration-200 ease-out"
-          style={{ ...textStrokeGlowStyle, opacity: settings.logoOpacity > 0 ? textStrokeGlowStyle.opacity : 0 }}
+          style={{ ...textStrokeGlowStyle, opacity: settings.logoOpacity > 0 ? textStrokeGlowStyle.opacity * settings.logoOpacity : 0 }}
         >
           S I X R
         </h1>
