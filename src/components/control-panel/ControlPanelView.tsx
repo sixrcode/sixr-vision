@@ -14,7 +14,7 @@ import { AiPresetChooser } from './ai-tools/AiPresetChooser';
 import { OtherControls } from './OtherControls';
 import { useAudioAnalysis } from '@/hooks/useAudioAnalysis';
 import { useEffect } from 'react';
-import { Power } from 'lucide-react';
+import { Power, Mic } from 'lucide-react';
 import { Accordion } from '@/components/ui/accordion';
 
 export function ControlPanelView() {
@@ -22,11 +22,22 @@ export function ControlPanelView() {
 
   // Attempt to initialize audio on mount
   useEffect(() => {
-    if (!isInitialized) {
-      // initializeAudio(); // Auto-init can be aggressive, let's use a button
+    if (!isInitialized && !error) { // Only attempt if not already initialized and no prior error
+      initializeAudio();
     }
-  }, [isInitialized, initializeAudio]);
+  }, [isInitialized, initializeAudio, error]);
 
+  const getButtonState = () => {
+    if (isInitialized) {
+      return { text: "Audio Active", icon: <Mic className="mr-2 h-4 w-4" />, variant: "default" as "default" | "destructive", disabled: true };
+    }
+    if (error) {
+      return { text: "Retry Init", icon: <Power className="mr-2 h-4 w-4" />, variant: "destructive" as "default" | "destructive", disabled: false };
+    }
+    return { text: "Initialize Audio", icon: <Power className="mr-2 h-4 w-4" />, variant: "default" as "default" | "destructive", disabled: false };
+  };
+
+  const buttonState = getButtonState();
 
   return (
     <div className="h-full flex flex-col text-[hsl(var(--control-panel-foreground))]">
@@ -36,18 +47,23 @@ export function ControlPanelView() {
           <h2 className="text-lg font-semibold">SIXR Vision</h2>
         </div>
         {!isInitialized && (
-            <Button size="sm" onClick={initializeAudio} variant={error ? "destructive" : "default"}>
-              <Power className="mr-2 h-4 w-4" /> {error ? "Retry Init" : "Start Audio"}
+            <Button size="sm" onClick={initializeAudio} variant={buttonState.variant} disabled={buttonState.disabled}>
+              {buttonState.icon} {buttonState.text}
             </Button>
         )}
+         {isInitialized && (
+             <div className="flex items-center text-sm text-green-400">
+                <Mic className="mr-1 h-4 w-4" /> Audio Active
+             </div>
+         )}
       </header>
-      {error && <p className="p-2 text-xs text-destructive bg-destructive/20 text-center">{error}</p>}
+      {error && !isInitialized && <p className="p-2 text-xs text-destructive bg-destructive/20 text-center">Audio Error: {error}. Please check microphone permissions.</p>}
       <ScrollArea className="flex-1">
         <Accordion 
           type="multiple" 
           defaultValue={['presets', 'audio-engine', 'visual-output']} 
-          className="w-full py-4 space-y-1" 
-        > {/* Reduced space-y for denser packing if needed */}
+          className="w-full py-4 space-y-1"
+        >
           <PresetSelector value="presets" />
           <AudioControls value="audio-engine" />
           <VisualControls value="visual-output" />

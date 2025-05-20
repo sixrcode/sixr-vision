@@ -40,6 +40,25 @@ export const SCENES: SceneDefinition[] = [
       ctx.fillStyle = 'hsla(var(--background))';
       ctx.fillRect(0,0,width,height);
 
+      // Check if audio data is essentially zero (RMS very low and spectrum is flat)
+      const isAudioSilent = audioData.rms < 0.01 && audioData.spectrum.every(v => v < 5); // Allow for tiny noise
+
+      if (isAudioSilent) {
+        ctx.fillStyle = 'hsl(var(--muted-foreground))';
+        ctx.textAlign = 'center';
+        ctx.font = '16px var(--font-geist-sans)';
+        ctx.fillText('Waiting for audio input...', width / 2, height / 2);
+        
+        // Optionally, draw faint bar outlines
+        const barWidth = width / (DEFAULT_SETTINGS.fftSize / 2);
+         ctx.strokeStyle = 'hsla(var(--muted-foreground), 0.2)';
+         ctx.lineWidth = 1;
+         for(let i=0; i < DEFAULT_SETTINGS.fftSize / 2; i++) {
+            ctx.strokeRect(i * barWidth, height - height * 0.3, barWidth -2, height * 0.3);
+         }
+        return;
+      }
+
       const barWidth = width / audioData.spectrum.length;
       ctx.fillStyle = 'hsl(var(--primary))';
       audioData.spectrum.forEach((value, i) => {
