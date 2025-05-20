@@ -15,7 +15,7 @@ import { useAudioData } from '@/providers/AudioDataProvider';
 import { useScene } from '@/providers/SceneProvider';
 import { generateVisualOverlay, type GenerateVisualOverlayInput, type GenerateVisualOverlayOutput } from '@/ai/flows/generate-visual-overlay';
 import { ControlPanelSection } from '../ControlPanelSection';
-import { Layers, Wand2, Loader2 } from 'lucide-react'; // Added Loader2
+import { Layers, Wand2, Loader2 } from 'lucide-react';
 import { VALID_BLEND_MODES } from '@/types';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
@@ -69,7 +69,14 @@ export function AiVisualOverlayMixer({ value }: AiVisualOverlayMixerProps) {
       return true;
     } catch (error) {
       console.error('Error generating AI overlay:', error);
-      toast({ title: 'Overlay Generation Failed', description: error instanceof Error ? error.message : 'Could not generate overlay.', variant: 'destructive' });
+      let description = 'Could not generate overlay.';
+      if (error instanceof Error) {
+        description = error.message;
+        if (error.message.includes("500 Internal Server Error")) {
+          description += " This is often a temporary issue with the AI service. Please try again in a few moments.";
+        }
+      }
+      toast({ title: 'Overlay Generation Failed', description, variant: 'destructive' });
       return false;
     } finally {
       setIsLoading(false);
@@ -78,21 +85,21 @@ export function AiVisualOverlayMixer({ value }: AiVisualOverlayMixerProps) {
 
   useEffect(() => {
     const autoGenerateAndEnable = async () => {
-      if (!initialGenerationAttempted.current && currentScene && settings.showWebcam) { // Also wait for webcam to be active for context
+      // Ensure initial generation attempt only happens once and if a scene is active
+      if (!initialGenerationAttempted.current && currentScene) {
         initialGenerationAttempted.current = true; 
-        const success = await handleGenerateOverlay(settings.aiOverlayPrompt || "ethereal wisps of light");
+        const success = await handleGenerateOverlay(settings.aiOverlayPrompt || "vibrant abstract energy");
         if (success) {
-          setTimeout(() => {
-            updateSetting('enableAiOverlay', true);
-          }, 100);
+          updateSetting('enableAiOverlay', true);
         }
       }
     };
     
-    const timer = setTimeout(autoGenerateAndEnable, 3000); // Increased delay
+    // Delay initial generation slightly to allow other components to mount
+    const timer = setTimeout(autoGenerateAndEnable, 3000);
     return () => clearTimeout(timer);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentScene, settings.showWebcam]); 
+  }, [currentScene]); // Depend on currentScene to ensure context is available
 
 
   return (

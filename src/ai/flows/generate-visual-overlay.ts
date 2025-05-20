@@ -70,7 +70,7 @@ const generateVisualOverlayFlow = ai.defineFlow(
       Output as a square PNG image.
     `;
 
-    console.log("[AI Flow Debug] Generating AI Visual Overlay with prompt:", imageGenerationPrompt); // Log the prompt
+    console.log("[AI Flow Debug] Generating AI Visual Overlay with prompt:", imageGenerationPrompt);
 
     const {media} = await ai.generate({
       model: 'googleai/gemini-2.0-flash-exp',
@@ -89,3 +89,4 @@ const generateVisualOverlayFlow = ai.defineFlow(
     };
   }
 );
+

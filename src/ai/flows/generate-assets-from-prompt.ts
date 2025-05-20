@@ -35,26 +35,6 @@ export async function generateAssets(input: GenerateAssetsInput): Promise<Genera
   return generateAssetsFlow(input);
 }
 
-// This specific prompt object (generateAssetsPrompt) was not being used by the generateAssetsFlow.
-// The flow directly calls ai.generate with model-specific parameters for image generation.
-// Removing it to avoid confusion as it implies a text-to-text model expecting data URIs in the prompt.
-/*
-const generateAssetsPrompt = ai.definePrompt({
-  name: 'generateAssetsPrompt',
-  input: {schema: GenerateAssetsInputSchema},
-  output: {schema: GenerateAssetsOutputSchema},
-  prompt: `You are a creative assistant that helps generate assets based on text prompts.
-
-You will generate a texture and a mesh based on the prompt provided. The texture should be suitable for use as a material.
-The mesh should be a simple 3D object.
-
-Prompt: {{{prompt}}}
-
-Texture Data URI: {{media url=textureDataUri}}
-Mesh Data URI: {{media url=meshDataUri}}`,
-});
-*/
-
 const generateAssetsFlow = ai.defineFlow(
   {
     name: 'generateAssetsFlow',
@@ -63,18 +43,18 @@ const generateAssetsFlow = ai.defineFlow(
   },
   async input => {
     const {media: textureMedia} = await ai.generate({
-      model: 'googleai/gemini-2.0-flash-exp', // Ensure this model is capable of image generation
+      model: 'googleai/gemini-2.0-flash-exp', 
       prompt: `Generate a seamless tileable texture based on the following artistic prompt: "${input.prompt}". Focus on abstract patterns and material qualities rather than literal depictions unless specified. Output as a square image suitable for texturing.`,
       config: {
-        responseModalities: ['TEXT', 'IMAGE'], // Must include IMAGE for media output
+        responseModalities: ['TEXT', 'IMAGE'], 
       },
     });
 
     const {media: meshMedia} = await ai.generate({
-      model: 'googleai/gemini-2.0-flash-exp', // Ensure this model is capable of image generation
+      model: 'googleai/gemini-2.0-flash-exp', 
       prompt: `Generate a visual preview of a simple 3D mesh or abstract geometric form inspired by the prompt: "${input.prompt}". This is for a preview image only, not a 3D model file. Output as a square image.`,
       config: {
-        responseModalities: ['TEXT', 'IMAGE'], // Must include IMAGE for media output
+        responseModalities: ['TEXT', 'IMAGE'], 
       },
     });
 
@@ -82,7 +62,7 @@ const generateAssetsFlow = ai.defineFlow(
         throw new Error('Texture generation failed to return a media URL.');
     }
     if (!meshMedia?.url) {
-        throw newError('Mesh preview generation failed to return a media URL.');
+        throw new Error('Mesh preview generation failed to return a media URL.');
     }
 
     return {
