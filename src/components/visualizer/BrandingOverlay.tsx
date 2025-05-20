@@ -11,7 +11,7 @@ export function BrandingOverlay() {
   const { settings } = useSettings();
   const { audioData } = useAudioData();
   const [bootShimmer, setBootShimmer] = useState(true);
-  const sixrMainColor = "rgb(235, 26, 115)"; // Updated general brand accent color
+  const sixrEffectColor = "rgb(235, 26, 115)"; // "X" color for general effects
 
   useEffect(() => {
     const timer = setTimeout(() => setBootShimmer(false), 2000); // Shimmer for 2s
@@ -22,21 +22,20 @@ export function BrandingOverlay() {
     return null;
   }
 
-  // Calculate glow based on RMS. Max glow at RMS >= 0.5
   const rmsGlowIntensity = Math.min(1, audioData.rms * 2); 
-  const textStrokeGlowStyle = {
-    WebkitTextStroke: `1px rgba(235, 26, 115, ${0.2 + audioData.rms * 0.5 + rmsGlowIntensity * 0.3})`, 
+  
+  const centralTextContainerStyle = {
+    opacity: settings.logoOpacity,
     textShadow: `
-      0 0 ${5 * rmsGlowIntensity}px ${sixrMainColor},
-      0 0 ${10 * rmsGlowIntensity}px ${sixrMainColor},
+      0 0 ${5 * rmsGlowIntensity}px ${sixrEffectColor},
+      0 0 ${10 * rmsGlowIntensity}px ${sixrEffectColor},
       0 0 ${15 * rmsGlowIntensity}px rgba(235, 26, 115, 0.7),
       0 0 ${20 * rmsGlowIntensity}px rgba(235, 26, 115, 0.5)
     `,
-    opacity: settings.logoOpacity,
   };
   
   const logoOutlineFlashStyle = audioData.beat ? {
-    filter: `drop-shadow(0 0 5px ${sixrMainColor}) drop-shadow(0 0 10px ${sixrMainColor})`,
+    filter: `drop-shadow(0 0 5px ${sixrEffectColor}) drop-shadow(0 0 10px ${sixrEffectColor})`,
   } : {};
 
 
@@ -63,10 +62,16 @@ export function BrandingOverlay() {
       {/* Centre SIXR Type */}
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
         <h1
-          className="text-6xl md:text-8xl font-mono font-bold text-transparent transition-opacity duration-200 ease-out"
-          style={textStrokeGlowStyle}
+          className="text-6xl md:text-8xl font-mono font-bold"
+          style={centralTextContainerStyle}
         >
-          S I X R
+          <span style={{ color: "rgb(254, 190, 15)" }}>S</span>
+          {' '}
+          <span style={{ color: "rgb(51, 197, 244)" }}>I</span>
+          {' '}
+          <span style={{ color: "rgb(235, 26, 115)" }}>X</span>
+          {' '}
+          <span style={{ color: "rgb(91, 185, 70)" }}>R</span>
         </h1>
       </div>
       
@@ -83,3 +88,4 @@ export function BrandingOverlay() {
     </>
   );
 }
+

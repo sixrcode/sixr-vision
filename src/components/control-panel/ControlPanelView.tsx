@@ -19,7 +19,6 @@ import { Accordion } from '@/components/ui/accordion';
 
 export function ControlPanelView() {
   const { initializeAudio, isInitialized, error } = useAudioAnalysis();
-  const sixrTextColor = "rgb(235, 26, 115)"; // Updated SIXR brand accent color
 
   // Attempt to initialize audio on mount
   useEffect(() => {
@@ -46,7 +45,12 @@ export function ControlPanelView() {
         <div className="flex items-center">
           <SixrLogo className="h-6 w-auto mr-2" />
           <h2 className="text-lg font-semibold">
-            <span style={{ color: sixrTextColor }}>SIXR</span> Vision
+            <span>
+              <span style={{ color: "rgb(254, 190, 15)" }}>S</span>
+              <span style={{ color: "rgb(51, 197, 244)" }}>I</span>
+              <span style={{ color: "rgb(235, 26, 115)" }}>X</span>
+              <span style={{ color: "rgb(91, 185, 70)" }}>R</span>
+            </span> Vision
           </h2>
         </div>
         {!isInitialized && (
@@ -79,9 +83,15 @@ export function ControlPanelView() {
       </ScrollArea>
       <footer className="p-2 border-t border-[hsl(var(--control-panel-border))] text-center">
         <p className="text-xs text-[hsl(var(--muted-foreground))]">
-          &copy; <span style={{ color: sixrTextColor }}>SIXR</span> Systems {new Date().getFullYear()}
+          &copy; <span>
+            <span style={{ color: "rgb(254, 190, 15)" }}>S</span>
+            <span style={{ color: "rgb(51, 197, 244)" }}>I</span>
+            <span style={{ color: "rgb(235, 26, 115)" }}>X</span>
+            <span style={{ color: "rgb(91, 185, 70)" }}>R</span>
+          </span> Systems {new Date().getFullYear()}
         </p>
       </footer>
     </div>
   );
 }
+

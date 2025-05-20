@@ -4,7 +4,7 @@ import type { SVGProps } from 'react';
 export function SixrLogo(props: SVGProps<SVGSVGElement>) {
   const sColor = "rgb(254, 190, 15)";
   const iColor = "rgb(51, 197, 244)";
-  const xColor = "rgb(235, 26, 115)"; // Updated X color
+  const xColor = "rgb(235, 26, 115)";
   const rColor = "rgb(91, 185, 70)";
   
   return (
@@ -30,3 +30,4 @@ export function SixrLogo(props: SVGProps<SVGSVGElement>) {
     </svg>
   );
 }
+
