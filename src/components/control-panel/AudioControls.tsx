@@ -48,7 +48,7 @@ export function AudioControls({ value }: AudioControlsProps) {
       </div>
       
       <div className="flex items-center justify-between space-y-1">
-        <Label htmlFor="agc-switch">Automatic Gain Control (AGC)</Label>
+        <Label htmlFor="agc-switch" className="flex-1 min-w-0 mr-2">Automatic Gain Control (AGC)</Label>
         <Switch
           id="agc-switch"
           checked={settings.enableAgc}

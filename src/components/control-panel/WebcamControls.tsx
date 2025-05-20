@@ -16,7 +16,7 @@ export function WebcamControls({ value }: WebcamControlsProps) {
   return (
     <ControlPanelSection title="Webcam Layer" value={value}>
       <div className="flex items-center justify-between">
-        <Label htmlFor="show-webcam-switch">Show Webcam</Label>
+        <Label htmlFor="show-webcam-switch" className="flex-1 min-w-0 mr-2">Show Webcam</Label>
         <Switch
           id="show-webcam-switch"
           checked={settings.showWebcam}
@@ -25,7 +25,7 @@ export function WebcamControls({ value }: WebcamControlsProps) {
       </div>
       {settings.showWebcam && (
         <div className="flex items-center justify-between mt-3">
-          <Label htmlFor="mirror-webcam-switch">Mirror Webcam</Label>
+          <Label htmlFor="mirror-webcam-switch" className="flex-1 min-w-0 mr-2">Mirror Webcam</Label>
           <Switch
             id="mirror-webcam-switch"
             checked={settings.mirrorWebcam}

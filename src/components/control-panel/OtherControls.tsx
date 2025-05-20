@@ -32,7 +32,7 @@ export function OtherControls({ value }: OtherControlsProps) {
   return (
     <ControlPanelSection title="System & Safety" value={value}>
       <div className="flex items-center justify-between">
-        <Label htmlFor="panic-mode-switch" className="flex items-center text-destructive">
+        <Label htmlFor="panic-mode-switch" className="flex items-center text-destructive flex-1 min-w-0 mr-2">
           <AlertTriangle className="mr-2 h-4 w-4" /> Panic Mode (Blackout)
         </Label>
         <Switch
@@ -43,7 +43,7 @@ export function OtherControls({ value }: OtherControlsProps) {
         />
       </div>
       <div className="flex items-center justify-between mt-3">
-        <Label htmlFor="logo-blackout-switch" className="flex items-center">
+        <Label htmlFor="logo-blackout-switch" className="flex items-center flex-1 min-w-0 mr-2">
           <ZapOff className="mr-2 h-4 w-4" /> Logo Blackout
         </Label>
         <Switch
