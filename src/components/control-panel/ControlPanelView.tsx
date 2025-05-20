@@ -42,7 +42,7 @@ export function ControlPanelView() {
         toast({
           title: "Welcome to SIXR Vision!",
           description: "Grant microphone & camera permissions (buttons in header) to begin. Explore presets & controls on the right.",
-          duration: 9000, // Longer duration for a welcome message
+          duration: 9000, 
         });
         localStorage.setItem('sixrVisionWelcomed', 'true');
       }
@@ -56,19 +56,19 @@ export function ControlPanelView() {
         await initializeAudio();
         setIsTogglingAudio(false);
       }
-      if (!settings.showWebcam) { // Check current setting before attempting to enable
+      if (!settings.showWebcam) { 
         console.log("ControlPanelView: Auto-enabling webcam on load.");
         updateSetting('showWebcam', true);
       }
     };
     autoInit();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Empty dependency array ensures this runs once on mount
+  }, []); 
 
 
   const handleAudioToggle = async () => {
     if (isTogglingAudio) return;
-
+    console.log("handleAudioToggle called. isInitialized:", isInitialized, "isTogglingAudio:", isTogglingAudio);
     setIsTogglingAudio(true);
     if (isInitialized) {
       console.log("ControlPanelView: Calling stopAudioAnalysis via toggle.");
@@ -78,7 +78,7 @@ export function ControlPanelView() {
       await initializeAudio();
     }
     setIsTogglingAudio(false);
-    console.log("ControlPanelView: Audio toggle finished. States will update on next render.");
+    console.log("ControlPanelView: Audio toggle finished. The 'isInitialized' state will update on the next render.");
   };
 
   const handleWebcamToggle = () => {
@@ -87,7 +87,7 @@ export function ControlPanelView() {
   };
 
   return (
-    <div className="h-full flex flex-col text-[hsl(var(--control-panel-foreground))]">
+    <div className="h-full flex flex-col text-[hsl(var(--control-panel-foreground))] bg-control-panel-background">
       <header className="p-4 border-b border-[hsl(var(--control-panel-border))] flex justify-between items-center">
         <div className="flex items-center">
           <SixrLogo className="h-6 w-auto mr-2" />
@@ -183,4 +183,3 @@ export function ControlPanelView() {
     </div>
   );
 }
-
