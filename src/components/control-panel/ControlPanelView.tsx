@@ -11,33 +11,23 @@ import { PresetSelector } from './PresetSelector';
 import { PaletteGenie } from './ai-tools/PaletteGenie';
 import { ProceduralAssetsGenerator } from './ai-tools/ProceduralAssetsGenerator';
 import { AiPresetChooser } from './ai-tools/AiPresetChooser';
-import { LogoAnimationControls } from './LogoAnimationControls'; // Added
+import { LogoAnimationControls } from './LogoAnimationControls';
 import { OtherControls } from './OtherControls';
 import { useAudioAnalysis } from '@/hooks/useAudioAnalysis';
+import { useSettings } from '@/providers/SettingsProvider'; // Added
 import { useEffect } from 'react';
-import { Power, Mic } from 'lucide-react';
+import { Power, Mic, Camera } from 'lucide-react'; // Added Camera
 import { Accordion } from '@/components/ui/accordion';
 
 export function ControlPanelView() {
   const { initializeAudio, isInitialized, error } = useAudioAnalysis();
+  const { settings } = useSettings(); // Added
 
   useEffect(() => {
-    if (!isInitialized && !error) { 
+    if (!isInitialized && !error) {
       initializeAudio();
     }
   }, [isInitialized, initializeAudio, error]);
-
-  const getButtonState = () => {
-    if (isInitialized) {
-      return { text: "Audio Active", icon: <Mic className="mr-2 h-4 w-4" />, variant: "default" as "default" | "destructive", disabled: true };
-    }
-    if (error) {
-      return { text: "Retry Init", icon: <Power className="mr-2 h-4 w-4" />, variant: "destructive" as "default" | "destructive", disabled: false };
-    }
-    return { text: "Initialize Audio", icon: <Power className="mr-2 h-4 w-4" />, variant: "default" as "default" | "destructive", disabled: false };
-  };
-
-  const buttonState = getButtonState();
 
   const sColor = "rgb(254, 190, 15)";
   const iColor = "rgb(51, 197, 244)";
@@ -54,35 +44,53 @@ export function ControlPanelView() {
             Vision
           </h2>
         </div>
-        {!isInitialized && (
-            <Button size="sm" onClick={initializeAudio} variant={buttonState.variant} disabled={buttonState.disabled}>
-              {buttonState.icon} {buttonState.text}
+
+        <div className="flex items-center gap-3"> {/* Container for right-side elements */}
+          {/* Status Indicators */}
+          {isInitialized && (
+            <div className="flex items-center text-sm text-green-400" title="Audio is active">
+              <Mic className="mr-1 h-4 w-4" />
+              <span>Audio</span>
+            </div>
+          )}
+          {settings.showWebcam && (
+            <div className="flex items-center text-sm text-sky-400" title="Webcam is active">
+              <Camera className="mr-1 h-4 w-4" />
+              <span>Webcam</span>
+            </div>
+          )}
+
+          {/* Audio Initialization Button (only shown if audio is not initialized) */}
+          {!isInitialized && (
+            <Button
+              size="sm"
+              onClick={initializeAudio}
+              variant={error ? "destructive" : "default"}
+            >
+              <Power className="mr-2 h-4 w-4" />
+              {error ? "Retry Audio" : "Initialize Audio"}
             </Button>
-        )}
-         {isInitialized && (
-             <div className="flex items-center text-sm text-green-400">
-                <Mic className="mr-1 h-4 w-4" /> Audio Active
-             </div>
-         )}
+          )}
+        </div>
       </header>
       {error && !isInitialized && <p className="p-2 text-xs text-destructive bg-destructive/20 text-center">Audio Error: {error}. Please check microphone permissions.</p>}
       <ScrollArea className="flex-1 min-h-0">
-        <div 
-          className="overflow-x-hidden" 
-          style={{ 
-            maxWidth: 'var(--sidebar-width)', 
-            width: '100%' 
+        <div
+          className="overflow-x-hidden"
+          style={{
+            maxWidth: 'var(--sidebar-width)',
+            width: '100%'
           }}
         >
-          <Accordion 
-            type="multiple" 
-            defaultValue={['presets', 'audio-engine', 'visual-output']} 
+          <Accordion
+            type="multiple"
+            defaultValue={['presets', 'audio-engine', 'visual-output']}
             className="w-full py-4 space-y-1"
           >
             <PresetSelector value="presets" />
             <AudioControls value="audio-engine" />
             <VisualControls value="visual-output" />
-            <LogoAnimationControls value="logo-animation" /> 
+            <LogoAnimationControls value="logo-animation" />
             <WebcamControls value="webcam-layer" />
             <AiPresetChooser value="ai-preset-chooser" />
             <PaletteGenie value="ai-palette-genie" />
