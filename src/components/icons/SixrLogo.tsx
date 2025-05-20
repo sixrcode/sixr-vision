@@ -1,3 +1,4 @@
+
 import type { SVGProps } from 'react';
 
 export function SixrLogo(props: SVGProps<SVGSVGElement>) {
@@ -20,7 +21,7 @@ export function SixrLogo(props: SVGProps<SVGSVGElement>) {
       >
         <tspan fill="rgba(254,190,15,1)">S</tspan>
         <tspan fill="rgba(51,197,244,1)">I</tspan>
-        <tspan fill="rgba(51,197,244,1)">X</tspan>
+        <tspan fill="rgb(37, 150, 190)">X</tspan>
         <tspan fill="rgba(91,185,70,1)">R</tspan>
       </text>
     </svg>
