@@ -11,7 +11,7 @@ export const DEFAULT_SETTINGS: Settings = {
   dither: 0.0,
   brightCap: 1.0,
   logoOpacity: 0.25,
-  showWebcam: false,
+  showWebcam: true, // Changed to true to initiate video on load
   mirrorWebcam: false,
   currentSceneId: 'radial_burst',
   panicMode: false,
@@ -516,3 +516,4 @@ export const SCENES: SceneDefinition[] = [
 
 export const CONTROL_PANEL_WIDTH_STRING = "280px";
 
+    
