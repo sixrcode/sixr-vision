@@ -1,5 +1,4 @@
 
-
 export type LogoAnimationType = 'none' | 'solid' | 'blink' | 'pulse' | 'rainbowCycle'; // Added rainbowCycle
 
 export type LogoAnimationSettings = {
@@ -46,8 +45,10 @@ export type Settings = {
   currentSceneId: string;
   panicMode: boolean; // Visualizer black
   logoBlackout: boolean; // Logo black/hidden
-  logoAnimationSettings: LogoAnimationSettings; // Added
-  lastAISuggestedAssetPrompt?: string; // For AI Preset Chooser to suggest an asset prompt
+  logoAnimationSettings: LogoAnimationSettings;
+  lastAISuggestedAssetPrompt?: string;
+  sceneTransitionDuration: number; // milliseconds for crossfade
+  sceneTransitionActive: boolean; // whether crossfade is enabled
 };
 
 export type PaletteGenieColor = {
@@ -76,4 +77,3 @@ export type RehearsalLogEntry = {
   event: string;
   details: Record<string, any>;
 };
-

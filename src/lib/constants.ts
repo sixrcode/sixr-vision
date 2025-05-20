@@ -17,11 +17,13 @@ export const DEFAULT_SETTINGS: Settings = {
   panicMode: false,
   logoBlackout: false,
   logoAnimationSettings: {
-    type: 'pulse', 
-    speed: 1, 
-    color: 'rgb(235, 26, 115)', 
+    type: 'pulse',
+    speed: 1,
+    color: 'rgb(235, 26, 115)',
   },
   lastAISuggestedAssetPrompt: undefined,
+  sceneTransitionDuration: 500, // Default 0.5 second transition
+  sceneTransitionActive: true, // Transitions are active by default
 };
 
 export const INITIAL_AUDIO_DATA: AudioData = {
@@ -38,11 +40,11 @@ export const SCENES: SceneDefinition[] = [
   {
     id: 'spectrum_bars',
     name: 'Spectrum Bars',
-    thumbnailUrl: 'https://placehold.co/120x80/1f2937/ffffff.png', // Dark background, white bars
+    thumbnailUrl: 'https://placehold.co/120x80/1f2937/ffffff.png',
     dataAiHint: 'audio spectrum',
     draw: (ctx, audioData, _settings) => {
       const { width, height } = ctx.canvas;
-      ctx.clearRect(0, 0, width, height);
+      // ctx.clearRect(0, 0, width, height); // Clearing is handled by VisualizerView during transitions
       ctx.fillStyle = 'hsla(var(--background))';
       ctx.fillRect(0,0,width,height);
 
@@ -53,11 +55,11 @@ export const SCENES: SceneDefinition[] = [
         ctx.textAlign = 'center';
         ctx.font = '16px var(--font-geist-sans)';
         ctx.fillText('Waiting for audio input...', width / 2, height / 2);
-        
-        const barWidth = width / audioData.spectrum.length; // Use actual spectrum length
+
+        const barWidth = width / audioData.spectrum.length;
          ctx.strokeStyle = 'hsla(var(--muted-foreground), 0.2)';
          ctx.lineWidth = 1;
-         for(let i=0; i < audioData.spectrum.length; i++) { // Use actual spectrum length
+         for(let i=0; i < audioData.spectrum.length; i++) {
             ctx.strokeRect(i * barWidth, height - height * 0.3, barWidth -2, height * 0.3);
          }
         return;
@@ -74,25 +76,25 @@ export const SCENES: SceneDefinition[] = [
   {
     id: 'radial_burst',
     name: 'Radial Burst',
-    thumbnailUrl: 'https://placehold.co/120x80/1f2937/eab308.png', // Dark bg, yellow/gold burst suggestion
+    thumbnailUrl: 'https://placehold.co/120x80/1f2937/eab308.png',
     dataAiHint: 'abstract explosion',
     draw: (ctx, audioData, settings) => {
       const { width, height } = ctx.canvas;
-      ctx.clearRect(0, 0, width, height);
+      // ctx.clearRect(0, 0, width, height);
       ctx.fillStyle = 'hsla(var(--background))';
       ctx.fillRect(0,0,width,height);
 
       const centerX = width / 2;
       const centerY = height / 2;
-      
+
       const isAudioSilent = audioData.rms < 0.01 && audioData.spectrum.every(v => v < 5);
 
-      if (isAudioSilent && !audioData.beat) { 
+      if (isAudioSilent && !audioData.beat) {
         ctx.fillStyle = 'hsl(var(--muted-foreground))';
         ctx.textAlign = 'center';
         ctx.font = '16px var(--font-geist-sans)';
         ctx.fillText('Visualizer active. Waiting for audio input...', width / 2, height / 2);
-        
+
         const numPlaceholderCircles = 8;
         ctx.strokeStyle = 'hsla(var(--muted-foreground), 0.15)';
         ctx.lineWidth = 2;
@@ -104,7 +106,7 @@ export const SCENES: SceneDefinition[] = [
         }
         return;
       }
-      
+
       if (audioData.beat) {
         const particleCount = 50 + Math.floor(audioData.rms * 100);
         for (let i = 0; i < particleCount; i++) {
@@ -113,7 +115,7 @@ export const SCENES: SceneDefinition[] = [
           const x = centerX + Math.cos(angle) * radius;
           const y = centerY + Math.sin(angle) * radius;
           const size = 1 + Math.random() * 4 * audioData.rms;
-          
+
           const hueBase = (settings.fftSize === 128 ? 200 : settings.fftSize === 256 ? 260 : 320);
           const hue = (hueBase + audioData.bassEnergy * 60) % 360;
           ctx.fillStyle = `hsla(${hue}, 100%, ${50 + audioData.trebleEnergy * 50}%, ${0.5 + audioData.midEnergy * 0.5})`;
@@ -122,7 +124,7 @@ export const SCENES: SceneDefinition[] = [
           ctx.fill();
         }
       }
-      
+
        const numStaticParticles = 20;
        for (let i = 0; i < numStaticParticles; i++) {
          const angle = (i / numStaticParticles) * Math.PI * 2;
@@ -140,14 +142,14 @@ export const SCENES: SceneDefinition[] = [
   {
     id: 'mirror_silhouette',
     name: 'Mirror Silhouette',
-    thumbnailUrl: 'https://placehold.co/120x80/1f2937/a78bfa.png', // Dark bg, purple-ish silhouette suggestion
+    thumbnailUrl: 'https://placehold.co/120x80/1f2937/a78bfa.png',
     dataAiHint: 'silhouette reflection',
     draw: (ctx, audioData, settings, webcamFeed) => {
       const { width, height } = ctx.canvas;
-      ctx.clearRect(0, 0, width, height);
+      // ctx.clearRect(0, 0, width, height);
       ctx.fillStyle = 'hsla(var(--background))';
       ctx.fillRect(0,0,width,height);
-      
+
       if (webcamFeed && settings.showWebcam) {
         if (webcamFeed.videoWidth === 0 || webcamFeed.videoHeight === 0) {
           ctx.fillStyle = 'hsl(var(--muted-foreground))';
@@ -174,7 +176,7 @@ export const SCENES: SceneDefinition[] = [
           ctx.translate(width, 0);
           ctx.scale(-1, 1);
         }
-        ctx.globalAlpha = 0.8 + audioData.rms * 0.2; 
+        ctx.globalAlpha = 0.8 + audioData.rms * 0.2;
         ctx.drawImage(webcamFeed, x, y, drawWidth, drawHeight);
         ctx.restore();
 
@@ -195,19 +197,20 @@ export const SCENES: SceneDefinition[] = [
   {
     id: 'particle_finale',
     name: 'Particle Finale',
-    thumbnailUrl: 'https://placehold.co/120x80/1f2937/f472b6.png', // Dark bg, pink/magenta particle suggestion
+    thumbnailUrl: 'https://placehold.co/120x80/1f2937/f472b6.png',
     dataAiHint: 'fireworks celebration',
     draw: (ctx, audioData, _settings) => {
       const { width, height } = ctx.canvas;
-      ctx.fillStyle = 'hsla(var(--background), 0.1)'; 
+      // ctx.clearRect(0, 0, width, height); // Fade effect handled by VisualizerView
+      ctx.fillStyle = 'hsla(var(--background), 0.1)'; // Make particle trails fade
       ctx.fillRect(0,0,width,height);
 
-      const particleCount = 100 + Math.floor(audioData.rms * 400); 
-      for (let i = 0; i < particleCount * audioData.rms; i++) { 
+      const particleCount = 100 + Math.floor(audioData.rms * 400);
+      for (let i = 0; i < particleCount * audioData.rms; i++) {
         const x = Math.random() * width;
         const y = Math.random() * height;
         const size = 1 + Math.random() * 5 * (audioData.bassEnergy + audioData.midEnergy);
-        const hue = (200 + Math.random() * 160 + audioData.trebleEnergy * 60) % 360; 
+        const hue = (200 + Math.random() * 160 + audioData.trebleEnergy * 60) % 360;
         const lightness = 50 + Math.random() * 30 + audioData.rms * 20;
         ctx.fillStyle = `hsla(${hue}, 100%, ${lightness}%, ${0.3 + Math.random() * 0.7})`;
         ctx.beginPath();
@@ -219,4 +222,3 @@ export const SCENES: SceneDefinition[] = [
 ];
 
 export const CONTROL_PANEL_WIDTH_STRING = "280px";
-

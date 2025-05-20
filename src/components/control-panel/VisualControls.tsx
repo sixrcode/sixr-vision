@@ -3,6 +3,7 @@
 
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
+import { Switch } from '@/components/ui/switch';
 import { useSettings } from '@/providers/SettingsProvider';
 import { ControlPanelSection } from './ControlPanelSection';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
@@ -70,6 +71,41 @@ export function VisualControls({ value }: VisualControlsProps) {
           onValueChange={([val]) => updateSetting('brightCap', val)}
         />
       </div>
+      <div className="flex items-center justify-between mt-3">
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Label htmlFor="scene-transition-switch" className="flex-1 min-w-0 mr-2">Enable Scene Transitions</Label>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Enables a smooth crossfade effect when switching between visualizer scenes.</p>
+          </TooltipContent>
+        </Tooltip>
+        <Switch
+          id="scene-transition-switch"
+          checked={settings.sceneTransitionActive}
+          onCheckedChange={(checked) => updateSetting('sceneTransitionActive', checked)}
+        />
+      </div>
+      {settings.sceneTransitionActive && (
+        <div className="space-y-1 mt-2">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Label htmlFor="transition-duration-slider">Transition Duration ({settings.sceneTransitionDuration}ms)</Label>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Controls how long the crossfade transition between scenes takes, in milliseconds.</p>
+            </TooltipContent>
+          </Tooltip>
+          <Slider
+            id="transition-duration-slider"
+            min={0}
+            max={2000}
+            step={50}
+            value={[settings.sceneTransitionDuration]}
+            onValueChange={([val]) => updateSetting('sceneTransitionDuration', val)}
+          />
+        </div>
+      )}
     </ControlPanelSection>
   );
 }
