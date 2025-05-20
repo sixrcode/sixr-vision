@@ -17,7 +17,7 @@ import { LogoAnimationControls } from './LogoAnimationControls';
 import { OtherControls } from './OtherControls';
 import { useAudioAnalysis } from '@/hooks/useAudioAnalysis';
 import { useEffect, useState } from 'react';
-import { Power, Mic, MicOff, Camera, Loader2 } from 'lucide-react';
+import { Mic, MicOff, Camera, CameraOff, Loader2 } from 'lucide-react';
 import { Accordion } from '@/components/ui/accordion';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { useSettings } from '@/providers/SettingsProvider';
@@ -28,44 +28,33 @@ export function ControlPanelView() {
   const { settings, updateSetting } = useSettings();
   const [isTogglingAudio, setIsTogglingAudio] = useState(false);
 
-
-  useEffect(() => {
-    // Attempt to initialize audio automatically on mount
-    if (!isInitialized && !error) {
-        console.log("ControlPanelView: Attempting initial audio initialization on mount.");
-        // initializeAudio(); // User will click button
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Run only once on mount
-
-
   const sColor = "rgb(254, 190, 15)";
   const iColor = "rgb(51, 197, 244)";
   const xColor = "rgb(235, 26, 115)";
   const rColor = "rgb(91, 185, 70)";
   const torusFontFamily = "'Torus Variations', var(--font-geist-mono), monospace";
 
-  const handlePowerToggle = async () => {
-    console.log("handlePowerToggle called. isInitialized:", isInitialized, "isTogglingAudio:", isTogglingAudio);
+  const handleAudioToggle = async () => {
     if (isTogglingAudio) return; 
 
     setIsTogglingAudio(true);
     if (isInitialized) {
-      console.log("Calling stopAudioAnalysis and disabling webcam...");
+      console.log("ControlPanelView: Calling stopAudioAnalysis.");
       await stopAudioAnalysis();
-      updateSetting('showWebcam', false);
     } else {
-      console.log("Calling initializeAudio and enabling webcam...");
+      console.log("ControlPanelView: Calling initializeAudio.");
       await initializeAudio();
-      // Only turn on webcam if audio initializes successfully
-      // The isInitialized state might not update immediately after initializeAudio() resolves
-      // So, we rely on the fact that initializeAudio sets its internal state,
-      // and WebcamFeed will react to settings.showWebcam
-      updateSetting('showWebcam', true); 
     }
     setIsTogglingAudio(false);
-    console.log("handlePowerToggle finished. States will update on next render.");
+    console.log("ControlPanelView: Audio toggle finished. States will update on next render.");
   };
+
+  const handleWebcamToggle = () => {
+    console.log("ControlPanelView: Toggling webcam. Current state:", settings.showWebcam);
+    updateSetting('showWebcam', !settings.showWebcam);
+    console.log("ControlPanelView: Webcam toggle finished. New state:", !settings.showWebcam);
+  };
+
 
   return (
     <div className="h-full flex flex-col text-[hsl(var(--control-panel-foreground))]">
@@ -83,48 +72,42 @@ export function ControlPanelView() {
               <Button
                 size="icon"
                 variant="ghost"
-                onClick={handlePowerToggle}
+                onClick={handleAudioToggle}
                 className="h-7 w-7 text-sm"
                 disabled={isTogglingAudio}
+                aria-label={isInitialized ? "Stop Audio Input" : "Start Audio Input"}
               >
                 {isTogglingAudio ? (
                   <Loader2 className="animate-spin" />
                 ) : isInitialized ? (
-                  <Power className="text-green-400" /> 
+                  <Mic className="text-green-400" /> 
                 ) : (
-                  <Power className="text-destructive" />
+                  <MicOff className="text-destructive" />
                 )}
               </Button>
             </TooltipTrigger>
             <TooltipContent>
-              <p>{isTogglingAudio ? "Processing..." : isInitialized ? 'Stop Audio & Webcam' : (error ? 'Retry Audio & Webcam Initialization' : 'Initialize Audio & Webcam')}</p>
+              <p>{isTogglingAudio ? "Processing..." : isInitialized ? 'Stop Audio Input' : (error ? 'Retry Audio Initialization' : 'Start Audio Input')}</p>
+              {error && !isInitialized && <p className="text-destructive mt-1">Error: {error}</p>}
             </TooltipContent>
           </Tooltip>
 
           <Tooltip>
             <TooltipTrigger asChild>
-              <div className="flex items-center text-sm cursor-default">
-                {isInitialized ? <Mic className="h-4 w-4 text-green-400" /> : <MicOff className="h-4 w-4 text-muted-foreground" />}
-              </div>
+               <Button
+                size="icon"
+                variant="ghost"
+                onClick={handleWebcamToggle}
+                className="h-7 w-7 text-sm"
+                aria-label={settings.showWebcam ? "Stop Webcam" : "Start Webcam"}
+              >
+                {settings.showWebcam ? <Camera className="text-sky-400" /> : <CameraOff className="text-muted-foreground" />}
+              </Button>
             </TooltipTrigger>
             <TooltipContent>
-              <p>{isInitialized ? 'Audio input is active' : 'Audio input is inactive'}</p>
-              {error && !isInitialized && <p className="text-destructive">Error: {error}</p>}
+              <p>{settings.showWebcam ? 'Stop Webcam' : 'Start Webcam'}</p> 
             </TooltipContent>
           </Tooltip>
-          
-          {settings.showWebcam && ( // This indicator reacts to the live settings.showWebcam
-             <Tooltip>
-              <TooltipTrigger asChild>
-                <div className="flex items-center text-sm text-sky-400 cursor-default">
-                  <Camera className="h-4 w-4" />
-                </div>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Webcam is active</p> 
-              </TooltipContent>
-            </Tooltip>
-          )}
         </div>
       </header>
       {error && !isInitialized && <p className="p-2 text-xs text-destructive bg-destructive/20 text-center">Audio Error: {error}. Please check microphone permissions.</p>}
