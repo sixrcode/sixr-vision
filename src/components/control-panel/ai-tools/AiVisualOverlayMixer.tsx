@@ -85,21 +85,23 @@ export function AiVisualOverlayMixer({ value }: AiVisualOverlayMixerProps) {
 
   useEffect(() => {
     const autoGenerateAndEnable = async () => {
-      // Ensure initial generation attempt only happens once and if a scene is active
       if (!initialGenerationAttempted.current && currentScene) {
         initialGenerationAttempted.current = true; 
+        console.log("Attempting initial AI overlay generation with prompt:", settings.aiOverlayPrompt || "vibrant abstract energy");
         const success = await handleGenerateOverlay(settings.aiOverlayPrompt || "vibrant abstract energy");
         if (success) {
+          console.log("Initial AI overlay generated successfully, enabling overlay.");
           updateSetting('enableAiOverlay', true);
+        } else {
+          console.log("Initial AI overlay generation failed.");
         }
       }
     };
     
-    // Delay initial generation slightly to allow other components to mount
     const timer = setTimeout(autoGenerateAndEnable, 3000);
     return () => clearTimeout(timer);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentScene]); // Depend on currentScene to ensure context is available
+  }, [currentScene]);
 
 
   return (
