@@ -14,7 +14,7 @@ export function SixrLogo(props: SVGProps<SVGSVGElement>) {
         dominantBaseline="middle"
         textAnchor="middle"
         fontSize="24"
-        fontFamily="var(--font-geist-mono), monospace"
+        fontFamily="'Torus Variations Biline Bold', var(--font-geist-mono), monospace"
         // Default fill can be removed or kept as a fallback if tspans don't cover everything
         // fill="currentColor" 
       >
