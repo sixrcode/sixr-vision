@@ -30,4 +30,3 @@ export function SixrLogo(props: SVGProps<SVGSVGElement>) {
     </svg>
   );
 }
-

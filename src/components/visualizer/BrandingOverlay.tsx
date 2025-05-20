@@ -11,7 +11,7 @@ export function BrandingOverlay() {
   const { settings } = useSettings();
   const { audioData } = useAudioData();
   const [bootShimmer, setBootShimmer] = useState(true);
-  const sixrMainColor = "rgb(37, 150, 190)";
+  const sixrMainColor = "rgb(37, 150, 190)"; // General brand accent color (X color)
 
   useEffect(() => {
     const timer = setTimeout(() => setBootShimmer(false), 2000); // Shimmer for 2s
