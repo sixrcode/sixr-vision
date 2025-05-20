@@ -21,12 +21,12 @@ import { Mic, MicOff, Camera, CameraOff, Loader2 } from 'lucide-react';
 import { Accordion } from '@/components/ui/accordion';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { useSettings } from '@/providers/SettingsProvider';
+import { toast } from '@/hooks/use-toast';
 
 export function ControlPanelView() {
   const { initializeAudio, stopAudioAnalysis, isInitialized, error: audioError } = useAudioAnalysis();
   const { settings, updateSetting } = useSettings();
   const [isTogglingAudio, setIsTogglingAudio] = useState(false);
-  const [isTogglingWebcam, setIsTogglingWebcam] = useState(false); // Not strictly needed if just updating setting, but good for consistency if actions were async
 
   const sColor = "rgb(254, 190, 15)";
   const iColor = "rgb(51, 197, 244)";
@@ -35,22 +35,35 @@ export function ControlPanelView() {
   const torusFontFamily = "'Torus Variations', var(--font-geist-mono), monospace";
 
   useEffect(() => {
+    // Welcome Toast Logic
+    if (typeof window !== 'undefined') {
+      const alreadyWelcomed = localStorage.getItem('sixrVisionWelcomed');
+      if (!alreadyWelcomed) {
+        toast({
+          title: "Welcome to SIXR Vision!",
+          description: "Grant microphone & camera permissions (buttons in header) to begin. Explore presets & controls on the right.",
+          duration: 9000, // Longer duration for a welcome message
+        });
+        localStorage.setItem('sixrVisionWelcomed', 'true');
+      }
+    }
+
+    // Auto-initialize Audio and Webcam
     const autoInit = async () => {
-      if (!isInitialized && !audioError) {
+      if (!isInitialized && !audioError && !isTogglingAudio) {
         console.log("ControlPanelView: Auto-initializing audio on load.");
         setIsTogglingAudio(true);
         await initializeAudio();
         setIsTogglingAudio(false);
       }
-      if (!settings.showWebcam) {
+      if (!settings.showWebcam) { // Check current setting before attempting to enable
         console.log("ControlPanelView: Auto-enabling webcam on load.");
-        // No async action needed for webcam toggle, just update setting
         updateSetting('showWebcam', true);
       }
     };
     autoInit();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Run once on mount
+  }, []); // Empty dependency array ensures this runs once on mount
 
 
   const handleAudioToggle = async () => {
@@ -69,7 +82,6 @@ export function ControlPanelView() {
   };
 
   const handleWebcamToggle = () => {
-    // If webcam toggle involved async operations, we'd use isTogglingWebcam
     console.log("ControlPanelView: Toggling webcam via button. Current state:", settings.showWebcam);
     updateSetting('showWebcam', !settings.showWebcam);
   };
@@ -171,3 +183,4 @@ export function ControlPanelView() {
     </div>
   );
 }
+
