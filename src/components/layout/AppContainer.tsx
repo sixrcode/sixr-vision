@@ -14,7 +14,8 @@ export function AppContainer({
   controlPanel: ReactNode;
 }) {
   useHotkeys(); // Initialize hotkeys listener
-  const { open: isDesktopSidebarOpen, isMobile } = useSidebar();
+  // useSidebar hook is not strictly needed here anymore for conditional rendering of the trigger's container
+  // as it will always be in the same position.
 
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-background">
@@ -24,12 +25,10 @@ export function AppContainer({
         </main>
       </SidebarInset>
 
-      {/* Sidebar Trigger - positioned based on mobile/desktop and sidebar state */}
+      {/* Sidebar Trigger - always positioned in the top-right corner */}
       <div
         className={cn(
-          "absolute z-50",
-          isMobile ? "top-4 right-4" : "top-1/2 right-4 -translate-y-1/2",
-          !isMobile && isDesktopSidebarOpen && "hidden" // Hide on desktop if sidebar is open
+          "absolute z-50 top-4 right-4"
         )}
       >
         <SidebarTrigger />
