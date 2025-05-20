@@ -10,7 +10,7 @@ export const DEFAULT_SETTINGS: Settings = {
   gamma: 1.0,
   dither: 0.0,
   brightCap: 1.0,
-  logoOpacity: 0.1, // Lowered default opacity
+  logoOpacity: 0.2, // Adjusted back up for visibility
   showWebcam: false,
   mirrorWebcam: false,
   currentSceneId: 'spectrum_bars',
@@ -196,3 +196,4 @@ export const SCENES: SceneDefinition[] = [
 ];
 
 export const CONTROL_PANEL_WIDTH = 320; // in pixels
+
