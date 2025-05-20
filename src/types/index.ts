@@ -47,6 +47,7 @@ export type Settings = {
   panicMode: boolean; // Visualizer black
   logoBlackout: boolean; // Logo black/hidden
   logoAnimationSettings: LogoAnimationSettings; // Added
+  lastAISuggestedAssetPrompt?: string; // For AI Preset Chooser to suggest an asset prompt
 };
 
 export type PaletteGenieColor = {

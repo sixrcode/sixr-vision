@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { useAudioData } from '@/providers/AudioDataProvider';
 import { useScene } from '@/providers/SceneProvider';
+import { useSettings } from '@/providers/SettingsProvider';
 import { suggestSceneFromAudio, type SuggestSceneFromAudioInput, type SuggestSceneFromAudioOutput } from '@/ai/flows/suggest-scene-from-audio';
 import { ControlPanelSection } from '../ControlPanelSection';
 import { Brain } from 'lucide-react';
@@ -17,7 +18,8 @@ type AiPresetChooserProps = {
 export function AiPresetChooser({ value }: AiPresetChooserProps) {
   const { audioData } = useAudioData();
   const { setCurrentSceneById, scenes } = useScene();
-  const [suggestedScene, setSuggestedScene] = useState<SuggestSceneFromAudioOutput | null>(null);
+  const { updateSetting } = useSettings(); // Get updateSetting from useSettings
+  const [suggestedSceneInfo, setSuggestedSceneInfo] = useState<SuggestSceneFromAudioOutput | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
   const [autoLoad, setAutoLoad] = useState(false); // Placeholder for auto-load toggle
@@ -32,7 +34,9 @@ export function AiPresetChooser({ value }: AiPresetChooserProps) {
         bpm: audioData.bpm,
       };
       const result = await suggestSceneFromAudio(input);
-      setSuggestedScene(result);
+      setSuggestedSceneInfo(result);
+      updateSetting('lastAISuggestedAssetPrompt', result.suggestedAssetPrompt); // Update setting
+
       if (autoLoad && scenes.find(s => s.id === result.sceneId)) {
         setCurrentSceneById(result.sceneId);
         toast({ title: 'AI Scene Loaded', description: `Switched to ${result.sceneId} based on audio.` });
@@ -49,7 +53,7 @@ export function AiPresetChooser({ value }: AiPresetChooserProps) {
     } finally {
       setIsLoading(false);
     }
-  }, [audioData, autoLoad, setCurrentSceneById, toast, scenes]);
+  }, [audioData, autoLoad, setCurrentSceneById, toast, scenes, updateSetting]);
 
   // Debounce fetching suggestions or fetch on significant audio changes
   useEffect(() => {
@@ -64,24 +68,27 @@ export function AiPresetChooser({ value }: AiPresetChooserProps) {
   }, [audioData, fetchSuggestion]);
 
   const handleLoadSuggested = () => {
-    if (suggestedScene?.sceneId && scenes.find(s => s.id === suggestedScene.sceneId)) {
-      setCurrentSceneById(suggestedScene.sceneId);
-      toast({ title: 'Scene Loaded', description: `Switched to ${suggestedScene.sceneId}.` });
-    } else if (suggestedScene?.sceneId) {
-       toast({ title: 'Scene Not Found', description: `Scene ${suggestedScene.sceneId} is not available.`, variant: 'destructive' });
+    if (suggestedSceneInfo?.sceneId && scenes.find(s => s.id === suggestedSceneInfo.sceneId)) {
+      setCurrentSceneById(suggestedSceneInfo.sceneId);
+      toast({ title: 'Scene Loaded', description: `Switched to ${suggestedSceneInfo.sceneId}.` });
+    } else if (suggestedSceneInfo?.sceneId) {
+       toast({ title: 'Scene Not Found', description: `Scene ${suggestedSceneInfo.sceneId} is not available.`, variant: 'destructive' });
     }
   };
 
   return (
     <ControlPanelSection title="AI: Preset Chooser" value={value}>
       <Button onClick={fetchSuggestion} disabled={isLoading} className="w-full">
-        <Brain className="mr-2 h-4 w-4" /> {isLoading ? 'Analyzing...' : 'Suggest Scene'}
+        <Brain className="mr-2 h-4 w-4" /> {isLoading ? 'Analyzing...' : 'Suggest Scene & Assets'}
       </Button>
-      {suggestedScene && (
+      {suggestedSceneInfo && (
         <div className="mt-3 p-2 border border-[hsl(var(--border))] rounded-md bg-[hsl(var(--background))]">
-          <p className="text-sm font-medium">Suggested: <span className="text-primary">{suggestedScene.sceneId}</span></p>
-          <p className="text-xs text-[hsl(var(--muted-foreground))] mt-1">{suggestedScene.reason}</p>
-          {scenes.find(s => s.id === suggestedScene.sceneId) && (
+          <p className="text-sm font-medium">Suggested Scene: <span className="text-primary">{suggestedSceneInfo.sceneId}</span></p>
+          <p className="text-xs text-[hsl(var(--muted-foreground))] mt-1">{suggestedSceneInfo.reason}</p>
+          {suggestedSceneInfo.suggestedAssetPrompt && (
+            <p className="text-xs text-[hsl(var(--muted-foreground))] mt-1">Asset idea: <em className="text-primary/90">"{suggestedSceneInfo.suggestedAssetPrompt}"</em> (use in Procedural Assets)</p>
+          )}
+          {scenes.find(s => s.id === suggestedSceneInfo.sceneId) && (
             <Button onClick={handleLoadSuggested} size="sm" className="mt-2 w-full">
               Load Suggested Scene
             </Button>

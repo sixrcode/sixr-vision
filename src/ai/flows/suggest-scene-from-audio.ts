@@ -4,7 +4,7 @@
 /**
  * @fileOverview This file defines a Genkit flow for suggesting a scene based on audio analysis.
  *
- * - suggestSceneFromAudio - A function that takes audio analysis data and returns a suggested scene ID.
+ * - suggestSceneFromAudio - A function that takes audio analysis data and returns a suggested scene ID and asset prompt.
  * - SuggestSceneFromAudioInput - The input type for the suggestSceneFromAudio function.
  * - SuggestSceneFromAudioOutput - The return type for the suggestSceneFromAudio function.
  */
@@ -27,6 +27,7 @@ const SuggestSceneFromAudioOutputSchema = z.object({
   reason: z
     .string()
     .describe('The reason why this scene was suggested based on the audio analysis.'),
+  suggestedAssetPrompt: z.string().describe('A short, creative prompt for generating procedural assets (like textures or simple meshes) that would visually complement the suggested scene and audio mood. E.g., "flowing lava", "crystal shards", "pulsating nebula".'),
 });
 export type SuggestSceneFromAudioOutput = z.infer<
   typeof SuggestSceneFromAudioOutputSchema
@@ -42,23 +43,24 @@ const prompt = ai.definePrompt({
   name: 'suggestSceneFromAudioPrompt',
   input: {schema: SuggestSceneFromAudioInputSchema},
   output: {schema: SuggestSceneFromAudioOutputSchema},
-  prompt: `You are an AI scene selector expert.
+  prompt: `You are an AI scene selector expert for an audio-reactive visualizer.
 
 You are provided with the bass, mid, and treble energy, as well as the BPM of the current audio.
-Based on this information, you will suggest the most fitting scene.
+Based on this information, you will suggest the most fitting scene and provide a reason.
 
 Consider these scenes:
-- Spectrum Bars: A scene with vertical bars that react to the different frequencies of the audio. Good for high energy across all frequencies.
-- Radial Burst: A scene with particles that burst from the center of the screen. Good for rhythmic music with a clear beat.
-- Mirror Silhouette: A scene that creates a mirrored silhouette of the performer. Good for slower, more atmospheric music.
-- Particle Finale: A scene with a large number of particles that create a visually stunning finale. Good for the end of a song or a high-energy breakdown.
+- Spectrum Bars: ID 'spectrum_bars'. A scene with vertical bars that react to the different frequencies of the audio. Good for high energy across all frequencies, clear representation of sound.
+- Radial Burst: ID 'radial_burst'. A scene with particles that burst from the center of the screen. Good for rhythmic music with a clear beat, percussive sounds, and high energy moments.
+- Mirror Silhouette: ID 'mirror_silhouette'. A scene that creates a mirrored silhouette of the performer using a webcam. Good for slower, more atmospheric music, or performances where the artist's form is central.
+- Particle Finale: ID 'particle_finale'. A scene with a large number of particles that create a visually stunning finale. Good for the end of a song, a high-energy breakdown, or climactic moments.
 
 Bass Energy: {{bassEnergy}}
 Mid Energy: {{midEnergy}}
 Treble Energy: {{trebleEnergy}}
 BPM: {{bpm}}
 
-Suggest a scene ID and explain your reasoning.`,
+Suggest a scene ID and explain your reasoning.
+Also, provide a 'suggestedAssetPrompt'. This should be a short, creative text prompt (2-5 words) for generating procedural assets (like textures or simple meshes) that would visually complement your chosen scene and the audio's mood. For example, if the music is intense and you suggest 'Radial Burst', an asset prompt could be 'explosive energy shards'. If it's atmospheric for 'Mirror Silhouette', it might be 'ethereal light streaks'.`,
 });
 
 const suggestSceneFromAudioFlow = ai.defineFlow(
@@ -72,3 +74,4 @@ const suggestSceneFromAudioFlow = ai.defineFlow(
     return output!;
   }
 );
+

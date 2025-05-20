@@ -10,17 +10,18 @@ export const DEFAULT_SETTINGS: Settings = {
   gamma: 1.0,
   dither: 0.0,
   brightCap: 1.0,
-  logoOpacity: 0.25, // Increased default opacity
+  logoOpacity: 0.25,
   showWebcam: false,
   mirrorWebcam: false,
-  currentSceneId: 'radial_burst', // Changed default scene
+  currentSceneId: 'radial_burst',
   panicMode: false,
   logoBlackout: false,
   logoAnimationSettings: {
-    type: 'pulse', // Set default animation to pulse
+    type: 'pulse', 
     speed: 1, 
     color: 'rgb(235, 26, 115)', 
   },
+  lastAISuggestedAssetPrompt: undefined,
 };
 
 export const INITIAL_AUDIO_DATA: AudioData = {
@@ -196,4 +197,3 @@ export const SCENES: SceneDefinition[] = [
 ];
 
 export const CONTROL_PANEL_WIDTH_STRING = "280px";
-

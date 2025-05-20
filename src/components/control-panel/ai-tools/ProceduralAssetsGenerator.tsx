@@ -10,17 +10,19 @@ import { useToast } from '@/hooks/use-toast';
 import { generateAssets, type GenerateAssetsInput, type GenerateAssetsOutput } from '@/ai/flows/generate-assets-from-prompt';
 import type { ProceduralAsset } from '@/types';
 import { ControlPanelSection } from '../ControlPanelSection';
-import { ImageIcon, Cuboid } from 'lucide-react';
-
-type ProceduralAssetsGeneratorProps = {
-  value: string; // For AccordionItem
-};
+import { ImageIcon, Cuboid, Sparkles } from 'lucide-react'; // Added Sparkles for suggestion
+import { useSettings } from '@/providers/SettingsProvider'; // Import useSettings
 
 export function ProceduralAssetsGenerator({ value }: ProceduralAssetsGeneratorProps) {
   const [prompt, setPrompt] = useState('');
   const [generatedAssets, setGeneratedAssets] = useState<ProceduralAsset | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+  const { settings } = useSettings(); // Get settings
+
+  type ProceduralAssetsGeneratorProps = {
+    value: string; // For AccordionItem
+  };
 
   const handleSubmit = async () => {
     if (!prompt.trim()) {
@@ -61,6 +63,26 @@ export function ProceduralAssetsGenerator({ value }: ProceduralAssetsGeneratorPr
           disabled={isLoading}
         />
       </div>
+
+      {settings.lastAISuggestedAssetPrompt && (
+        <div className="mt-2 p-2 border border-dashed border-[hsl(var(--border))] rounded-md bg-[hsl(var(--background))]">
+          <div className="flex items-center justify-between">
+            <p className="text-xs text-[hsl(var(--muted-foreground))]">
+              <Sparkles className="inline h-3 w-3 mr-1 text-primary/80" />
+              AI suggestion: <em className="text-primary/90">"{settings.lastAISuggestedAssetPrompt}"</em>
+            </p>
+            <Button
+              size="xs" // Using a hypothetical "xs" size, or "sm" and adjust padding if needed
+              variant="outline"
+              onClick={() => setPrompt(settings.lastAISuggestedAssetPrompt!)}
+              className="px-2 py-1 h-auto text-xs" // More compact button
+            >
+              Use
+            </Button>
+          </div>
+        </div>
+      )}
+
       <Button onClick={handleSubmit} disabled={isLoading} className="w-full mt-2">
         {isLoading ? 'Generating...' : 'Generate Assets'}
       </Button>
