@@ -38,8 +38,8 @@ export const SCENES: SceneDefinition[] = [
   {
     id: 'spectrum_bars',
     name: 'Spectrum Bars',
-    thumbnailUrl: 'https://placehold.co/120x80.png?text=Spectrum',
-    dataAiHint: 'abstract audio',
+    thumbnailUrl: 'https://placehold.co/120x80.png', // Placeholder suggesting vertical bars
+    dataAiHint: 'audio spectrum',
     draw: (ctx, audioData, _settings) => {
       const { width, height } = ctx.canvas;
       ctx.clearRect(0, 0, width, height);
@@ -74,7 +74,7 @@ export const SCENES: SceneDefinition[] = [
   {
     id: 'radial_burst',
     name: 'Radial Burst',
-    thumbnailUrl: 'https://placehold.co/120x80.png?text=Burst',
+    thumbnailUrl: 'https://placehold.co/120x80.png', // Placeholder suggesting outward burst
     dataAiHint: 'abstract explosion',
     draw: (ctx, audioData, settings) => {
       const { width, height } = ctx.canvas;
@@ -118,7 +118,7 @@ export const SCENES: SceneDefinition[] = [
   {
     id: 'mirror_silhouette',
     name: 'Mirror Silhouette',
-    thumbnailUrl: 'https://placehold.co/120x80.png?text=Mirror',
+    thumbnailUrl: 'https://placehold.co/120x80.png', // Placeholder suggesting a mirrored shape
     dataAiHint: 'silhouette reflection',
     draw: (ctx, audioData, settings, webcamFeed) => {
       const { width, height } = ctx.canvas;
@@ -173,7 +173,7 @@ export const SCENES: SceneDefinition[] = [
   {
     id: 'particle_finale',
     name: 'Particle Finale',
-    thumbnailUrl: 'https://placehold.co/120x80.png?text=Finale',
+    thumbnailUrl: 'https://placehold.co/120x80.png', // Placeholder suggesting scattered particles
     dataAiHint: 'fireworks celebration',
     draw: (ctx, audioData, _settings) => {
       const { width, height } = ctx.canvas;
@@ -197,3 +197,4 @@ export const SCENES: SceneDefinition[] = [
 ];
 
 export const CONTROL_PANEL_WIDTH_STRING = "280px";
+
