@@ -190,4 +190,4 @@ export const SCENES: SceneDefinition[] = [
   },
 ];
 
-export const CONTROL_PANEL_WIDTH_STRING = "320px";
+export const CONTROL_PANEL_WIDTH_STRING = "280px";
