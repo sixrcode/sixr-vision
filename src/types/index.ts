@@ -1,5 +1,6 @@
 
-export type LogoAnimationType = 'none' | 'solid' | 'blink' | 'pulse'; // Added 'rainbowCycle' for future
+
+export type LogoAnimationType = 'none' | 'solid' | 'blink' | 'pulse' | 'rainbowCycle'; // Added rainbowCycle
 
 export type LogoAnimationSettings = {
   type: LogoAnimationType;
@@ -74,3 +75,4 @@ export type RehearsalLogEntry = {
   event: string;
   details: Record<string, any>;
 };
+

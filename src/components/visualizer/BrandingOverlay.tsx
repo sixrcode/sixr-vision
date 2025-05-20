@@ -4,7 +4,7 @@
 import { SixrLogo } from '@/components/icons/SixrLogo';
 import { useSettings } from '@/providers/SettingsProvider';
 import { useAudioData } from '@/providers/AudioDataProvider';
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useRef } from 'react';
 import { cn } from '@/lib/utils';
 
 // Define default letter colors (used when no animation overrides them or for 'none' type)
@@ -19,6 +19,8 @@ export function BrandingOverlay() {
   const { audioData } = useAudioData();
   const [bootShimmer, setBootShimmer] = useState(true);
   const [blinkOn, setBlinkOn] = useState(true);
+  const [rainbowHue, setRainbowHue] = useState(0);
+  const animationFrameRef = useRef<number | null>(null);
 
   const { logoOpacity, logoAnimationSettings } = settings;
   const { type: animType, speed: animSpeed, color: animColor } = logoAnimationSettings;
@@ -31,16 +33,43 @@ export function BrandingOverlay() {
   useEffect(() => {
     let intervalId: NodeJS.Timeout | undefined;
     if (animType === 'blink') {
-      const blinkInterval = 1000 / animSpeed; // animSpeed is Hz-like
+      const blinkInterval = 1000 / animSpeed; 
       intervalId = setInterval(() => {
         setBlinkOn(prev => !prev);
-      }, blinkInterval / 2); // Toggle twice per cycle
+      }, blinkInterval / 2); 
     }
     return () => {
       if (intervalId) clearInterval(intervalId);
-      setBlinkOn(true); // Reset blink state when effect changes
+      setBlinkOn(true); 
     };
   }, [animType, animSpeed]);
+
+  useEffect(() => {
+    if (animType === 'rainbowCycle') {
+      let lastTime = performance.now();
+      const animateHue = (currentTime: number) => {
+        const deltaTime = currentTime - lastTime;
+        lastTime = currentTime;
+        // Adjust hue increment based on speed and deltaTime for smoother animation
+        // animSpeed is 0.2 to 3. A factor like 0.1 might be good to scale.
+        // Hue increases by (animSpeed * scaleFactor * deltaTime / (1000/60)) degrees per frame roughly
+        // Let's simplify: make speed influence degrees per second.
+        // A speed of 1 could mean 360 degrees in 5 seconds (72 deg/sec).
+        // A speed of 3 could mean 360 degrees in ~1.6 seconds (216 deg/sec).
+        const hueIncrement = (animSpeed / 5) * (360 / 60) * (deltaTime / (1000/60)); // (speed_factor * deg_per_sec * time_elapsed_ratio)
+
+        setRainbowHue(prevHue => (prevHue + hueIncrement) % 360);
+        animationFrameRef.current = requestAnimationFrame(animateHue);
+      };
+      animationFrameRef.current = requestAnimationFrame(animateHue);
+    }
+    return () => {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+    };
+  }, [animType, animSpeed]);
+
 
   if (settings.logoBlackout) {
     return null;
@@ -49,16 +78,29 @@ export function BrandingOverlay() {
   const rmsGlowIntensity = Math.min(1, audioData.rms * 2);
   const masterOpacity = logoOpacity;
 
-  // Determine colors for the central text based on animation
-  const sDisplayColor = (animType === 'solid' || (animType === 'blink' && blinkOn)) ? animColor : sColorDefault;
-  const iDisplayColor = (animType === 'solid' || (animType === 'blink' && blinkOn)) ? animColor : iColorDefault;
-  const xDisplayColor = (animType === 'solid' || (animType === 'blink' && blinkOn)) ? animColor : xColorDefault;
-  const rDisplayColor = (animType === 'solid' || (animType === 'blink' && blinkOn)) ? animColor : rColorDefault;
+  let sDisplayColor = sColorDefault;
+  let iDisplayColor = iColorDefault;
+  let xDisplayColor = xColorDefault;
+  let rDisplayColor = rColorDefault;
+  let logoColorOverride: string | undefined = undefined;
+
+  if (animType === 'solid') {
+    sDisplayColor = iDisplayColor = xDisplayColor = rDisplayColor = animColor;
+    logoColorOverride = animColor;
+  } else if (animType === 'blink' && blinkOn) {
+    sDisplayColor = iDisplayColor = xDisplayColor = rDisplayColor = animColor;
+    logoColorOverride = animColor;
+  } else if (animType === 'rainbowCycle') {
+    const rainbowColorStr = `hsl(${rainbowHue}, 100%, 70%)`; // Use a brighter lightness for rainbow
+    sDisplayColor = iDisplayColor = xDisplayColor = rDisplayColor = rainbowColorStr;
+    logoColorOverride = rainbowColorStr;
+  }
+  
 
   const centralTextBaseStyle: React.CSSProperties = {
     fontFamily: torusFontFamily,
-    opacity: masterOpacity, // Base opacity
-    transition: 'opacity 0.1s ease-in-out', // Smooth transitions for blink
+    opacity: masterOpacity, 
+    transition: 'opacity 0.1s ease-in-out, color 0.05s linear', 
   };
 
   const centralTextStyleS: React.CSSProperties = { ...centralTextBaseStyle, color: sDisplayColor };
@@ -73,46 +115,54 @@ export function BrandingOverlay() {
     centralTextStyleR.opacity = 0;
   }
   
-  const centralTextGlowColor = animType === 'solid' ? animColor : xColorDefault;
+  let centralTextGlowColor = xColorDefault; // Default glow
+  if (animType === 'solid' || (animType === 'blink' && blinkOn)) {
+    centralTextGlowColor = animColor;
+  } else if (animType === 'rainbowCycle') {
+    centralTextGlowColor = `hsl(${rainbowHue}, 100%, 80%)`; // Lighter glow for rainbow
+  }
+
   const centralTextContainerStyle: React.CSSProperties = {
     textShadow: `
       0 0 ${5 * rmsGlowIntensity}px ${centralTextGlowColor},
       0 0 ${10 * rmsGlowIntensity}px ${centralTextGlowColor},
-      0 0 ${15 * rmsGlowIntensity}px ${animType === 'solid' ? animColor.replace('rgb', 'rgba').replace(')', ', 0.7)') : xColorDefault.replace('rgb', 'rgba').replace(')', ', 0.7)')},
-      0 0 ${20 * rmsGlowIntensity}px ${animType === 'solid' ? animColor.replace('rgb', 'rgba').replace(')', ', 0.5)') : xColorDefault.replace('rgb', 'rgba').replace(')', ', 0.5)')}
+      0 0 ${15 * rmsGlowIntensity}px ${centralTextGlowColor.replace('rgb', 'rgba').replace(')', ', 0.7)')},
+      0 0 ${20 * rmsGlowIntensity}px ${centralTextGlowColor.replace('rgb', 'rgba').replace(')', ', 0.5)')}
     `,
   };
 
-  // Animation styles for pulse
   const pulseAnimationName = 'pulseAnimation';
   const pulseAnimationStyle: React.CSSProperties = animType === 'pulse' ? {
     animationName: pulseAnimationName,
-    animationDuration: `${2 / animSpeed}s`, // Slower pulse for lower speed value
+    animationDuration: `${2 / animSpeed}s`, 
     animationIterationCount: 'infinite',
     animationTimingFunction: 'ease-in-out',
   } : {};
   
-
-  // Logo color override for solid/blink
-  const logoColorOverride = (animType === 'solid' || (animType === 'blink' && blinkOn)) ? animColor : undefined;
-  
   const logoWrapperBaseStyle: React.CSSProperties = {
     opacity: masterOpacity,
-    transition: 'opacity 0.1s ease-in-out',
+    transition: 'opacity 0.1s ease-in-out, color 0.05s linear',
   };
 
-  const rotatingWatermarkStyle: React.CSSProperties = {...logoWrapperBaseStyle, ...pulseAnimationStyle};
-  const beatFlashLogoStyle: React.CSSProperties = {...logoWrapperBaseStyle, ...pulseAnimationStyle};
+  const rotatingWatermarkStyle: React.CSSProperties = {...logoWrapperBaseStyle, ...(animType === 'pulse' ? pulseAnimationStyle : {})};
+  const beatFlashLogoStyle: React.CSSProperties = {...logoWrapperBaseStyle, ...(animType === 'pulse' ? pulseAnimationStyle : {})};
 
   if (animType === 'blink' && !blinkOn) {
     rotatingWatermarkStyle.opacity = 0;
     beatFlashLogoStyle.opacity = 0;
   }
 
-  const beatFlashEffectStyle = audioData.beat ? {
-    filter: `drop-shadow(0 0 5px ${animType === 'solid' ? animColor : xColorDefault}) drop-shadow(0 0 10px ${animType === 'solid' ? animColor : xColorDefault})`,
-  } : {};
 
+  let beatFlashGlowColor = xColorDefault;
+  if (animType === 'solid' || (animType === 'blink' && blinkOn)) {
+    beatFlashGlowColor = animColor;
+  } else if (animType === 'rainbowCycle') {
+    beatFlashGlowColor = `hsl(${rainbowHue}, 100%, 80%)`;
+  }
+
+  const beatFlashEffectStyle = audioData.beat ? {
+    filter: `drop-shadow(0 0 5px ${beatFlashGlowColor}) drop-shadow(0 0 10px ${beatFlashGlowColor})`,
+  } : {};
 
   return (
     <>
@@ -123,14 +173,12 @@ export function BrandingOverlay() {
         }
       `}</style>
 
-      {/* Boot Logo Shimmer */}
       {bootShimmer && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none animate-pulse">
           <SixrLogo className="w-32 h-auto opacity-50" />
         </div>
       )}
 
-      {/* Rotating Watermark */}
       <div
         className={cn(
           "absolute top-4 right-4 pointer-events-none",
@@ -145,7 +193,6 @@ export function BrandingOverlay() {
         />
       </div>
 
-      {/* Centre SIXR Type */}
       <div 
         className={cn(
           "absolute inset-0 flex items-center justify-center pointer-events-none",
@@ -161,7 +208,6 @@ export function BrandingOverlay() {
         </h1>
       </div>
       
-      {/* Beat-flash logo outline */}
        <div
         className={cn(
           "absolute bottom-4 left-4 pointer-events-none",

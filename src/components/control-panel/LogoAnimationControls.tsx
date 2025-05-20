@@ -24,6 +24,8 @@ export function LogoAnimationControls({ value }: LogoAnimationControlsProps) {
     updateSetting('logoAnimationSettings', { ...logoAnimationSettings, [key]: val });
   };
 
+  const currentAnimType = logoAnimationSettings.type;
+
   return (
     <ControlPanelSection title="Logo & Watermark Animation" value={value}>
       <div className="space-y-3">
@@ -38,7 +40,7 @@ export function LogoAnimationControls({ value }: LogoAnimationControlsProps) {
         />
       </div>
 
-      <div className="space-y-3 mt-4"> {/* Added mt-4 for spacing */}
+      <div className="space-y-3 mt-4">
         <Label htmlFor="logo-animation-type-select">Animation Type</Label>
         <Select
           value={logoAnimationSettings.type}
@@ -52,12 +54,12 @@ export function LogoAnimationControls({ value }: LogoAnimationControlsProps) {
             <SelectItem value="solid">Solid Color</SelectItem>
             <SelectItem value="blink">Blink</SelectItem>
             <SelectItem value="pulse">Pulse</SelectItem>
-            {/* <SelectItem value="rainbowCycle">Rainbow Cycle</SelectItem> */}
+            <SelectItem value="rainbowCycle">Rainbow Cycle</SelectItem>
           </SelectContent>
         </Select>
       </div>
 
-      {(logoAnimationSettings.type === 'solid' || logoAnimationSettings.type === 'blink') && (
+      {(currentAnimType === 'solid' || currentAnimType === 'blink') && (
         <div className="space-y-3 mt-3">
           <Label htmlFor="logo-animation-color">Color</Label>
           <Input
@@ -65,31 +67,32 @@ export function LogoAnimationControls({ value }: LogoAnimationControlsProps) {
             type="color"
             value={logoAnimationSettings.color}
             onChange={(e) => handleAnimationSettingChange('color', e.target.value)}
-            className="h-10" // Ensure consistent height with other inputs
+            className="h-10"
           />
         </div>
       )}
 
-      {(logoAnimationSettings.type === 'blink' || logoAnimationSettings.type === 'pulse') && (
+      {(currentAnimType === 'blink' || currentAnimType === 'pulse' || currentAnimType === 'rainbowCycle') && (
         <div className="space-y-3 mt-3">
           <Label htmlFor="logo-animation-speed-slider">
             Speed ({logoAnimationSettings.speed.toFixed(1)})
           </Label>
           <Slider
             id="logo-animation-speed-slider"
-            min={0.2} // Slower
-            max={3}   // Faster
+            min={0.2}
+            max={3}
             step={0.1}
             value={[logoAnimationSettings.speed]}
             onValueChange={([val]) => handleAnimationSettingChange('speed', val)}
           />
           <p className="text-xs text-[hsl(var(--muted-foreground))]">
-            {logoAnimationSettings.type === 'blink' ? 'Higher is faster blinking.' : 'Higher is faster pulsing.'}
+            {currentAnimType === 'blink' ? 'Higher is faster blinking.' :
+             currentAnimType === 'pulse' ? 'Higher is faster pulsing.' :
+             currentAnimType === 'rainbowCycle' ? 'Higher is faster color cycling.' : ''}
           </p>
         </div>
       )}
-       <p className="text-xs text-[hsl(var(--muted-foreground))] mt-2">More animations (Rainbow Cycle, Chase, etc.) are placeholders.</p>
+       <p className="text-xs text-[hsl(var(--muted-foreground))] mt-2">More animations (Chase, Sparkle, etc.) are placeholders.</p>
     </ControlPanelSection>
   );
 }
-
