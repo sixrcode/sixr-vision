@@ -58,7 +58,7 @@ export function ControlPanelView() {
          )}
       </header>
       {error && !isInitialized && <p className="p-2 text-xs text-destructive bg-destructive/20 text-center">Audio Error: {error}. Please check microphone permissions.</p>}
-      <ScrollArea className="flex-1">
+      <ScrollArea className="flex-1 min-h-0">
         <Accordion 
           type="multiple" 
           defaultValue={['presets', 'audio-engine', 'visual-output']} 
