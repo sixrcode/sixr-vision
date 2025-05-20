@@ -19,7 +19,7 @@ import { Accordion } from '@/components/ui/accordion';
 
 export function ControlPanelView() {
   const { initializeAudio, isInitialized, error } = useAudioAnalysis();
-  const sixrTextColor = "rgb(37, 150, 190)";
+  const sixrTextColor = "rgb(235, 26, 115)"; // Updated SIXR brand accent color
 
   // Attempt to initialize audio on mount
   useEffect(() => {

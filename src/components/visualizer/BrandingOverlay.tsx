@@ -11,7 +11,7 @@ export function BrandingOverlay() {
   const { settings } = useSettings();
   const { audioData } = useAudioData();
   const [bootShimmer, setBootShimmer] = useState(true);
-  const sixrMainColor = "rgb(37, 150, 190)"; // General brand accent color (X color)
+  const sixrMainColor = "rgb(235, 26, 115)"; // Updated general brand accent color
 
   useEffect(() => {
     const timer = setTimeout(() => setBootShimmer(false), 2000); // Shimmer for 2s
@@ -25,12 +25,12 @@ export function BrandingOverlay() {
   // Calculate glow based on RMS. Max glow at RMS >= 0.5
   const rmsGlowIntensity = Math.min(1, audioData.rms * 2); 
   const textStrokeGlowStyle = {
-    WebkitTextStroke: `1px rgba(37, 150, 190, ${0.2 + audioData.rms * 0.5 + rmsGlowIntensity * 0.3})`, 
+    WebkitTextStroke: `1px rgba(235, 26, 115, ${0.2 + audioData.rms * 0.5 + rmsGlowIntensity * 0.3})`, 
     textShadow: `
       0 0 ${5 * rmsGlowIntensity}px ${sixrMainColor},
       0 0 ${10 * rmsGlowIntensity}px ${sixrMainColor},
-      0 0 ${15 * rmsGlowIntensity}px rgba(37, 150, 190, 0.7),
-      0 0 ${20 * rmsGlowIntensity}px rgba(37, 150, 190, 0.5)
+      0 0 ${15 * rmsGlowIntensity}px rgba(235, 26, 115, 0.7),
+      0 0 ${20 * rmsGlowIntensity}px rgba(235, 26, 115, 0.5)
     `,
     opacity: settings.logoOpacity,
   };
