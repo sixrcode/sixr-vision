@@ -69,7 +69,7 @@ export function ControlPanelView() {
     };
     autoInit();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Removed settings.showWebcam from deps to avoid re-triggering webcam init if user toggles it off
+  }, []); 
 
 
   const handleAudioToggle = async () => {
@@ -154,7 +154,7 @@ export function ControlPanelView() {
       {audioError && !isInitialized && <p className="p-2 text-xs text-destructive bg-destructive/20 text-center">Audio Error: {audioError}. Please check microphone permissions.</p>}
       <ScrollArea className="flex-1 min-h-0">
         <div
-          className="overflow-x-hidden"
+          className="overflow-x-hidden control-panel-content-wrapper"
           style={{
             maxWidth: 'var(--sidebar-width)',
             width: '100%'
