@@ -45,6 +45,7 @@ export function ControlPanelView() {
   const rColor = "rgb(91, 185, 70)";
   const torusFontFamily = "'Torus Variations', var(--font-geist-mono), monospace";
 
+
   return (
     <div className="h-full flex flex-col text-[hsl(var(--control-panel-foreground))]">
       <header className="p-4 border-b border-[hsl(var(--control-panel-border))] flex justify-between items-center">
@@ -67,20 +68,22 @@ export function ControlPanelView() {
       </header>
       {error && !isInitialized && <p className="p-2 text-xs text-destructive bg-destructive/20 text-center">Audio Error: {error}. Please check microphone permissions.</p>}
       <ScrollArea className="flex-1 min-h-0">
-        <Accordion 
-          type="multiple" 
-          defaultValue={['presets', 'audio-engine', 'visual-output']} 
-          className="w-full py-4 space-y-1"
-        >
-          <PresetSelector value="presets" />
-          <AudioControls value="audio-engine" />
-          <VisualControls value="visual-output" />
-          <WebcamControls value="webcam-layer" />
-          <AiPresetChooser value="ai-preset-chooser" />
-          <PaletteGenie value="ai-palette-genie" />
-          <ProceduralAssetsGenerator value="ai-procedural-assets" />
-          <OtherControls value="system-safety" />
-        </Accordion>
+        <div className="overflow-x-hidden"> {/* Wrapper to clip horizontal overflow */}
+          <Accordion 
+            type="multiple" 
+            defaultValue={['presets', 'audio-engine', 'visual-output']} 
+            className="w-full py-4 space-y-1"
+          >
+            <PresetSelector value="presets" />
+            <AudioControls value="audio-engine" />
+            <VisualControls value="visual-output" />
+            <WebcamControls value="webcam-layer" />
+            <AiPresetChooser value="ai-preset-chooser" />
+            <PaletteGenie value="ai-palette-genie" />
+            <ProceduralAssetsGenerator value="ai-procedural-assets" />
+            <OtherControls value="system-safety" />
+          </Accordion>
+        </div>
       </ScrollArea>
       <footer className="p-2 border-t border-[hsl(var(--control-panel-border))] text-center">
         <p className="text-xs text-[hsl(var(--muted-foreground))]">
