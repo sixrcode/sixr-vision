@@ -27,6 +27,7 @@ export function ControlPanelView() {
   const { initializeAudio, stopAudioAnalysis, isInitialized, error: audioError } = useAudioAnalysis();
   const { settings, updateSetting } = useSettings();
   const [isTogglingAudio, setIsTogglingAudio] = useState(false);
+  const [isTogglingWebcam, setIsTogglingWebcam] = useState(false); // To manage webcam toggle state if needed, though not strictly necessary for a settings toggle
 
   const sColor = "rgb(254, 190, 15)";
   const iColor = "rgb(51, 197, 244)";
@@ -42,7 +43,7 @@ export function ControlPanelView() {
         toast({
           title: "Welcome to SIXR Vision!",
           description: "Grant microphone & camera permissions (buttons in header) to begin. Explore presets & controls on the right.",
-          duration: 9000, 
+          duration: 9000,
         });
         localStorage.setItem('sixrVisionWelcomed', 'true');
       }
@@ -56,14 +57,17 @@ export function ControlPanelView() {
         await initializeAudio();
         setIsTogglingAudio(false);
       }
-      if (!settings.showWebcam) { 
-        console.log("ControlPanelView: Auto-enabling webcam on load.");
-        updateSetting('showWebcam', true);
+      // No automatic webcam initialization - controlled by its own button
+      // However, if we want the webcam to try and activate if settings.showWebcam is true (persisted from previous session perhaps):
+      if (settings.showWebcam && !isTogglingWebcam) { // Check if already true
+         console.log("ControlPanelView: showWebcam is true, ensuring webcam is active (or attempting activation).");
+         // The WebcamFeed component itself handles initialization based on settings.showWebcam
+         // No direct call needed here unless we want to force a toggle state change.
       }
     };
     autoInit();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); 
+  }, []);
 
 
   const handleAudioToggle = async () => {
@@ -87,7 +91,7 @@ export function ControlPanelView() {
   };
 
   return (
-    <div className="h-full flex flex-col text-[hsl(var(--control-panel-foreground))] bg-control-panel-background">
+    <div className="h-full flex flex-col text-[hsl(var(--control-panel-foreground))] bg-control-panel-background !bg-[hsl(var(--control-panel-background))]">
       <header className="p-4 border-b border-[hsl(var(--control-panel-border))] flex justify-between items-center">
         <div className="flex items-center">
           <SixrLogo className="h-6 w-auto mr-2" />
