@@ -9,6 +9,7 @@ import { useSettings } from '@/providers/SettingsProvider';
 import { FFT_SIZES } from '@/lib/constants';
 import { ControlPanelSection } from './ControlPanelSection';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
+import { cn } from '@/lib/utils';
 
 type AudioControlsProps = {
   value: string; // For AccordionItem
@@ -44,13 +45,15 @@ export function AudioControls({ value }: AudioControlsProps) {
         <p className="text-xs text-[hsl(var(--muted-foreground))]">Controls the resolution of audio frequency analysis.</p>
       </div>
 
-      <div className="space-y-1">
+      <div className={cn("space-y-1", settings.enableAgc && "opacity-50 pointer-events-none")}>
         <Tooltip>
           <TooltipTrigger asChild>
-            <Label htmlFor="gain-slider">Gain ({settings.gain.toFixed(2)})</Label>
+            <Label htmlFor="gain-slider" className={cn(settings.enableAgc && "text-[hsl(var(--muted-foreground))]")}>
+              Manual Gain ({settings.gain.toFixed(2)}) {settings.enableAgc && "(AGC Active)"}
+            </Label>
           </TooltipTrigger>
           <TooltipContent>
-            <p>Amplifies or reduces the incoming audio signal level before analysis.</p>
+            <p>Amplifies or reduces the incoming audio signal level before analysis. Disabled when AGC is active.</p>
           </TooltipContent>
         </Tooltip>
         <Slider
@@ -60,16 +63,18 @@ export function AudioControls({ value }: AudioControlsProps) {
           step={0.05}
           value={[settings.gain]}
           onValueChange={([val]) => updateSetting('gain', val)}
+          disabled={settings.enableAgc}
         />
       </div>
       
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between pt-2">
         <Tooltip>
           <TooltipTrigger asChild>
             <Label htmlFor="agc-switch" className="flex-1 min-w-0 mr-2">Automatic Gain Control (AGC)</Label>
           </TooltipTrigger>
           <TooltipContent>
-            <p>Automatically adjusts gain to maintain a consistent audio level. (Currently a placeholder feature)</p>
+            <p>Automatically adjusts gain to maintain a consistent audio level.</p>
+            {settings.enableAgc && <p className="text-xs text-primary">AGC is currently managing audio levels.</p>}
           </TooltipContent>
         </Tooltip>
         <Switch
@@ -79,7 +84,10 @@ export function AudioControls({ value }: AudioControlsProps) {
           aria-label="Toggle Automatic Gain Control"
         />
       </div>
-      <p className="text-xs text-[hsl(var(--muted-foreground))]">Note: AGC functionality is a placeholder.</p>
+       <p className="text-xs text-[hsl(var(--muted-foreground))]">
+        {settings.enableAgc ? "AGC is active. Manual gain is disabled." : "Adjust gain manually or enable AGC."}
+      </p>
     </ControlPanelSection>
   );
 }
+

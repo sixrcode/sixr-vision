@@ -5,8 +5,8 @@ export const FFT_SIZES = [128, 256, 512] as const;
 
 export const DEFAULT_SETTINGS: Settings = {
   fftSize: 256,
-  gain: 1.0,
-  enableAgc: false,
+  gain: 1.0, // Manual gain, used if AGC is off
+  enableAgc: true, // AGC is now on by default
   gamma: 1.0,
   dither: 0.0,
   brightCap: 1.0,
@@ -53,7 +53,7 @@ export const SCENES: SceneDefinition[] = [
       const { width, height } = ctx.canvas;
       // Subtle background pulse
       const bgBrightness = 5 + audioData.rms * 10;
-      ctx.fillStyle = `hsla(224, 71.4%, ${bgBrightness}%, 1)`; // Using background HSL
+      ctx.fillStyle = `hsla(var(--background), ${settings.sceneTransitionActive && settings.sceneTransitionDuration > 0 ? 1 : 0.9})`; // Less fade for this scene
       ctx.fillRect(0,0,width,height);
 
       const isAudioSilent = audioData.rms < 0.01 && audioData.spectrum.every(v => v < 5);
@@ -67,7 +67,7 @@ export const SCENES: SceneDefinition[] = [
         const barWidth = width / audioData.spectrum.length;
          ctx.strokeStyle = 'hsla(var(--muted-foreground), 0.2)';
          ctx.lineWidth = 1;
-         for(let i=0; i < audioData.spectrum.length; i++) {
+         for(let i=0; i < audioData.spectrum.length; i++) { // Use actual spectrum length
             ctx.strokeRect(i * barWidth, height - height * 0.3, barWidth -2, height * 0.3);
          }
         return;
@@ -156,7 +156,8 @@ export const SCENES: SceneDefinition[] = [
           const y = centerY + Math.sin(angle) * radius * (1 + Math.random() * 0.5);
           const size = (1.5 + Math.random() * 5 * (audioData.rms + audioData.bassEnergy * 0.5)) * settings.brightCap;
 
-          const hueBase = (settings.fftSize === 128 ? 200 : settings.fftSize === 256 ? 260 : 320) + (performance.now()/1000 * 10);
+          //fftSize used to be settings.fftSize
+          const hueBase = (audioData.spectrum.length === 64 ? 200 : audioData.spectrum.length === 128 ? 260 : 320) + (performance.now()/1000 * 10);
           const hue = (hueBase + audioData.bassEnergy * 90 + Math.random()*60 - 30) % 360; // More dynamic hue
           ctx.fillStyle = `hsla(${hue}, 100%, ${60 + audioData.trebleEnergy * 40}%, ${0.6 + audioData.midEnergy * 0.4})`;
           ctx.beginPath();
@@ -364,7 +365,12 @@ export const SCENES: SceneDefinition[] = [
         if (energy < 0.03) continue;
 
         for (let j = 0; j < numSteps; j++) {
-            const time = performance.now() / (1500 / (settings.gain * 0.8 + 0.2));
+            // When AGC is on, settings.gain might not be the actual current gain.
+            // However, for visual animation speed, using settings.gain here (the user's base preference)
+            // or a fixed value might be more predictable than a rapidly changing AGC-driven gain.
+            // Let's use a combination, or simplify to be less dependent on actual gain value for speed.
+            const speedFactor = settings.enableAgc ? 1.0 : settings.gain;
+            const time = performance.now() / (1500 / (speedFactor * 0.8 + 0.2));
             const ringProgress = (time + j * (0.4 / numSteps) * (i + 1)) % 1; 
             
             const radius = ringProgress * maxRingRadius * (0.5 + energy * 0.5); 
@@ -509,3 +515,4 @@ export const SCENES: SceneDefinition[] = [
 ];
 
 export const CONTROL_PANEL_WIDTH_STRING = "280px";
+

@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from 'react';
@@ -10,9 +11,17 @@ import { INITIAL_AUDIO_DATA } from '@/lib/constants';
 const BEAT_DETECTION_THRESHOLD = 0.7; // Adjust this based on sensitivity
 const RMS_SMOOTHING_FACTOR = 0.1; // For smoothing RMS values
 
+// AGC Constants
+const AGC_TARGET_RMS = 0.25; // Target RMS level for AGC (0-1 scale)
+const AGC_MIN_GAIN = 0.1;   // Minimum gain AGC will apply
+const AGC_MAX_GAIN = 4.0;   // Maximum gain AGC will apply (to prevent over-amplifying noise)
+const AGC_ATTACK_TIME_CONSTANT = 0.03; // Time constant for gain reduction (seconds)
+const AGC_RELEASE_TIME_CONSTANT = 0.4; // Time constant for gain increase (seconds)
+
+
 export function useAudioAnalysis() {
   const { settings } = useSettings();
-  const { setAudioData } = useAudioData();
+  const { audioData: currentGlobalAudioData, setAudioData } = useAudioData(); // Renamed to avoid conflict
   
   const audioContextRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
@@ -29,8 +38,9 @@ export function useAudioAnalysis() {
   const [previousRms, setPreviousRms] = useState(0);
 
 
-  const calculateEnergy = useCallback((spectrum: Uint8Array, fftSize: number): Pick<AudioData, 'bassEnergy' | 'midEnergy' | 'trebleEnergy' | 'rms' | 'beat'> => {
-    const nyquist = audioContextRef.current!.sampleRate / 2;
+  const calculateEnergy = useCallback((spectrum: Uint8Array): Pick<AudioData, 'bassEnergy' | 'midEnergy' | 'trebleEnergy' | 'rms' | 'beat'> => {
+    if (!audioContextRef.current) return { bassEnergy: 0, midEnergy: 0, trebleEnergy: 0, rms: 0, beat: false};
+    const nyquist = audioContextRef.current.sampleRate / 2;
     const bassEndFreq = 250; // Hz
     const midEndFreq = 4000; // Hz
 
@@ -81,44 +91,74 @@ export function useAudioAnalysis() {
   }, [lastBeatTime, previousRms]);
 
   const estimateBPM = useCallback((): number => {
-    if (beatTimestamps.length < 5) return settings.bpm || 120; // Not enough data, use current or default
+    if (beatTimestamps.length < 5) return currentGlobalAudioData.bpm || 120; // Use current global BPM or default
 
     const intervals = [];
     for (let i = 1; i < beatTimestamps.length; i++) {
       intervals.push(beatTimestamps[i] - beatTimestamps[i-1]);
     }
     
-    if (intervals.length === 0) return settings.bpm || 120;
+    if (intervals.length === 0) return currentGlobalAudioData.bpm || 120;
 
-    // Median interval for robustness
     intervals.sort((a, b) => a - b);
     const medianInterval = intervals[Math.floor(intervals.length / 2)];
     
-    if (medianInterval === 0) return settings.bpm || 120;
+    if (medianInterval === 0 || medianInterval < 50 ) return currentGlobalAudioData.bpm || 120; // Avoid too high BPM / div by zero
     
     const bpm = 60000 / medianInterval;
-    return Math.round(bpm); // Return a smoothed or rounded BPM
-  }, [beatTimestamps, settings.bpm]);
+    // Smooth BPM update
+    const smoothedBpm = Math.round(currentGlobalAudioData.bpm * 0.8 + bpm * 0.2);
+    return smoothedBpm;
+  }, [beatTimestamps, currentGlobalAudioData.bpm]);
 
   const analyze = useCallback(() => {
-    if (!analyserRef.current || !dataArrayRef.current) return;
+    if (!analyserRef.current || !dataArrayRef.current || !audioContextRef.current) {
+      animationFrameIdRef.current = requestAnimationFrame(analyze); // Keep trying
+      return;
+    }
 
     analyserRef.current.getByteFrequencyData(dataArrayRef.current);
-    const energy = calculateEnergy(dataArrayRef.current, settings.fftSize);
+    const energyAndRms = calculateEnergy(dataArrayRef.current);
     const bpm = estimateBPM();
 
     setAudioData({
       spectrum: new Uint8Array(dataArrayRef.current), // Clone array
-      ...energy,
+      ...energyAndRms,
       bpm,
     });
 
+    // AGC Logic
+    if (settings.enableAgc && gainNodeRef.current && audioContextRef.current.state === 'running') {
+        const currentRms = energyAndRms.rms; 
+        const currentGain = gainNodeRef.current.gain.value;
+
+        if (currentRms > 0.005) { // Only adjust if there's some meaningful signal
+            let targetGain = currentGain * (AGC_TARGET_RMS / currentRms);
+            targetGain = Math.max(AGC_MIN_GAIN, Math.min(AGC_MAX_GAIN, targetGain));
+            
+            const timeConstant = currentRms > AGC_TARGET_RMS ? AGC_ATTACK_TIME_CONSTANT : AGC_RELEASE_TIME_CONSTANT;
+
+            gainNodeRef.current.gain.setTargetAtTime(
+                targetGain,
+                audioContextRef.current.currentTime,
+                timeConstant
+            );
+        } else { // Very low signal, potentially ramp gain slowly towards a neutral point if it's too high
+            if (currentGain > 1.5) { // If gain is significantly high during silence
+                 gainNodeRef.current.gain.setTargetAtTime(
+                    1.0, // Ramp towards a neutral gain of 1.0
+                    audioContextRef.current.currentTime,
+                    AGC_RELEASE_TIME_CONSTANT * 2 // Slower release during silence
+                );
+            }
+        }
+    }
     animationFrameIdRef.current = requestAnimationFrame(analyze);
-  }, [settings.fftSize, calculateEnergy, estimateBPM, setAudioData]);
+  }, [settings.enableAgc, calculateEnergy, estimateBPM, setAudioData]);
 
 
   const initializeAudio = useCallback(async () => {
-    if (isInitialized) return;
+    if (isInitialized || audioContextRef.current?.state === 'running') return;
     setError(null);
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
@@ -129,39 +169,71 @@ export function useAudioAnalysis() {
       gainNodeRef.current = audioContextRef.current.createGain();
 
       analyserRef.current.fftSize = settings.fftSize;
-      analyserRef.current.smoothingTimeConstant = 0.8; // Adjust as needed
+      analyserRef.current.smoothingTimeConstant = 0.8; 
       
       dataArrayRef.current = new Uint8Array(analyserRef.current.frequencyBinCount);
 
       sourceNodeRef.current.connect(gainNodeRef.current);
       gainNodeRef.current.connect(analyserRef.current);
-      // For AGC, analyser might connect directly or after an AGC node (not implemented here)
-      // If not connecting to destination, analyser is enough for data.
-      // gainNodeRef.current.connect(audioContextRef.current.destination); // Optional: play audio through
-
-      gainNodeRef.current.gain.setValueAtTime(settings.gain, audioContextRef.current.currentTime);
+      
+      // Initial gain setting
+      if (settings.enableAgc) {
+        // If AGC is on by default, start with a neutral gain. AGC will adjust it.
+        gainNodeRef.current.gain.setValueAtTime(1.0, audioContextRef.current.currentTime);
+      } else {
+        gainNodeRef.current.gain.setValueAtTime(settings.gain, audioContextRef.current.currentTime);
+      }
 
       setIsInitialized(true);
+      setError(null); // Clear any previous error
+      if (animationFrameIdRef.current) cancelAnimationFrame(animationFrameIdRef.current); // Ensure no duplicates
       analyze();
     } catch (err) {
       console.error("Error initializing audio:", err);
       setError(err instanceof Error ? err.message : String(err));
       setIsInitialized(false);
+      setAudioData(INITIAL_AUDIO_DATA); // Reset audio data on error
     }
-  }, [isInitialized, settings.fftSize, settings.gain, analyze]);
+  }, [isInitialized, settings.fftSize, settings.gain, settings.enableAgc, analyze, setAudioData]);
 
 
   useEffect(() => {
-    if (analyserRef.current && settings.fftSize !== analyserRef.current.fftSize) {
+    // Effect to handle enabling/disabling AGC and manual gain changes
+    if (!isInitialized || !audioContextRef.current || !gainNodeRef.current) return;
+
+    if (settings.enableAgc) {
+        // AGC is enabled. The `analyze` function handles dynamic gain adjustments.
+        // If gain was previously set manually, AGC will now take over.
+        // It might be good to ensure a smooth transition if AGC is toggled ON.
+        // For now, analyze() will start adjusting from current gain value.
+    } else {
+        // AGC is disabled. Set gain to the manual `settings.gain` value.
+        if (audioContextRef.current.state === 'running') {
+            gainNodeRef.current.gain.setTargetAtTime(
+                settings.gain,
+                audioContextRef.current.currentTime,
+                0.05 // A small time constant for a smooth transition back to manual
+            );
+        } else {
+             // If context is not running (e.g., suspended), set value directly.
+            gainNodeRef.current.gain.value = settings.gain;
+        }
+    }
+  }, [settings.enableAgc, settings.gain, isInitialized]);
+
+  useEffect(() => {
+    // Effect to handle FFT size changes
+    if (analyserRef.current && dataArrayRef.current && settings.fftSize !== analyserRef.current.fftSize) {
       analyserRef.current.fftSize = settings.fftSize;
-      dataArrayRef.current = new Uint8Array(analyserRef.current.frequencyBinCount);
-      setAudioData({ spectrum: new Uint8Array(analyserRef.current.frequencyBinCount).fill(0) });
+      const newFrequencyBinCount = analyserRef.current.frequencyBinCount;
+      dataArrayRef.current = new Uint8Array(newFrequencyBinCount);
+      // Update global audioData with new spectrum array size, filled with 0
+      setAudioData(prev => ({ 
+        ...prev, 
+        spectrum: new Uint8Array(newFrequencyBinCount).fill(0) 
+      }));
     }
-    if (gainNodeRef.current && audioContextRef.current) {
-      gainNodeRef.current.gain.setValueAtTime(settings.gain, audioContextRef.current.currentTime);
-    }
-    // TODO: Implement AGC logic if settings.enableAgc is true
-  }, [settings.fftSize, settings.gain, settings.enableAgc, setAudioData]);
+  }, [settings.fftSize, setAudioData]);
 
   // Cleanup
   useEffect(() => {
@@ -170,16 +242,26 @@ export function useAudioAnalysis() {
         cancelAnimationFrame(animationFrameIdRef.current);
       }
       if (sourceNodeRef.current) {
+        sourceNodeRef.current.mediaStream?.getTracks().forEach(track => track.stop());
         sourceNodeRef.current.disconnect();
-        // Stop tracks on the stream
-        sourceNodeRef.current.mediaStream.getTracks().forEach(track => track.stop());
+      }
+      if (gainNodeRef.current) {
+        gainNodeRef.current.disconnect();
+      }
+      if(analyserRef.current){
+        analyserRef.current.disconnect();
       }
       if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
-        audioContextRef.current.close();
+        audioContextRef.current.close().catch(e => console.error("Error closing audio context", e));
       }
+      audioContextRef.current = null; // Ensure it's nulled for re-initialization checks
+      analyserRef.current = null;
+      gainNodeRef.current = null;
+      sourceNodeRef.current = null;
       setIsInitialized(false);
     };
   }, []);
 
   return { initializeAudio, isInitialized, error };
 }
+
