@@ -3,9 +3,17 @@ const defaultTheme = require('tailwindcss/defaultTheme')
 
 export default {
     darkMode: ["class"],
-    // Ensure these paths cover all files using Tailwind classes.
-    // Correctly configured content paths are crucial for efficient CSS purging by Tailwind,
-    // which minimizes the final CSS bundle size by removing unused styles.
+    // PurgeCSS Content Paths:
+    // These paths are critical for Tailwind CSS to efficiently purge unused styles,
+    // minimizing the final CSS bundle size.
+    //
+    // VERIFY these paths cover ALL directories containing JSX/TSX/MDX files
+    // where Tailwind classes might be used. Add new directories if your project structure changes.
+    //
+    // Current paths scan:
+    // - src/pages/
+    // - src/components/
+    // - src/app/
     content: [
     "./src/pages/**/*.{js,ts,jsx,tsx,mdx}",
     "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
