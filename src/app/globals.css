@@ -100,78 +100,13 @@ body {
   }
 
   .dark {
-    /* Ensure dark theme applies these variables */
-    --background-hsl: 270 50% 10%; 
-    --foreground-hsl: 210 20% 95%; 
-    --card-hsl: 270 50% 15%; 
-    --card-foreground-hsl: 210 20% 98%; 
-    --popover-hsl: 270 50% 18%; 
-    --popover-foreground-hsl: 210 20% 98%; 
-    --primary-hsl: 180 70% 45%; 
-    --primary-foreground-hsl: 210 20% 98%; 
-    --secondary-hsl: 240 40% 20%; 
-    --secondary-foreground-hsl: 210 20% 98%; 
-    --muted-hsl: 270 30% 25%; 
-    --muted-foreground-hsl: 210 15% 65%; 
-    --accent-hsl: 180 70% 55%; 
-    --accent-foreground-hsl: 210 20% 98%; 
-    --destructive-hsl: 0 72.2% 50.6%; 
-    --destructive-foreground-hsl: 210 20% 98%; 
-    --border-hsl: 270 40% 22%; 
-    --input-hsl: 270 35% 35%; 
-    --ring-hsl: 180 70% 55%;
-
-    --control-panel-background-hsl: 270 50% 8%; 
-    --control-panel-foreground-hsl: 210 20% 90%;
-    --control-panel-border-hsl: 270 40% 18%;
-    
-    /* Ensure non-HSL suffixed variables are also updated for dark if needed */
-    --background: hsl(var(--background-hsl));
-    --foreground: hsl(var(--foreground-hsl));
-    --card: hsl(var(--card-hsl));
-    --card-foreground: hsl(var(--card-foreground-hsl));
-    --popover: hsl(var(--popover-hsl));
-    --popover-foreground: hsl(var(--popover-foreground-hsl));
-    --primary: hsl(var(--primary-hsl));
-    --primary-foreground: hsl(var(--primary-foreground-hsl));
-    --secondary: hsl(var(--secondary-hsl));
-    --secondary-foreground: hsl(var(--secondary-foreground-hsl));
-    --muted: hsl(var(--muted-hsl));
-    --muted-foreground: hsl(var(--muted-foreground-hsl));
-    --accent: hsl(var(--accent-hsl));
-    --accent-foreground: hsl(var(--accent-foreground-hsl));
-    --destructive: hsl(var(--destructive-hsl));
-    --destructive-foreground: hsl(var(--destructive-foreground-hsl));
-    --border: hsl(var(--border-hsl));
-    --input: hsl(var(--input-hsl));
-    --ring: hsl(var(--ring-hsl));
-
-    --control-panel-background: hsl(var(--control-panel-background-hsl));
-    --control-panel-foreground: hsl(var(--control-panel-foreground-hsl));
-    --control-panel-border: hsl(var(--control-panel-border-hsl));
-    
-    --sidebar-background: hsl(var(--control-panel-background-hsl));
-    --sidebar-foreground: hsl(var(--control-panel-foreground-hsl));
-    --sidebar-border: hsl(var(--control-panel-border-hsl));
-    --sidebar-accent: var(--accent);
-    --sidebar-accent-foreground: var(--accent-foreground);
-    --sidebar-primary: var(--primary);
-    --sidebar-primary-foreground: var(--primary-foreground);
-    --sidebar-ring: var(--ring);
-
-    --chart-1-hsl: 270 70% 60%;
-    --chart-2-hsl: 180 65% 55%;
-    --chart-3-hsl: 300 75% 65%;
-    --chart-4-hsl: 210 70% 50%;
-    --chart-5-hsl: 330 80% 70%;
-
-    --chart-1: hsl(var(--chart-1-hsl));
-    --chart-2: hsl(var(--chart-2-hsl));
-    --chart-3: hsl(var(--chart-3-hsl));
-    --chart-4: hsl(var(--chart-4-hsl));
-    --chart-5: hsl(var(--chart-5-hsl));
-
-    /* Explicit Sidebar Styling Overrides REMOVED to rely on Tailwind classes */
+    /* All variables are defined in :root and are inherently dark. 
+       This block is kept for potential future light/dark mode switching,
+       but for a dark-only theme, explicit re-declarations here are redundant
+       if identical to :root. The :root definitions will apply.
+       If you were to add a light theme, this .dark block would contain
+       the specific HSL values for the dark theme.
+    */
   }
 }
 
@@ -181,4 +116,3 @@ body {
   }
   /* body is already styled above to use bg-background text-foreground */
 }
-
