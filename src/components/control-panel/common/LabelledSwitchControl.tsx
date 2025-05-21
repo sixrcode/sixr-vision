@@ -34,12 +34,15 @@ export function LabelledSwitchControl({
 }: LabelledSwitchControlProps) {
   const effectiveSwitchAriaLabel = switchAriaLabel || (typeof labelContent === 'string' ? labelContent : labelHtmlFor);
   return (
-    <div className={cn("flex items-center justify-between", containerClassName)}>
+    <div className={cn("group flex items-center justify-between", containerClassName)}>
       <Tooltip>
         <TooltipTrigger asChild>
           <Label
             htmlFor={labelHtmlFor}
-            className={cn("flex-1 min-w-0 mr-2 cursor-pointer", labelClassName)}
+            className={cn(
+              "flex-1 min-w-0 mr-2 cursor-pointer group-hover:text-accent-foreground",
+              labelClassName
+            )}
           >
             {labelContent}
           </Label>
@@ -52,6 +55,7 @@ export function LabelledSwitchControl({
         onCheckedChange={onCheckedChange}
         aria-label={effectiveSwitchAriaLabel}
         {...switchProps}
+        className={cn(switchProps?.className, "group-hover:ring-1 group-hover:ring-ring/30")}
       />
     </div>
   );
