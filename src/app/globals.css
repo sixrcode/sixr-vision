@@ -202,25 +202,12 @@ Event Theming (e.g., "Cosmic Grapevines"):
     --logo-pulse-duration: 2s; /* Default animation duration */
   }
 
-  /*
-    The .dark class on <html> enables Tailwind's dark variants (e.g., dark:bg-gray-800).
-    Since this application is dark-by-default and all HSL variables are defined in :root
-    for the dark theme, this .dark block does not need to re-declare the HSL variables.
-    If a light theme were introduced, :root would contain light theme HSLs, and .dark
-    would contain the overriding dark theme HSLs.
-  */
   .dark {
-    /* HSL variables are inherited from :root for the dark theme.
-       No need to re-declare them here if they are identical to :root.
-       If a light theme were to be introduced, this is where you would
-       override the HSL variables for the dark theme.
-       For example:
-       --background-hsl: 270 50% 10%; (This would be the dark theme value)
-    */
+    /* HSL variables are inherited from :root for the dark theme. */
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-sans antialiased;
     min-height: 100vh;
   }
 }
@@ -256,5 +243,3 @@ div[data-radix-dialog-content][data-sidebar="sidebar"][data-mobile="true"] {
   background-color: hsl(var(--sidebar-background)) !important;
   color: hsl(var(--sidebar-foreground)) !important;
 }
-
-    

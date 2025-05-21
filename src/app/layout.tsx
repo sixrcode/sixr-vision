@@ -3,9 +3,12 @@ import type { Metadata } from 'next';
 import { GeistSans } from 'geist/font/sans';
 import { GeistMono } from 'geist/font/mono';
 // import localFont from 'next/font/local'; // Re-enable import if Torus font file is correctly placed
-import './globals.css';
+
 // The fonts.css file can be re-imported here if it contains active @font-face rules.
-// import './fonts.css'; // Remains removed as Torus font loading is disabled.
+// It's currently not imported as Torus font loading via next/font/local is preferred.
+// import './fonts.css'; 
+import './globals.css';
+
 import { Toaster } from '@/components/ui/toaster';
 import { AppProviders } from '@/providers/AppProviders';
 import { SidebarProvider } from '@/components/ui/sidebar';
@@ -69,7 +72,7 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className={`${GeistSans.variable} ${GeistMono.variable} ${torusVariations.variable} font-sans antialiased overflow-x-hidden`}>
+      <body className={`${GeistSans.variable} ${GeistMono.variable} ${torusVariations.variable} overflow-x-hidden`}>
         <SidebarProvider style={{ "--sidebar-width": CONTROL_PANEL_WIDTH_STRING } as React.CSSProperties}>
           <AppProviders>
             {children}
