@@ -19,14 +19,22 @@ const TooltipContent = React.forwardRef<
   <TooltipPrimitive.Content
     ref={ref}
     sideOffset={sideOffset}
+    // Remove Tailwind classes for background, text, border color from className
     className={cn(
-      "z-50 overflow-hidden rounded-md border-[hsl(var(--border))] bg-[hsl(var(--popover))] px-3 py-1.5 text-sm text-[hsl(var(--popover-foreground))] shadow-md animate-in fade-in-0 zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2",
+      "z-50 overflow-hidden rounded-md px-3 py-1.5 text-sm shadow-md animate-in fade-in-0 zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2",
       className
     )}
+    // Apply colors directly via inline style for maximum specificity
+    style={{
+      backgroundColor: 'hsl(var(--popover-hsl))',
+      color: 'hsl(var(--popover-foreground-hsl))',
+      borderColor: 'hsl(var(--border-hsl))',
+      borderWidth: '1px', // Ensure border is visible
+      borderStyle: 'solid', // Ensure border is visible
+    }}
     {...props}
   />
 ))
 TooltipContent.displayName = TooltipPrimitive.Content.displayName
 
 export { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider }
-
