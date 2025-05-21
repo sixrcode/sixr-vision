@@ -29,7 +29,7 @@ Core Color Palette (Cosmic Grapevines Theme):
   - --popover-hsl: 270 50% 22%; (Even Lighter Purple) - Background for popovers, tooltips.
   - --primary-hsl: 180 70% 45%; (Interstellar Teal) - Primary interactive elements, buttons, active states.
   - --primary-foreground-hsl: 210 20% 98%; (Light Text) - Text on primary-colored elements.
-  - --secondary-hsl: 240 40% 20%; (Muted Cosmic Blue) - Secondary elements or backgrounds.
+  - --secondary-hsl: 240 20% 50%; (Lighter Muted Cosmic Blue for Slider Tracks) - Secondary elements or backgrounds.
   - --muted-hsl: 270 30% 25%; (Muted Purple) - Muted backgrounds or less important elements.
   - --muted-foreground-hsl: 210 15% 65%; (Darker Muted Text) - Text on muted backgrounds or less important text.
   - --accent-hsl: 180 70% 55%; (Lighter Interstellar Teal) - Hover states, secondary highlights.
@@ -37,7 +37,7 @@ Core Color Palette (Cosmic Grapevines Theme):
   - --success-hsl: 130 60% 45%; (Vibrant Green) - Success states, active audio indicator.
   - --info-hsl: 200 75% 55%; (Bright Blue) - Informational elements, active webcam indicator.
   - --border-hsl: 270 40% 22%; (Purple-ish Border) - Default border color.
-  - --input-hsl: 270 35% 35%; (Purple-ish Input BG) - Background for input fields, unchecked switches.
+  - --input-hsl: 270 25% 55%; (Lighter Gray-Purple for Switch Tracks) - Background for input fields, unchecked switches.
   - --ring-hsl: 180 70% 65%; (Bright Teal - increased from 55%) - Focus rings.
 
 SIXR Brand Colors (Used for Logo Elements - Defined as CSS Variables):
@@ -105,7 +105,7 @@ Event Theming (e.g., "Cosmic Grapevines"):
     --primary-hsl: 180 70% 45%;
     --primary-foreground-hsl: 210 20% 98%;
 
-    --secondary-hsl: 240 40% 20%;
+    --secondary-hsl: 240 20% 50%; /* Updated for slider tracks */
     --secondary-foreground-hsl: 210 20% 98%;
 
     --muted-hsl: 270 30% 25%;
@@ -124,7 +124,7 @@ Event Theming (e.g., "Cosmic Grapevines"):
     --info-foreground-hsl: 210 20% 98%;
 
     --border-hsl: 270 40% 22%;
-    --input-hsl: 270 35% 35%;
+    --input-hsl: 270 25% 55%; /* Updated for switch tracks */
     --ring-hsl: 180 70% 65%;
 
     --radius: 0.5rem;
@@ -202,28 +202,13 @@ Event Theming (e.g., "Cosmic Grapevines"):
     --logo-pulse-duration: 2s; /* Default animation duration */
   }
 
-  .dark {
-    /* HSL variables are inherited from :root for the dark theme. */
-  }
-
   body {
     @apply bg-background text-foreground font-sans antialiased;
     min-height: 100vh;
   }
 }
 
-/* Keyframes for logo pulse, moved from inline style */
-@keyframes logoPulseEffect {
-  0%, 100% {
-    opacity: var(--logo-pulse-start-opacity);
-    transform: scale(1);
-  }
-  50% {
-    opacity: var(--logo-pulse-mid-opacity);
-    transform: scale(0.95);
-  }
-}
-
+@tailwind utilities;
 
 /* Forceful Sidebar Styling - This is a high-specificity override */
 /* This ensures the sidebar components get their intended dark background */
