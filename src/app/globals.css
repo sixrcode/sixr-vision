@@ -4,10 +4,9 @@
 @tailwind utilities;
 
 body {
-  /* The primary font-family is now driven by the `font-sans` utility class applied in layout.tsx, 
+  /* The primary font-family is now driven by the `font-sans` utility class applied in layout.tsx,
      which uses `var(--font-geist-sans)` via tailwind.config.ts.
-     Keeping generic fallbacks here is good practice. */
-  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+     Keeping generic fallbacks here is good practice but the explicit var(--font-geist-sans) was redundant. */
   @apply bg-background text-foreground;
   min-height: 100vh;
   overflow-x: hidden;
