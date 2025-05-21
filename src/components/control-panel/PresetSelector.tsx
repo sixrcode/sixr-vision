@@ -33,8 +33,13 @@ export function PresetSelector({ value }: PresetSelectorProps) {
               <TooltipContent
                 side="bottom"
                 align="center"
-                // Removed potentially conflicting className here
-                // The base TooltipContent component in ui/tooltip.tsx now handles its styling
+                style={{
+                  backgroundColor: 'hsl(var(--popover-hsl))',
+                  color: 'hsl(var(--popover-foreground-hsl))',
+                  borderColor: 'hsl(var(--border-hsl))',
+                  borderWidth: '1px',
+                  zIndex: 50, // Ensure it's above other elements
+                }}
               >
                 <p className="font-semibold">{scene.name}</p>
                 {scene.dataAiHint && (
