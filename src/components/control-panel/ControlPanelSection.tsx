@@ -13,12 +13,12 @@ type ControlPanelSectionProps = {
 
 export function ControlPanelSection({ title, children, className, value }: ControlPanelSectionProps) {
   return (
-    <AccordionItem value={value} className={cn("border-b border-[hsl(var(--control-panel-border))]", className)}>
-      <AccordionTrigger className="py-2 text-sm font-semibold text-[hsl(var(--control-panel-foreground))] opacity-90 hover:opacity-100 hover:no-underline justify-start [&[data-state=open]>svg]:ml-auto">
+    <AccordionItem value={value} className={cn("border-b border-sidebar-border", className)}>
+      <AccordionTrigger className="py-2 text-sm font-semibold text-sidebar-foreground opacity-90 hover:opacity-100 hover:no-underline justify-start [&[data-state=open]>svg]:ml-auto">
         <span className="px-2 truncate">{title.toUpperCase()}</span>
       </AccordionTrigger>
       <AccordionContent className={cn(
-        "bg-[hsl(var(--background))] rounded-b-md shadow-sm", // Background, rounding, shadow
+        "bg-background rounded-b-md shadow-sm", // Background, rounding, shadow
         "px-2 pt-2 pb-3" // Padding: pb-3 to ensure content doesn't touch bottom, pt-2 to match trigger proximity
       )}>
          {/* The children (e.g., divs from AudioControls) will be spaced by their own space-y utilities */}
