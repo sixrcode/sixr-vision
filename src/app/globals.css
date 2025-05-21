@@ -26,7 +26,7 @@ Core Color Palette (Cosmic Grapevines Theme):
   - --background-hsl: 270 50% 10%; (Deep Cosmic Purple) - Main page background.
   - --foreground-hsl: 210 20% 90%; (Light Gray) - Default text color, softened for readability.
   - --card-hsl: 270 50% 15%; (Lighter Deep Purple) - Background for card-like elements.
-  - --popover-hsl: 270 50% 18%; (Even Lighter Purple) - Background for popovers, tooltips.
+  - --popover-hsl: 270 50% 20%; (Even Lighter Purple - increased from 18%) - Background for popovers, tooltips.
   - --primary-hsl: 180 70% 45%; (Interstellar Teal) - Primary interactive elements, buttons, active states.
   - --primary-foreground-hsl: 210 20% 98%; (Light Text) - Text on primary-colored elements.
   - --secondary-hsl: 240 40% 20%; (Muted Cosmic Blue) - Secondary elements or backgrounds.
@@ -99,7 +99,7 @@ Event Theming (e.g., "Cosmic Grapevines"):
     --card-hsl: 270 50% 15%;
     --card-foreground-hsl: 210 20% 98%;
 
-    --popover-hsl: 270 50% 18%; /* Lightness increased from 12% to 18% */
+    --popover-hsl: 270 50% 20%; /* Lightness increased from 18% to 20% for better layering */
     --popover-foreground-hsl: 210 20% 98%;
 
     --primary-hsl: 180 70% 45%; /* Interstellar Teal */
