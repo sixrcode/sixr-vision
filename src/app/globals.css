@@ -6,7 +6,7 @@
 body {
   font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
   /* Ensure body directly uses the theme background */
-  @apply bg-background text-foreground; 
+  @apply bg-background text-foreground;
   min-height: 100vh;
   overflow-x: hidden;
 }
@@ -16,32 +16,32 @@ body {
     /* Cosmic Grapevines Theme */
     --background-hsl: 270 50% 10%; /* Deep Purple */
     --foreground-hsl: 210 20% 95%; /* Slightly less bright than 98% for comfort */
-    
+
     --card-hsl: 270 50% 15%; /* Slightly lighter deep purple */
-    --card-foreground-hsl: 210 20% 98%; 
-    
+    --card-foreground-hsl: 210 20% 98%;
+
     --popover-hsl: 270 50% 18%; /* Lighter than card to stand out more */
-    --popover-foreground-hsl: 210 20% 98%; 
-    
+    --popover-foreground-hsl: 210 20% 98%;
+
     --primary-hsl: 180 70% 45%; /* Interstellar Teal */
-    --primary-foreground-hsl: 210 20% 98%; 
-    
+    --primary-foreground-hsl: 210 20% 98%;
+
     --secondary-hsl: 240 40% 20%; /* Muted Cosmic Blue */
-    --secondary-foreground-hsl: 210 20% 98%; 
-    
+    --secondary-foreground-hsl: 210 20% 98%;
+
     --muted-hsl: 270 30% 25%; /* Muted Purple */
     --muted-foreground-hsl: 210 15% 65%; /* Slightly darker muted text */
-    
+
     --accent-hsl: 180 70% 55%; /* Lighter Interstellar Teal */
-    --accent-foreground-hsl: 210 20% 98%; 
-    
+    --accent-foreground-hsl: 210 20% 98%;
+
     --destructive-hsl: 0 72.2% 50.6%; /* Red for destructive actions */
-    --destructive-foreground-hsl: 210 20% 98%; 
-    
+    --destructive-foreground-hsl: 210 20% 98%;
+
     --border-hsl: 270 40% 22%; /* Purple-ish border */
     --input-hsl: 270 35% 35%; /* Input background - Purple-ish, increased lightness for better visibility */
     --ring-hsl: 180 70% 55%; /* Focus ring color - Lighter Teal (same as accent) */
-    
+
     --radius: 0.5rem;
 
     /* CSS variable names without "-hsl" suffix for direct use in Tailwind config */
@@ -76,7 +76,7 @@ body {
 
 
     /* Sidebar variables (mapped from control panel or theme) */
-    --sidebar-background: hsl(var(--control-panel-background-hsl)); 
+    --sidebar-background: hsl(var(--control-panel-background-hsl));
     --sidebar-foreground: hsl(var(--control-panel-foreground-hsl));
     --sidebar-border: hsl(var(--control-panel-border-hsl));
     --sidebar-accent: var(--accent);
@@ -99,8 +99,11 @@ body {
     --chart-5: hsl(var(--chart-5-hsl));
   }
 
+  /* .dark block is no longer strictly necessary if :root contains all dark theme vars by default.
+     Kept for clarity or future light/dark mode switching.
+  */
   .dark {
-    /* All variables are defined in :root and are inherently dark. 
+    /* All variables are defined in :root and are inherently dark.
        This block is kept for potential future light/dark mode switching,
        but for a dark-only theme, explicit re-declarations here are redundant
        if identical to :root. The :root definitions will apply.
@@ -115,4 +118,16 @@ body {
     @apply border-border;
   }
   /* body is already styled above to use bg-background text-foreground */
+}
+
+/* Keyframes for logo pulse animation */
+@keyframes logoPulseEffect {
+  0%, 100% {
+    opacity: var(--logo-pulse-start-opacity, 1); /* Fallback opacity if var not set */
+    transform: scale(1);
+  }
+  50% {
+    opacity: var(--logo-pulse-mid-opacity, 0.6); /* Fallback opacity if var not set */
+    transform: scale(0.95);
+  }
 }
