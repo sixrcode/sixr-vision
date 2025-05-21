@@ -53,16 +53,13 @@ export function ControlPanelView() {
         await initializeAudio();
         setIsTogglingAudio(false);
       }
-      if (!settings.showWebcam && !isTogglingWebcam) {
-        console.log("ControlPanelView: Auto-enabling webcam on load.");
-        setIsTogglingWebcam(true);
-        updateSetting('showWebcam', true); // This will trigger WebcamFeed.tsx to initialize
-        setIsTogglingWebcam(false);
-      }
+      // Webcam auto-init is implicitly handled by its default setting
+      // and the WebcamFeed component. We can ensure showWebcam is true by default
+      // if that's the desired behavior (already set in constants).
     };
     autoInit();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Runs once on mount
+  }, []); 
 
 
   const handleAudioToggle = async () => {
@@ -83,8 +80,6 @@ export function ControlPanelView() {
     console.log("ControlPanelView: Toggling webcam via button. Current state:", settings.showWebcam);
     setIsTogglingWebcam(true);
     updateSetting('showWebcam', !settings.showWebcam);
-    // No async operation, so set to false immediately for UI responsiveness.
-    // The actual webcam feed handling is in WebcamFeed.tsx based on settings.showWebcam
     setIsTogglingWebcam(false); 
     console.log("ControlPanelView: Webcam toggle finished. New showWebcam setting:", !settings.showWebcam);
   };
@@ -99,7 +94,7 @@ export function ControlPanelView() {
           </h2>
         </div>
 
-        <div className="flex items-center gap-3 mr-10">
+        <div className="flex items-center gap-2 mr-10"> {/* Changed gap-3 to gap-2 */}
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
@@ -187,3 +182,4 @@ export function ControlPanelView() {
     </div>
   );
 }
+
