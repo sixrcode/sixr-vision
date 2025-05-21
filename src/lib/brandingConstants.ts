@@ -1,8 +1,8 @@
 
-export const SIXR_S_COLOR = "rgb(254, 190, 15)";
-export const SIXR_I_COLOR = "rgb(51, 197, 244)";
-export const SIXR_X_COLOR = "rgb(235, 26, 115)";
-export const SIXR_R_COLOR = "rgb(91, 185, 70)";
+export const SIXR_S_COLOR = "hsl(var(--sixr-s-color-hsl))";
+export const SIXR_I_COLOR = "hsl(var(--sixr-i-color-hsl))";
+export const SIXR_X_COLOR = "hsl(var(--sixr-x-color-hsl))";
+export const SIXR_R_COLOR = "hsl(var(--sixr-r-color-hsl))";
 
 // Use the CSS variable defined by next/font/local for Torus Variations
 // TORUS FONT TEMPORARILY DISABLED - Using fallbacks

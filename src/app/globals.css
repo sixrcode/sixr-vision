@@ -39,6 +39,12 @@ Core Color Palette (Cosmic Grapevines Theme):
   - --input-hsl: 270 35% 35%; (Purple-ish Input BG) - Background for input fields, unchecked switches.
   - --ring-hsl: 180 70% 55%; (Lighter Teal) - Focus rings.
 
+SIXR Brand Colors (Used for Logo Elements):
+  - --sixr-s-color-hsl: 45 98% 53%; (Gold/Yellow)
+  - --sixr-i-color-hsl: 197 90% 58%; (Bright Blue)
+  - --sixr-x-color-hsl: 337 81% 51%; (Pink/Magenta)
+  - --sixr-r-color-hsl: 107 47% 50%; (Green)
+
 Control Panel / Sidebar Specifics:
   - --control-panel-background-hsl: 270 50% 8%; (Darker Deep Purple) - Sidebar/Control Panel BG.
   - --control-panel-foreground-hsl: 210 20% 90%; (Slightly Darker Light Text) - Text in Sidebar.
@@ -50,9 +56,9 @@ Spacing & Layout:
 - Avoid arbitrary pixel values for margins and paddings where possible.
 
 Typography:
-- Primary Sans-Serif: Geist Sans (via `var(--font-geist-sans)`, mapped to `font-sans`).
-- Primary Mono: Geist Mono (via `var(--font-geist-mono)`, mapped to `font-mono`).
-- Branding/Logo Font: Torus Variations (via `var(--font-torus-variations)` if enabled).
+- Primary Sans-Serif: Geist Sans (via `var(--font-geist-sans)`, mapped to `font-sans` in Tailwind config).
+- Primary Mono: Geist Mono (via `var(--font-geist-mono)`, mapped to `font-mono` in Tailwind config).
+- Branding/Logo Font: Torus Variations (via `var(--font-torus-variations)` if enabled, or fallback).
 - Font sizes should follow Tailwind's scale (`text-sm`, `text-lg`, etc.) for consistency.
 
 Adding New Components or Styles:
@@ -69,7 +75,7 @@ Event Theming (e.g., "Cosmic Grapevines"):
   1. Defining a new set of HSL variables (e.g., `--event-background-hsl`).
   2. Creating a theme-specific class (e.g., `.theme-new-event`).
   3. Under this class, override the base HSL variables.
-     Example: .theme-new-event { --background-hsl: var(--event-background-hsl); }
+     Example: .theme-new-event { --background-hsl: var(--custom-theme-bg-hsl); }
   4. Apply this class to the `<html>` or `<body>` tag to activate the theme.
 - This approach keeps theme changes modular and leverages the existing token system.
 
@@ -77,8 +83,6 @@ Event Theming (e.g., "Cosmic Grapevines"):
 */
 
 body {
-  /* The primary font-family is now driven by the `font-sans` utility class applied in layout.tsx,
-     which uses `var(--font-geist-sans)` via tailwind.config.ts. */
   @apply bg-background text-foreground;
   min-height: 100vh;
   overflow-x: hidden;
@@ -87,39 +91,39 @@ body {
 @layer base {
   :root {
     /* Cosmic Grapevines Theme */
-    --background-hsl: 270 50% 10%; /* Deep Purple */
-    --foreground-hsl: 210 20% 95%; /* Slightly less bright than 98% for comfort */
+    --background-hsl: 270 50% 10%;
+    --foreground-hsl: 210 20% 95%;
 
-    --card-hsl: 270 50% 15%; /* Slightly lighter deep purple */
+    --card-hsl: 270 50% 15%;
     --card-foreground-hsl: 210 20% 98%;
 
-    --popover-hsl: 270 50% 18%; /* Lighter than card to stand out more */
+    --popover-hsl: 270 50% 18%;
     --popover-foreground-hsl: 210 20% 98%;
 
-    --primary-hsl: 180 70% 45%; /* Interstellar Teal */
+    --primary-hsl: 180 70% 45%;
     --primary-foreground-hsl: 210 20% 98%;
 
-    --secondary-hsl: 240 40% 20%; /* Muted Cosmic Blue */
+    --secondary-hsl: 240 40% 20%;
     --secondary-foreground-hsl: 210 20% 98%;
 
-    --muted-hsl: 270 30% 25%; /* Muted Purple */
-    --muted-foreground-hsl: 210 15% 65%; /* Slightly darker muted text */
+    --muted-hsl: 270 30% 25%;
+    --muted-foreground-hsl: 210 15% 65%;
 
-    --accent-hsl: 180 70% 55%; /* Lighter Interstellar Teal */
+    --accent-hsl: 180 70% 55%;
     --accent-foreground-hsl: 210 20% 98%;
 
-    --destructive-hsl: 0 72.2% 50.6%; /* Red for destructive actions */
+    --destructive-hsl: 0 72.2% 50.6%;
     --destructive-foreground-hsl: 210 20% 98%;
 
-    --success-hsl: 130 60% 45%; /* Vibrant Green for success/active */
+    --success-hsl: 130 60% 45%;
     --success-foreground-hsl: 210 20% 98%;
 
-    --info-hsl: 200 75% 55%; /* Bright Blue for info/active webcam */
+    --info-hsl: 200 75% 55%;
     --info-foreground-hsl: 210 20% 98%;
 
-    --border-hsl: 270 40% 22%; /* Purple-ish border */
-    --input-hsl: 270 35% 35%; /* Input background - Purple-ish, increased lightness for better visibility */
-    --ring-hsl: 180 70% 55%; /* Focus ring color - Lighter Teal (same as accent) */
+    --border-hsl: 270 40% 22%;
+    --input-hsl: 270 35% 35%;
+    --ring-hsl: 180 70% 55%;
 
     --radius: 0.5rem;
 
@@ -148,8 +152,20 @@ body {
     --input: hsl(var(--input-hsl));
     --ring: hsl(var(--ring-hsl));
 
+    /* SIXR Brand Colors */
+    --sixr-s-color-hsl: 45 98% 53%;
+    --sixr-i-color-hsl: 197 90% 58%;
+    --sixr-x-color-hsl: 337 81% 51%;
+    --sixr-r-color-hsl: 107 47% 50%;
+
+    --sixr-s-color: hsl(var(--sixr-s-color-hsl));
+    --sixr-i-color: hsl(var(--sixr-i-color-hsl));
+    --sixr-x-color: hsl(var(--sixr-x-color-hsl));
+    --sixr-r-color: hsl(var(--sixr-r-color-hsl));
+
+
     /* Specific for control panel, can use card variables too if suitable */
-    --control-panel-background-hsl: 270 50% 8%; /* Darker Deep Purple */
+    --control-panel-background-hsl: 270 50% 8%;
     --control-panel-foreground-hsl: 210 20% 90%;
     --control-panel-border-hsl: 270 40% 18%;
 
