@@ -22,18 +22,13 @@ import { Accordion } from '@/components/ui/accordion';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { useSettings } from '@/providers/SettingsProvider';
 import { toast } from '@/hooks/use-toast';
+import { SIXR_S_COLOR, SIXR_I_COLOR, SIXR_X_COLOR, SIXR_R_COLOR, TORUS_FONT_FAMILY } from '@/lib/brandingConstants';
 
 export function ControlPanelView() {
   const { initializeAudio, stopAudioAnalysis, isInitialized, error: audioError } = useAudioAnalysis();
   const { settings, updateSetting } = useSettings();
   const [isTogglingAudio, setIsTogglingAudio] = useState(false);
   const [isTogglingWebcam, setIsTogglingWebcam] = useState(false); 
-
-  const sColor = "rgb(254, 190, 15)";
-  const iColor = "rgb(51, 197, 244)";
-  const xColor = "rgb(235, 26, 115)";
-  const rColor = "rgb(91, 185, 70)";
-  const torusFontFamily = "'Torus Variations', var(--font-geist-mono), monospace";
 
   useEffect(() => {
     // Welcome Toast Logic
@@ -57,12 +52,8 @@ export function ControlPanelView() {
         await initializeAudio();
         setIsTogglingAudio(false);
       }
-      if (!settings.showWebcam && !isTogglingWebcam) { 
-         console.log("ControlPanelView: Auto-initializing webcam on load.");
-         setIsTogglingWebcam(true);
-         updateSetting('showWebcam', true);
-         setIsTogglingWebcam(false);
-      }
+      // Auto-init webcam removed to give user explicit control via its toggle.
+      // The 'showWebcam' default in settings determines its initial state.
     };
     autoInit();
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -71,17 +62,15 @@ export function ControlPanelView() {
 
   const handleAudioToggle = async () => {
     if (isTogglingAudio) return;
-    console.log("handleAudioToggle called. isInitialized:", isInitialized, "isTogglingAudio:", isTogglingAudio);
+    console.log("ControlPanelView: Toggling audio via button. Current isInitialized:", isInitialized, "isTogglingAudio:", isTogglingAudio);
     setIsTogglingAudio(true);
     if (isInitialized) {
-      console.log("ControlPanelView: Calling stopAudioAnalysis via toggle.");
       await stopAudioAnalysis();
     } else {
-      console.log("ControlPanelView: Calling initializeAudio via toggle.");
       await initializeAudio();
     }
     setIsTogglingAudio(false);
-    console.log("ControlPanelView: Audio toggle finished. The 'isInitialized' state will update on the next render.");
+    console.log("ControlPanelView: Audio toggle finished. isInitialized will update on next render.");
   };
 
   const handleWebcamToggle = () => {
@@ -89,16 +78,18 @@ export function ControlPanelView() {
     console.log("ControlPanelView: Toggling webcam via button. Current state:", settings.showWebcam);
     setIsTogglingWebcam(true);
     updateSetting('showWebcam', !settings.showWebcam);
-    setIsTogglingWebcam(false);
-    console.log("ControlPanelView: Webcam toggle finished.");
+    // No async operation, so set to false immediately for UI responsiveness.
+    // The actual webcam feed handling is in WebcamFeed.tsx based on settings.showWebcam
+    setIsTogglingWebcam(false); 
+    console.log("ControlPanelView: Webcam toggle finished. New showWebcam setting:", !settings.showWebcam);
   };
 
   return (
-    <div className="h-full flex flex-col text-control-panel-foreground bg-control-panel-background">
+    <div className="h-full flex flex-col bg-control-panel-background text-control-panel-foreground">
       <header className="p-4 border-b border-control-panel-border flex justify-between items-center">
         <div className="flex items-center">
           <SixrLogo className="h-6 w-auto mr-2" />
-          <h2 className="text-lg font-semibold" style={{ fontFamily: torusFontFamily }}>
+          <h2 className="text-lg font-semibold" style={{ fontFamily: TORUS_FONT_FAMILY }}>
             Vision
           </h2>
         </div>
@@ -179,11 +170,11 @@ export function ControlPanelView() {
       <footer className="p-2 border-t border-control-panel-border text-center">
         <p className="text-xs text-muted-foreground">
           &copy;{' '}
-          <span style={{ fontFamily: torusFontFamily }}>
-            <span style={{ color: sColor }}>S</span>
-            <span style={{ color: iColor }}>I</span>
-            <span style={{ color: xColor }}>X</span>
-            <span style={{ color: rColor }}>R</span>
+          <span style={{ fontFamily: TORUS_FONT_FAMILY }}>
+            <span style={{ color: SIXR_S_COLOR }}>S</span>
+            <span style={{ color: SIXR_I_COLOR }}>I</span>
+            <span style={{ color: SIXR_X_COLOR }}>X</span>
+            <span style={{ color: SIXR_R_COLOR }}>R</span>
           </span>{' '}
           Immersive Storytelling Lab {new Date().getFullYear()}
         </p>
@@ -191,4 +182,3 @@ export function ControlPanelView() {
     </div>
   );
 }
-

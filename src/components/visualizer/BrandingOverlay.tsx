@@ -6,13 +6,8 @@ import { useSettings } from '@/providers/SettingsProvider';
 import { useAudioData } from '@/providers/AudioDataProvider';
 import { useEffect, useState, useRef } from 'react';
 import { cn } from '@/lib/utils';
+import { SIXR_S_COLOR, SIXR_I_COLOR, SIXR_X_COLOR, SIXR_R_COLOR, TORUS_FONT_FAMILY } from '@/lib/brandingConstants';
 
-// Define default letter colors (used when no animation overrides them or for 'none' type)
-const sColorDefault = "rgb(254, 190, 15)";
-const iColorDefault = "rgb(51, 197, 244)";
-const xColorDefault = "rgb(235, 26, 115)";
-const rColorDefault = "rgb(91, 185, 70)";
-const torusFontFamily = "'Torus Variations', var(--font-geist-mono), monospace";
 
 export function BrandingOverlay() {
   const { settings } = useSettings();
@@ -37,14 +32,14 @@ export function BrandingOverlay() {
   useEffect(() => {
     let intervalId: NodeJS.Timeout | undefined;
     if (animType === 'blink') {
-      const blinkInterval = 1000 / animSpeed;
+      const blinkInterval = 1000 / animSpeed; // animSpeed is multiplier, higher is faster
       intervalId = setInterval(() => {
         setBlinkOn(prev => !prev);
-      }, blinkInterval / 2);
+      }, blinkInterval / 2); // Blink on for half interval, off for half
     }
     return () => {
       if (intervalId) clearInterval(intervalId);
-      setBlinkOn(true);
+      setBlinkOn(true); // Ensure it's on if animation changes
     };
   }, [animType, animSpeed]);
 
@@ -54,7 +49,8 @@ export function BrandingOverlay() {
       const animateHue = (currentTime: number) => {
         const deltaTime = currentTime - lastTime;
         lastTime = currentTime;
-        const hueIncrement = (animSpeed / 5) * (360 / 60) * (deltaTime / (1000 / 60));
+        // animSpeed of 1 roughly cycles once per 6 seconds. Higher animSpeed increases cycle rate.
+        const hueIncrement = (animSpeed / 5) * (360 / 60) * (deltaTime / (1000 / 60)); // Adjusted for reasonable speed
         setRainbowHue(prevHue => (prevHue + hueIncrement) % 360);
         animationFrameRef.current = requestAnimationFrame(animateHue);
       };
@@ -72,15 +68,17 @@ export function BrandingOverlay() {
     return null;
   }
 
-  const rmsGlowIntensity = Math.min(1, audioData.rms * 2);
+  const rmsGlowIntensity = Math.min(1, audioData.rms * 2); // Cap intensity
   const masterOpacity = logoOpacity;
 
-  let sDisplayColor = sColorDefault;
-  let iDisplayColor = iColorDefault;
-  let xDisplayColor = xColorDefault;
-  let rDisplayColor = rColorDefault;
+  // Default letter colors
+  let sDisplayColor = SIXR_S_COLOR;
+  let iDisplayColor = SIXR_I_COLOR;
+  let xDisplayColor = SIXR_X_COLOR;
+  let rDisplayColor = SIXR_R_COLOR;
   let logoColorOverride: string | undefined = undefined;
 
+  // Apply animation colors
   if (animType === 'solid') {
     logoColorOverride = animColor;
   } else if (animType === 'blink' && blinkOn) {
@@ -89,34 +87,40 @@ export function BrandingOverlay() {
     logoColorOverride = `hsl(${rainbowHue}, 100%, 70%)`;
   }
 
-  sDisplayColor = (animType === 'solid' || (animType === 'blink' && blinkOn) || animType === 'rainbowCycle') ? logoColorOverride! : sColorDefault;
-  iDisplayColor = (animType === 'solid' || (animType === 'blink' && blinkOn) || animType === 'rainbowCycle') ? logoColorOverride! : iColorDefault;
-  xDisplayColor = (animType === 'solid' || (animType === 'blink' && blinkOn) || animType === 'rainbowCycle') ? logoColorOverride! : xColorDefault;
-  rDisplayColor = (animType === 'solid' || (animType === 'blink' && blinkOn) || animType === 'rainbowCycle') ? logoColorOverride! : rColorDefault;
-
+  // If there's a color override for the entire logo (solid, blink, rainbow), apply it to all letters
+  if (animType === 'solid' || (animType === 'blink' && blinkOn) || animType === 'rainbowCycle') {
+    sDisplayColor = logoColorOverride!;
+    iDisplayColor = logoColorOverride!;
+    xDisplayColor = logoColorOverride!;
+    rDisplayColor = logoColorOverride!;
+  }
+  
   const centralTextBaseStyle: React.CSSProperties = {
-    fontFamily: torusFontFamily,
-    opacity: masterOpacity,
-    transition: 'opacity 0.1s ease-in-out, color 0.05s linear',
+    fontFamily: TORUS_FONT_FAMILY,
+    opacity: masterOpacity, // Base opacity
+    transition: 'opacity 0.1s ease-in-out, color 0.05s linear', // Smooth transitions
   };
 
+  // Individual letter styles for the central text
   const centralTextStyleS: React.CSSProperties = { ...centralTextBaseStyle, color: sDisplayColor };
   const centralTextStyleI: React.CSSProperties = { ...centralTextBaseStyle, color: iDisplayColor };
   const centralTextStyleX: React.CSSProperties = { ...centralTextBaseStyle, color: xDisplayColor };
   const centralTextStyleR: React.CSSProperties = { ...centralTextBaseStyle, color: rDisplayColor };
 
+  // Handle blink animation opacity for central text
   if (animType === 'blink' && !blinkOn) {
     centralTextStyleS.opacity = 0;
     centralTextStyleI.opacity = 0;
     centralTextStyleX.opacity = 0;
     centralTextStyleR.opacity = 0;
   }
-
-  let centralTextGlowColor = xColorDefault;
+  
+  // Determine glow color for central text, defaulting to X's color if not overridden
+  let centralTextGlowColor = SIXR_X_COLOR; 
   if (animType === 'solid' || (animType === 'blink' && blinkOn)) {
     centralTextGlowColor = animColor;
   } else if (animType === 'rainbowCycle') {
-    centralTextGlowColor = `hsl(${rainbowHue}, 100%, 80%)`;
+     centralTextGlowColor = `hsl(${rainbowHue}, 100%, 80%)`; // Brighter for glow
   }
 
   const centralTextContainerStyle: React.CSSProperties = {
@@ -129,7 +133,7 @@ export function BrandingOverlay() {
   };
 
   const pulseAnimationStyle: React.CSSProperties = animType === 'pulse' ? {
-    animationName: 'logoPulseEffect', // Reference the keyframe defined in CSS
+    animationName: 'logoPulseEffect',
     animationDuration: `${2 / animSpeed}s`,
     animationIterationCount: 'infinite',
     animationTimingFunction: 'ease-in-out',
@@ -138,25 +142,22 @@ export function BrandingOverlay() {
   } : {};
 
   const logoWrapperBaseStyle: React.CSSProperties = {
-    // Opacity will be handled by the animation if 'pulse' is active, or by masterOpacity otherwise.
-    // So, if not pulsing, this opacity applies. If pulsing, the keyframe's opacity (via CSS vars) takes over.
-    opacity: animType === 'pulse' ? undefined : masterOpacity,
+    opacity: animType === 'pulse' ? undefined : masterOpacity, // Pulse animation handles its own opacity via CSS vars
     transition: 'opacity 0.3s ease-in-out, color 0.05s linear',
   };
 
 
+  // Styles for rotating watermark and beat-flash logo
   const rotatingWatermarkStyle: React.CSSProperties = {...logoWrapperBaseStyle, ...(animType === 'pulse' ? pulseAnimationStyle : {})};
   const beatFlashLogoStyle: React.CSSProperties = {...logoWrapperBaseStyle, ...(animType === 'pulse' ? pulseAnimationStyle : {})};
 
   if (animType === 'blink' && !blinkOn) {
-    // For blink, opacity is handled differently by directly setting it to 0 when "off"
-    // Ensure this doesn't conflict with pulse logic if animType could somehow be both
     rotatingWatermarkStyle.opacity = 0;
     beatFlashLogoStyle.opacity = 0;
   }
 
-
-  let beatFlashGlowColor = xColorDefault;
+  // Determine glow color for beat flash, defaulting to X's color if not overridden
+  let beatFlashGlowColor = SIXR_X_COLOR;
   if (animType === 'solid' || (animType === 'blink' && blinkOn)) {
     beatFlashGlowColor = animColor;
   } else if (animType === 'rainbowCycle') {
@@ -169,7 +170,6 @@ export function BrandingOverlay() {
 
   return (
     <>
-      {/* Inline <style> tag for @keyframes removed */}
       {bootShimmer && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none animate-pulse">
           <SixrLogo className="w-32 h-auto opacity-50" />
@@ -178,29 +178,33 @@ export function BrandingOverlay() {
 
       {showMainBranding && (
         <>
+          {/* Rotating Watermark Logo (Top Right) */}
           <div
             className={cn(
               "absolute top-4 right-4 pointer-events-none",
               animType !== 'pulse' && "transition-opacity duration-200 ease-out",
-              // If not pulsing and logoOpacity is 0, hide it. Pulse handles its own opacity.
-              animType !== 'pulse' && logoOpacity === 0 && "opacity-0"
+              animType !== 'pulse' && logoOpacity === 0 && "opacity-0" // Hide if opacity is 0 and not pulsing
             )}
             style={rotatingWatermarkStyle}
           >
             <SixrLogo
               className="w-16 h-auto animate-[spin_20s_linear_infinite]"
-              colorOverride={logoColorOverride}
+              colorOverride={logoColorOverride} // This will apply solid, blink, or rainbow color
             />
           </div>
 
+          {/* Central "S I X R" Text */}
           <div
             className={cn(
               "absolute inset-0 flex items-center justify-center pointer-events-none",
-              animType !== 'pulse' && "transition-opacity duration-300 ease-out"
+              // Pulse animation includes opacity, so direct transition-opacity might not be needed here
+              animType !== 'pulse' && "transition-opacity duration-300 ease-out" 
             )}
+            // Apply pulse to container if pulse is active, otherwise just the glow style.
+            // Base opacity for letters is handled in their individual style objects
             style={animType === 'pulse' ? {...centralTextContainerStyle, ...pulseAnimationStyle } : centralTextContainerStyle}
           >
-            <h1 className="text-6xl md:text-8xl font-bold" style={{ fontFamily: torusFontFamily }}>
+            <h1 className="text-6xl md:text-8xl font-bold" style={{ fontFamily: TORUS_FONT_FAMILY }}>
               <span style={centralTextStyleS}>S</span>{' '}
               <span style={centralTextStyleI}>I</span>{' '}
               <span style={centralTextStyleX}>X</span>{' '}
@@ -208,6 +212,7 @@ export function BrandingOverlay() {
             </h1>
           </div>
 
+           {/* Beat-Flash Logo (Bottom Left) */}
            <div
             className={cn(
               "absolute bottom-4 left-4 pointer-events-none",
@@ -218,7 +223,7 @@ export function BrandingOverlay() {
           >
             <SixrLogo
                 className="w-20 h-auto"
-                colorOverride={logoColorOverride}
+                colorOverride={logoColorOverride} // Applies solid, blink, or rainbow color
             />
           </div>
         </>

@@ -1,28 +1,23 @@
 
 import type { SVGProps } from 'react';
-
-// Define specific colors for each letter
-const sColorDefault = "rgb(254, 190, 15)";
-const iColorDefault = "rgb(51, 197, 244)";
-const xColorDefault = "rgb(235, 26, 115)";
-const rColorDefault = "rgb(91, 185, 70)";
+import { SIXR_S_COLOR, SIXR_I_COLOR, SIXR_X_COLOR, SIXR_R_COLOR, TORUS_FONT_FAMILY } from '@/lib/brandingConstants';
 
 interface SixrLogoProps extends SVGProps<SVGSVGElement> {
   colorOverride?: string;
 }
 
 export function SixrLogo({ colorOverride, ...props }: SixrLogoProps) {
-  const sFill = colorOverride || sColorDefault;
-  const iFill = colorOverride || iColorDefault;
-  const xFill = colorOverride || xColorDefault;
-  const rFill = colorOverride || rColorDefault;
+  const sFill = colorOverride || SIXR_S_COLOR;
+  const iFill = colorOverride || SIXR_I_COLOR;
+  const xFill = colorOverride || SIXR_X_COLOR;
+  const rFill = colorOverride || SIXR_R_COLOR;
 
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
       viewBox="0 0 100 40"
       aria-label="SIXR Logo"
-      fontFamily="'Torus Variations', var(--font-geist-mono), monospace"
+      fontFamily={TORUS_FONT_FAMILY}
       {...props}
     >
       <text
