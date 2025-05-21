@@ -2,7 +2,7 @@
 import type { Metadata } from 'next';
 import { GeistSans } from 'geist/font/sans';
 import { GeistMono } from 'geist/font/mono';
-import localFont from 'next/font/local';
+// import localFont from 'next/font/local'; // Temporarily commented out
 import './globals.css';
 // Ensure fonts.css is imported if it contains other critical @font-face rules,
 // but it should NOT contain rules for TorusVariations if managed by next/font/local.
@@ -18,7 +18,19 @@ import { CONTROL_PANEL_WIDTH_STRING } from '@/lib/constants';
 // 1. Created the 'fonts' directory inside 'src/app/' (i.e., src/app/fonts/).
 // 2. Placed your 'TorusVariations-VF.woff2' file there.
 // 3. The filename and casing MUST match EXACTLY.
-const torusVariations = localFont({
+
+// === TORUS FONT TEMPORARILY DISABLED DUE TO LOADING ERRORS ===
+// To re-enable:
+// 1. Ensure 'TorusVariations-VF.woff2' is in 'src/app/fonts/'
+// 2. Uncomment the 'localFont' import above.
+// 3. Uncomment the 'torusVariationsFont' constant definition below.
+// 4. Change 'torusVariations' to 'torusVariationsFont' in the body className.
+// 5. Update 'src/lib/brandingConstants.ts' to use '--font-torus-variations'.
+
+const torusVariations = { variable: '' }; // Placeholder to prevent errors if font loading is disabled
+
+/*
+const torusVariationsFont = localFont({
   src: [
     {
       path: './fonts/TorusVariations-VF.woff2', // Path relative to this file (src/app/layout.tsx)
@@ -29,6 +41,7 @@ const torusVariations = localFont({
   variable: '--font-torus-variations', // CSS variable name
   display: 'swap', // Improves perceived loading performance
 });
+*/
 
 export const metadata: Metadata = {
   title: 'SIXR Vision',
