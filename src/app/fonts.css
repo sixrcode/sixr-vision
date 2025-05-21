@@ -1,45 +1,24 @@
 /*
-  This file defines the @font-face rules for the Torus Variations font.
-  Ensure you have placed your font files (e.g., .woff2) in the 'public/fonts/' directory.
-  Adjust the 'url()' paths and font properties below if your filenames or font characteristics differ.
+  This file previously defined @font-face rules.
+  Font loading for 'Torus Variations' is now handled by next/font/local in src/app/layout.tsx.
+  If you have other custom fonts to load manually, you can define their @font-face rules here.
 */
 
-@font-face {
-  font-family: 'Torus Variations';
-  /* 
-    Replace 'TorusVariations-VF.woff2' with the actual filename of your primary font file.
-    If you have multiple font files (e.g., for different weights or styles), 
-    you may need to create additional @font-face rules or adjust this one.
-  */
-  src: url('/fonts/TorusVariations-VF.woff2') format('woff2-variations'), /* Modern browsers, assuming variable font */
-       url('/fonts/TorusVariations-VF.woff') format('woff'); /* Fallback for older browsers, if you have a .woff version */
-  
-  /* 
-    Adjust font-weight and font-style based on your font files.
-    For a variable font, this range covers many possibilities.
-    For static fonts, you'd set a specific weight (e.g., 400 for regular, 700 for bold).
-  */
-  font-weight: 100 900; 
-  font-style: normal; /* Add 'italic' if your font file includes italics or use a separate rule */
-  
-  font-display: swap; /* Improves perceived loading performance */
-}
-
 /*
-  EXAMPLE FOR STATIC (NON-VARIABLE) FONT FILES:
+  EXAMPLE FOR STATIC (NON-VARIABLE) FONT FILES (if needed for other fonts):
   If you have separate files for regular and bold, you might do something like this:
 
   @font-face {
-    font-family: 'Torus Variations';
-    src: url('/fonts/TorusVariations-Regular.woff2') format('woff2');
+    font-family: 'AnotherCustomFont';
+    src: url('/fonts/AnotherCustomFont-Regular.woff2') format('woff2');
     font-weight: 400; // or 'normal'
     font-style: normal;
     font-display: swap;
   }
 
   @font-face {
-    font-family: 'Torus Variations';
-    src: url('/fonts/TorusVariations-Bold.woff2') format('woff2');
+    font-family: 'AnotherCustomFont';
+    src: url('/fonts/AnotherCustomFont-Bold.woff2') format('woff2');
     font-weight: 700; // or 'bold'
     font-style: normal;
     font-display: swap;
