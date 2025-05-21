@@ -58,7 +58,7 @@ SIXR Brand Colors (Used for Logo Elements - Defined as CSS Variables):
 Control Panel / Sidebar Specifics (Derived from Theme or Specific Variables):
   - --control-panel-background-hsl: 270 50% 8%; (Darker Deep Purple) - Sidebar/Control Panel BG.
   - --control-panel-foreground-hsl: 210 20% 90%; (Slightly Darker Light Text) - Text in Sidebar.
-  - --control-panel-border-hsl: 270 40% 18%; (Darker Purple Border) - Borders within Sidebar.
+  - --control-panel-border-hsl: 270 40% 22%; (Darker Purple Border - Lightness increased from 18% to 22%) - Borders within Sidebar.
   - Sidebar accent/primary colors map to the global primary/accent.
 
 Spacing & Layout:
@@ -176,7 +176,7 @@ Event Theming (e.g., "Cosmic Grapevines"):
     /* Specific for control panel, can use card variables too if suitable */
     --control-panel-background-hsl: 270 50% 8%;
     --control-panel-foreground-hsl: 210 20% 90%; /* Text in Sidebar */
-    --control-panel-border-hsl: 270 40% 18%;
+    --control-panel-border-hsl: 270 40% 22%; /* Lightness increased from 18% */
 
     --control-panel-background: hsl(var(--control-panel-background-hsl));
     --control-panel-foreground: hsl(var(--control-panel-foreground-hsl));
@@ -217,6 +217,8 @@ Event Theming (e.g., "Cosmic Grapevines"):
   }
 }
 
+@tailwind utilities;
+
 /* Forceful Sidebar Styling - This is a high-specificity override */
 /* This ensures the sidebar components get their intended dark background */
 /* if Tailwind utility classes are being overridden elsewhere. */
@@ -235,6 +237,3 @@ div[data-radix-dialog-content][data-sidebar="sidebar"][data-mobile="true"] {
   background-color: hsl(var(--sidebar-background)) !important;
   color: hsl(var(--sidebar-foreground)) !important;
 }
-
-    
-
