@@ -54,13 +54,11 @@ export function ControlPanelView() {
         await initializeAudio();
         setIsTogglingAudio(false);
       }
-      // No automatic webcam init here as it's controlled by its own toggle now
-      // but if we wanted to, it would be:
-      // if (!settings.showWebcam && !isTogglingWebcam) {
-      //   setIsTogglingWebcam(true);
-      //   updateSetting('showWebcam', true);
-      //   setIsTogglingWebcam(false);
-      // }
+      if (!settings.showWebcam && !isTogglingWebcam) {
+        setIsTogglingWebcam(true);
+        updateSetting('showWebcam', true);
+        setIsTogglingWebcam(false);
+      }
     };
     autoInit();
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -69,7 +67,7 @@ export function ControlPanelView() {
 
   const handleAudioToggle = async () => {
     if (isTogglingAudio) return;
-    console.log("ControlPanelView: Toggling audio via button. Current isInitialized:", isInitialized, "isTogglingAudio:", isTogglingAudio);
+    console.log("ControlPanelView: Toggling audio. Current isInitialized:", isInitialized, "isTogglingAudio:", isTogglingAudio);
     setIsTogglingAudio(true);
     if (isInitialized) {
       await stopAudioAnalysis();
@@ -82,7 +80,7 @@ export function ControlPanelView() {
 
   const handleWebcamToggle = () => {
     if (isTogglingWebcam) return;
-    console.log("ControlPanelView: Toggling webcam via button. Current state:", settings.showWebcam);
+    console.log("ControlPanelView: Toggling webcam. Current state:", settings.showWebcam);
     setIsTogglingWebcam(true);
     updateSetting('showWebcam', !settings.showWebcam);
     setIsTogglingWebcam(false);
@@ -107,24 +105,24 @@ export function ControlPanelView() {
                 variant="ghost"
                 onClick={handleAudioToggle}
                 className={cn(
-                  "relative h-7 w-7 text-sm after:content-[''] after:absolute after:-inset-2 after:rounded-full after:md:hidden",
-                  isInitialized && "bg-accent"
+                  "relative h-8 w-8 text-sm after:content-[''] after:absolute after:-inset-2 after:rounded-full after:md:hidden",
+                  isInitialized && !audioError && "bg-accent"
                 )}
                 disabled={isTogglingAudio}
-                aria-pressed={isInitialized}
-                aria-label={isInitialized ? "Stop Audio Input" : (audioError ? "Retry Audio Initialization" : "Start Audio Input")}
+                aria-pressed={isInitialized && !audioError}
+                aria-label={isInitialized && !audioError ? "Stop Audio Input" : (audioError ? "Retry Audio Initialization" : "Start Audio Input")}
               >
                 {isTogglingAudio ? (
-                  <Loader2 className="animate-spin" />
-                ) : isInitialized ? (
-                  <Mic className="text-success" />
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                ) : isInitialized && !audioError ? (
+                  <Mic className="h-5 w-5 text-success" />
                 ) : (
-                  <MicOff className="text-destructive" />
+                  <MicOff className="h-5 w-5 text-destructive" />
                 )}
               </Button>
             </TooltipTrigger>
             <TooltipContent>
-              <p>{isTogglingAudio ? "Processing..." : isInitialized ? 'Stop Audio Input' : (audioError ? 'Retry Audio Initialization' : 'Start Audio Input')}</p>
+              <p>{isTogglingAudio ? "Processing..." : isInitialized && !audioError ? 'Stop Audio Input' : (audioError ? 'Retry Audio Initialization' : 'Start Audio Input')}</p>
               {audioError && !isInitialized && <p className="text-destructive mt-1">Error: {audioError}</p>}
             </TooltipContent>
           </Tooltip>
@@ -136,14 +134,14 @@ export function ControlPanelView() {
                 variant="ghost"
                 onClick={handleWebcamToggle}
                 className={cn(
-                  "relative h-7 w-7 text-sm after:content-[''] after:absolute after:-inset-2 after:rounded-full after:md:hidden",
+                  "relative h-8 w-8 text-sm after:content-[''] after:absolute after:-inset-2 after:rounded-full after:md:hidden",
                   settings.showWebcam && "bg-accent"
                 )}
                 disabled={isTogglingWebcam}
                 aria-pressed={settings.showWebcam}
                 aria-label={settings.showWebcam ? "Stop Webcam" : "Start Webcam"}
               >
-                {isTogglingWebcam ? <Loader2 className="animate-spin" /> : settings.showWebcam ? <Camera className="text-info" /> : <CameraOff className="text-muted-foreground" />}
+                {isTogglingWebcam ? <Loader2 className="h-5 w-5 animate-spin" /> : settings.showWebcam ? <Camera className="h-5 w-5 text-info" /> : <CameraOff className="h-5 w-5 text-muted-foreground" />}
               </Button>
             </TooltipTrigger>
             <TooltipContent>
@@ -195,3 +193,4 @@ export function ControlPanelView() {
     </div>
   );
 }
+
