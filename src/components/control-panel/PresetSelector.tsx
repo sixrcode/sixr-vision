@@ -3,7 +3,7 @@
 
 import { useScene } from '@/providers/SceneProvider';
 import { useSettings } from '@/providers/SettingsProvider';
-import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
+// import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area'; // Temporarily removed
 import { ControlPanelSection } from './ControlPanelSection';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import { PresetCard } from './PresetCard';
@@ -18,10 +18,10 @@ export function PresetSelector({ value }: PresetSelectorProps) {
 
   return (
     <ControlPanelSection title="Presets" value={value}>
-      <ScrollArea className="w-full h-auto max-h-[300px]">
-        <div className="grid grid-cols-3 gap-2 p-1">
+      {/* <ScrollArea className="w-full h-auto max-h-[300px]"> */} {/* Temporarily removed */}
+        <div className="grid grid-cols-3 gap-2 p-1 overflow-y-auto max-h-[300px]"> {/* Added overflow-y-auto and max-h here as a basic replacement */}
           {scenes.map((scene) => (
-            <Tooltip key={scene.id}> {/* Removed delayDuration for maximum simplicity */}
+            <Tooltip key={scene.id}>
               <TooltipTrigger asChild>
                 <PresetCard
                   scene={scene}
@@ -30,7 +30,6 @@ export function PresetSelector({ value }: PresetSelectorProps) {
                   onKeyDown={(e) => e.key === 'Enter' && setCurrentSceneById(scene.id)}
                 />
               </TooltipTrigger>
-              {/* Rely entirely on the base TooltipContent from /components/ui/tooltip for styling */}
               <TooltipContent
                 side="bottom"
                 align="center"
@@ -46,8 +45,10 @@ export function PresetSelector({ value }: PresetSelectorProps) {
             </Tooltip>
           ))}
         </div>
-        <ScrollBar orientation="vertical" />
-      </ScrollArea>
+        {/* <ScrollBar orientation="vertical" /> */} {/* Temporarily removed */}
+      {/* </ScrollArea> */} {/* Temporarily removed */}
     </ControlPanelSection>
   );
 }
+
+    
