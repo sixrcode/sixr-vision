@@ -56,6 +56,7 @@ Spacing & Layout:
 - Primarily use Tailwind's default spacing scale (e.g., `p-2`, `m-4`, `gap-2`) for consistency.
   These are tokenized values (e.g., `2` often maps to `0.5rem`).
 - Font sizes should also be managed as design tokens, typically through Tailwind's theme configuration.
+  Refer to `tailwind.config.ts` for `theme.fontSize`.
 - Avoid arbitrary pixel values for margins and paddings where possible. If custom spacing is
   needed frequently, consider adding it to the Tailwind theme configuration.
 
@@ -93,42 +94,41 @@ Event Theming (e.g., "Cosmic Grapevines"):
   :root {
     /* Cosmic Grapevines Theme */
     --background-hsl: 270 50% 10%;
-    --foreground-hsl: 210 20% 95%; /* Adjusted for softer contrast */
+    --foreground-hsl: 210 20% 95%;
 
-    --card-hsl: 270 50% 16%; /* Slightly Lighter Deep Purple - Adjusted for depth */
+    --card-hsl: 270 50% 16%;
     --card-foreground-hsl: 210 20% 98%;
 
-    --popover-hsl: 270 50% 22%; /* Even Lighter Purple - Adjusted for better layering */
+    --popover-hsl: 270 50% 22%;
     --popover-foreground-hsl: 210 20% 98%;
 
-    --primary-hsl: 180 70% 45%; /* Interstellar Teal */
+    --primary-hsl: 180 70% 45%;
     --primary-foreground-hsl: 210 20% 98%;
 
-    --secondary-hsl: 240 40% 20%; /* Muted Cosmic Blue */
+    --secondary-hsl: 240 40% 20%;
     --secondary-foreground-hsl: 210 20% 98%;
 
-    --muted-hsl: 270 30% 25%; /* Muted Purple */
+    --muted-hsl: 270 30% 25%;
     --muted-foreground-hsl: 210 15% 65%;
 
-    --accent-hsl: 180 70% 55%; /* Lighter Interstellar Teal */
+    --accent-hsl: 180 70% 55%;
     --accent-foreground-hsl: 210 20% 98%;
 
     --destructive-hsl: 0 72.2% 50.6%;
     --destructive-foreground-hsl: 210 20% 98%;
 
-    --success-hsl: 130 60% 45%; /* Vibrant Green */
+    --success-hsl: 130 60% 45%;
     --success-foreground-hsl: 210 20% 98%;
 
-    --info-hsl: 200 75% 55%; /* Bright Blue */
+    --info-hsl: 200 75% 55%;
     --info-foreground-hsl: 210 20% 98%;
 
     --border-hsl: 270 40% 22%;
     --input-hsl: 270 35% 35%;
-    --ring-hsl: 180 70% 65%; /* Brightened Teal for focus rings */
+    --ring-hsl: 180 70% 65%;
 
     --radius: 0.5rem;
 
-    /* CSS variable names without "-hsl" suffix for direct use in Tailwind config */
     --background: hsl(var(--background-hsl));
     --foreground: hsl(var(--foreground-hsl));
     --card: hsl(var(--card-hsl));
@@ -164,7 +164,6 @@ Event Theming (e.g., "Cosmic Grapevines"):
     --sixr-x-color: hsl(var(--sixr-x-color-hsl));
     --sixr-r-color: hsl(var(--sixr-r-color-hsl));
 
-
     /* Specific for control panel, can use card variables too if suitable */
     --control-panel-background-hsl: 270 50% 8%;
     --control-panel-foreground-hsl: 210 20% 90%; /* Text in Sidebar */
@@ -173,7 +172,6 @@ Event Theming (e.g., "Cosmic Grapevines"):
     --control-panel-background: hsl(var(--control-panel-background-hsl));
     --control-panel-foreground: hsl(var(--control-panel-foreground-hsl));
     --control-panel-border: hsl(var(--control-panel-border-hsl));
-
 
     /* Sidebar variables (mapped from control panel or theme) */
     --sidebar-background: hsl(var(--control-panel-background-hsl));
@@ -202,5 +200,23 @@ Event Theming (e.g., "Cosmic Grapevines"):
   body {
     @apply bg-background text-foreground;
     min-height: 100vh;
+  }
+
+  /* Forceful Sidebar Styling - This is a high-specificity override */
+  /* This ensures the sidebar components get their intended dark background */
+  /* if Tailwind utility classes are being overridden elsewhere. */
+  div[data-sidebar="sidebar"]:not([data-mobile="true"]) {
+    background-color: hsl(var(--sidebar-background)) !important;
+    color: hsl(var(--sidebar-foreground)) !important;
+  }
+  /* Apply to the SheetContent used for mobile sidebar */
+  div[data-radix-dialog-content][data-sidebar="sidebar"][data-mobile="true"] {
+    background-color: hsl(var(--sidebar-background)) !important;
+    color: hsl(var(--sidebar-foreground)) !important;
+  }
+   /* Fallback if SheetContent structure varies or doesn't have data-radix-dialog-content directly */
+   div[data-sidebar="sidebar"][data-mobile="true"] {
+    background-color: hsl(var(--sidebar-background)) !important;
+    color: hsl(var(--sidebar-foreground)) !important;
   }
 }

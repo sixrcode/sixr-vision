@@ -182,7 +182,7 @@ const Sidebar = React.forwardRef<
       return (
         <div
           className={cn(
-            "flex h-full w-[--sidebar-width] flex-col bg-sidebar text-sidebar-foreground",
+            "flex h-full w-[--sidebar-width] flex-col bg-sidebar text-sidebar-foreground", // Using Tailwind classes
             className
           )}
           ref={ref}
@@ -197,10 +197,10 @@ const Sidebar = React.forwardRef<
       return (
         <Sheet open={openMobile} onOpenChange={setOpenMobile} {...props}>
           <SheetContent
-            data-sidebar="sidebar"
-            data-mobile="true"
+            data-sidebar="sidebar" // Keep for potential global CSS targeting
+            data-mobile="true"    // Keep for potential global CSS targeting
             className={cn(
-              "w-[--sidebar-width] p-0 bg-sidebar text-sidebar-foreground [&>button]:hidden", 
+              "w-[--sidebar-width] p-0 bg-sidebar text-sidebar-foreground [&>button]:hidden", // Using Tailwind classes
               className
             )}
             style={
@@ -219,7 +219,7 @@ const Sidebar = React.forwardRef<
     return (
       <div
         ref={ref}
-        className="group peer hidden md:block text-sidebar-foreground"
+        className="group peer hidden md:block text-sidebar-foreground" // text-sidebar-foreground applied here
         data-state={state}
         data-collapsible={state === "collapsed" ? collapsible : ""}
         data-variant={variant}
@@ -251,11 +251,11 @@ const Sidebar = React.forwardRef<
           {...props}
         >
           <div
-            data-sidebar="sidebar"
+            data-sidebar="sidebar" // Keep for potential global CSS targeting
             className={cn(
-              "flex h-full w-full flex-col bg-sidebar text-sidebar-foreground group-data-[variant=floating]:rounded-lg group-data-[variant=floating]:border group-data-[variant=floating]:border-sidebar-border group-data-[variant=floating]:shadow",
-              className
+              "flex h-full w-full flex-col bg-sidebar text-sidebar-foreground group-data-[variant=floating]:rounded-lg group-data-[variant=floating]:border group-data-[variant=floating]:border-sidebar-border group-data-[variant=floating]:shadow"
             )}
+            // Removed inline style here, rely on global CSS with !important if needed
           >
             {children}
           </div>
@@ -768,5 +768,3 @@ export {
   SidebarTrigger,
   useSidebar,
 }
-
-    
