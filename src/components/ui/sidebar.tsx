@@ -182,7 +182,7 @@ const Sidebar = React.forwardRef<
       return (
         <div
           className={cn(
-            "flex h-full w-[--sidebar-width] flex-col bg-sidebar text-sidebar-foreground", // Using Tailwind classes
+            "flex h-full w-[--sidebar-width] flex-col bg-sidebar text-sidebar-foreground", 
             className
           )}
           ref={ref}
@@ -197,10 +197,10 @@ const Sidebar = React.forwardRef<
       return (
         <Sheet open={openMobile} onOpenChange={setOpenMobile} {...props}>
           <SheetContent
-            data-sidebar="sidebar" // Keep for potential global CSS targeting
-            data-mobile="true"    // Keep for potential global CSS targeting
+            data-sidebar="sidebar" 
+            data-mobile="true"    
             className={cn(
-              "w-[--sidebar-width] p-0 bg-sidebar text-sidebar-foreground [&>button]:hidden", // Using Tailwind classes
+              "w-[--sidebar-width] p-0 bg-sidebar text-sidebar-foreground [&>button]:hidden", 
               className
             )}
             style={
@@ -219,7 +219,7 @@ const Sidebar = React.forwardRef<
     return (
       <div
         ref={ref}
-        className="group peer hidden md:block text-sidebar-foreground" // text-sidebar-foreground applied here
+        className="group peer hidden md:block text-sidebar-foreground" 
         data-state={state}
         data-collapsible={state === "collapsed" ? collapsible : ""}
         data-variant={variant}
@@ -251,11 +251,10 @@ const Sidebar = React.forwardRef<
           {...props}
         >
           <div
-            data-sidebar="sidebar" // Keep for potential global CSS targeting
+            data-sidebar="sidebar" 
             className={cn(
               "flex h-full w-full flex-col bg-sidebar text-sidebar-foreground group-data-[variant=floating]:rounded-lg group-data-[variant=floating]:border group-data-[variant=floating]:border-sidebar-border group-data-[variant=floating]:shadow"
             )}
-            // Removed inline style here, rely on global CSS with !important if needed
           >
             {children}
           </div>
@@ -613,15 +612,14 @@ const SidebarMenuAction = React.forwardRef<
       ref={ref}
       data-sidebar="menu-action"
       className={cn(
-        "absolute right-1 top-1.5 flex aspect-square w-5 items-center justify-center rounded-md p-0 text-sidebar-foreground outline-none ring-sidebar-ring transition-transform hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 peer-hover/menu-button:text-sidebar-accent-foreground [&>svg]:size-4 [&>svg]:shrink-0",
-        // Increases the hit area of the button on mobile.
+        "absolute right-1 top-1.5 flex aspect-square w-5 items-center justify-center rounded-md p-0 text-sidebar-foreground outline-none ring-sidebar-ring transition-transform transition-opacity duration-200 ease-in-out hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 peer-hover/menu-button:text-sidebar-accent-foreground [&>svg]:size-4 [&>svg]:shrink-0",
         "after:absolute after:-inset-2 after:md:hidden",
         "peer-data-[size=sm]/menu-button:top-1",
         "peer-data-[size=default]/menu-button:top-1.5",
         "peer-data-[size=lg]/menu-button:top-2.5",
         "group-data-[collapsible=icon]:hidden",
         showOnHover &&
-          "group-focus-within/menu-item:opacity-100 group-hover/menu-item:opacity-100 data-[state=open]:opacity-100 peer-data-[active=true]/menu-button:text-sidebar-accent-foreground md:opacity-0",
+          "md:opacity-30 group-focus-within/menu-item:opacity-100 group-hover/menu-item:opacity-100 data-[state=open]:opacity-100 peer-data-[active=true]/menu-button:text-sidebar-accent-foreground",
         className
       )}
       {...props}
@@ -768,3 +766,4 @@ export {
   SidebarTrigger,
   useSidebar,
 }
+
