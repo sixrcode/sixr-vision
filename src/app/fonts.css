@@ -1,5 +1,5 @@
 /*
-  This file previously defined @font-face rules.
+  This file previously defined @font-face rules for TorusVariations.
   Font loading for 'Torus Variations' is now handled by next/font/local in src/app/layout.tsx.
   This file can be used for other custom fonts loaded manually via @font-face if needed.
 */

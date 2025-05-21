@@ -4,7 +4,9 @@ import { GeistSans } from 'geist/font/sans';
 import { GeistMono } from 'geist/font/mono';
 import localFont from 'next/font/local';
 import './globals.css';
-// import './fonts.css'; // Manual import is primarily for @font-face rules not handled by next/font
+// Ensure fonts.css is imported if it contains other critical @font-face rules,
+// but it should NOT contain rules for TorusVariations if managed by next/font/local.
+import './fonts.css';
 import { Toaster } from '@/components/ui/toaster';
 import { AppProviders } from '@/providers/AppProviders';
 import { SidebarProvider } from '@/components/ui/sidebar';
@@ -12,8 +14,10 @@ import { CONTROL_PANEL_WIDTH_STRING } from '@/lib/constants';
 
 // Configure Torus Variations font using next/font/local
 // IMPORTANT: This configuration expects the font file to be at src/app/fonts/TorusVariations-VF.woff2
-// Please ensure you have created the 'fonts' directory inside 'src/app/'
-// and placed your 'TorusVariations-VF.woff2' file there.
+// Please ensure you have:
+// 1. Created the 'fonts' directory inside 'src/app/' (i.e., src/app/fonts/).
+// 2. Placed your 'TorusVariations-VF.woff2' file there.
+// 3. The filename and casing MUST match EXACTLY.
 const torusVariations = localFont({
   src: [
     {
