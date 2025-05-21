@@ -4,9 +4,8 @@ import { GeistSans } from 'geist/font/sans';
 import { GeistMono } from 'geist/font/mono';
 // import localFont from 'next/font/local'; // Temporarily commented out
 import './globals.css';
-// Ensure fonts.css is imported if it contains other critical @font-face rules,
-// but it should NOT contain rules for TorusVariations if managed by next/font/local.
-import './fonts.css';
+// The fonts.css file can be re-imported here if it contains active @font-face rules.
+// import './fonts.css'; // Temporarily removed as it currently only contains comments.
 import { Toaster } from '@/components/ui/toaster';
 import { AppProviders } from '@/providers/AppProviders';
 import { SidebarProvider } from '@/components/ui/sidebar';
