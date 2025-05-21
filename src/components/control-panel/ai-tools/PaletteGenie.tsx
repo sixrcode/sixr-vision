@@ -113,7 +113,7 @@ export function PaletteGenie({ value }: PaletteGenieProps) {
             {generatedPalette.map((color, index) => (
               <div
                 key={index}
-                className="w-8 h-8 rounded border border-[hsl(var(--border))]"
+                className="w-8 h-8 rounded border border-border"
                 style={{
                   backgroundColor: `hsl(${color.hue}, ${color.saturation}%, ${color.brightness}%)`,
                 }}
