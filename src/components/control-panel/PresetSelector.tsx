@@ -28,12 +28,13 @@ export function PresetSelector({ value }: PresetSelectorProps) {
                 <Card
                   className={cn(
                     "w-full h-auto shrink-0 cursor-pointer transition-all hover:shadow-lg hover:border-primary",
-                    settings.currentSceneId === scene.id && "border-primary ring-2 ring-primary"
+                    settings.currentSceneId === scene.id && "border-primary ring-2 ring-primary bg-accent"
                   )}
                   onClick={() => setCurrentSceneById(scene.id)}
                   tabIndex={0}
                   onKeyDown={(e) => e.key === 'Enter' && setCurrentSceneById(scene.id)}
                   aria-label={`Activate ${scene.name} preset`}
+                  aria-pressed={settings.currentSceneId === scene.id}
                 >
                   <CardContent className="p-0 flex flex-col items-center">
                     {scene.thumbnailUrl && (
@@ -52,7 +53,7 @@ export function PresetSelector({ value }: PresetSelectorProps) {
               <TooltipContent 
                 side="bottom" 
                 align="center" 
-                className="bg-popover text-popover-foreground" // Explicitly add background and text color
+                className="bg-popover text-popover-foreground"
               >
                 <p className="font-semibold">{scene.name}</p>
                 {scene.dataAiHint && (
@@ -70,3 +71,4 @@ export function PresetSelector({ value }: PresetSelectorProps) {
     </ControlPanelSection>
   );
 }
+
