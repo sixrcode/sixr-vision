@@ -11,8 +11,9 @@ import { useScene } from '@/providers/SceneProvider';
 import { useSettings } from '@/providers/SettingsProvider';
 import { suggestSceneFromAudio, type SuggestSceneFromAudioInput, type SuggestSceneFromAudioOutput } from '@/ai/flows/suggest-scene-from-audio';
 import { ControlPanelSection } from '../ControlPanelSection';
-import { Brain, Loader2 } from 'lucide-react'; // Added Loader2 for loading state
+import { Brain, Loader2 } from 'lucide-react';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
+import { ControlHint } from '../ControlHint';
 
 type AiPresetChooserProps = {
   value: string; // For AccordionItem
@@ -28,7 +29,7 @@ export function AiPresetChooser({ value }: AiPresetChooserProps) {
   const [autoLoad, setAutoLoad] = useState(false); 
 
   const fetchSuggestion = useCallback(async (isAutoTrigger = false) => {
-    if (isLoading && !isAutoTrigger) return; // Prevent manual trigger if already loading
+    if (isLoading && !isAutoTrigger) return;
     if (isLoading && isAutoTrigger && autoLoad) return;
 
     setIsLoading(true);
@@ -113,9 +114,9 @@ export function AiPresetChooser({ value }: AiPresetChooserProps) {
       {suggestedSceneInfo && (
         <div className="mt-3 p-2 border rounded-md bg-background">
           <p className="text-sm font-medium">Suggested Scene: <span className="text-primary">{suggestedSceneInfo.sceneId}</span></p>
-          <p className="text-xs text-muted-foreground mt-1">{suggestedSceneInfo.reason}</p>
+          <ControlHint className="mt-1">{suggestedSceneInfo.reason}</ControlHint>
           {suggestedSceneInfo.suggestedAssetPrompt && (
-            <p className="text-xs text-muted-foreground mt-1">Asset idea: <em className="text-primary/90">"{suggestedSceneInfo.suggestedAssetPrompt}"</em> (use in Procedural Assets)</p>
+            <ControlHint className="mt-1">Asset idea: <em className="text-primary/90">"{suggestedSceneInfo.suggestedAssetPrompt}"</em> (use in Procedural Assets)</ControlHint>
           )}
           {scenes.find(s => s.id === suggestedSceneInfo.sceneId) && !autoLoad && (
             <Button onClick={handleLoadSuggested} size="sm" className="mt-2 w-full" disabled={isLoading}>
@@ -135,7 +136,7 @@ export function AiPresetChooser({ value }: AiPresetChooserProps) {
         </Tooltip>
         <Switch id="auto-load-switch" checked={autoLoad} onCheckedChange={setAutoLoad} aria-label="Toggle auto-load scene suggestions" disabled={isLoading} />
       </div>
-      <p className="text-xs text-muted-foreground mt-1">When active, AI will periodically suggest & load scenes (every 30s).</p>
+      <ControlHint className="mt-1">When active, AI will periodically suggest & load scenes (every 30s).</ControlHint>
     </ControlPanelSection>
   );
 }

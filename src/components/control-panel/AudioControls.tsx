@@ -10,6 +10,7 @@ import { FFT_SIZES } from '@/lib/constants';
 import { ControlPanelSection } from './ControlPanelSection';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
+import { ControlHint } from './ControlHint';
 
 type AudioControlsProps = {
   value: string; // For AccordionItem
@@ -42,7 +43,7 @@ export function AudioControls({ value }: AudioControlsProps) {
             ))}
           </SelectContent>
         </Select>
-        <p className="text-xs text-muted-foreground">Controls the resolution of audio frequency analysis.</p>
+        <ControlHint>Controls the resolution of audio frequency analysis.</ControlHint>
       </div>
 
       <div className={cn("space-y-1", settings.enableAgc && "opacity-50 pointer-events-none")}>
@@ -84,9 +85,9 @@ export function AudioControls({ value }: AudioControlsProps) {
           aria-label="Toggle Automatic Gain Control"
         />
       </div>
-       <p className="text-xs text-muted-foreground">
+       <ControlHint>
         {settings.enableAgc ? "AGC is active. Manual gain is disabled." : "Adjust gain manually or enable AGC."}
-      </p>
+      </ControlHint>
     </ControlPanelSection>
   );
 }

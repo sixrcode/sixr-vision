@@ -8,10 +8,11 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { generateSceneAmbiance, type GenerateSceneAmbianceInput, type GenerateSceneAmbianceOutput } from '@/ai/flows/generate-scene-ambiance';
 import { ControlPanelSection } from '../ControlPanelSection';
-import { MessageSquareText, Loader2 } from 'lucide-react'; // Added Loader2
+import { MessageSquareText, Loader2 } from 'lucide-react';
 import { useAudioData } from '@/providers/AudioDataProvider';
 import { useScene } from '@/providers/SceneProvider';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { ControlHint } from '../ControlHint';
 
 type AmbianceGeneratorProps = {
   value: string; // For AccordionItem
@@ -103,9 +104,9 @@ export function AmbianceGenerator({ value }: AmbianceGeneratorProps) {
           </div>
         )}
       </div>
-      <p className="text-xs text-muted-foreground mt-2">
+      <ControlHint className="mt-2">
         Generates a poetic snippet reflecting the current audiovisual experience.
-      </p>
+      </ControlHint>
     </ControlPanelSection>
   );
 }

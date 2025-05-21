@@ -13,6 +13,7 @@ import { ControlPanelSection } from '../ControlPanelSection';
 import { ImageIcon, Cuboid, Sparkles, Loader2 } from 'lucide-react';
 import { useSettings } from '@/providers/SettingsProvider';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
+import { ControlHint } from '../ControlHint';
 
 type ProceduralAssetsGeneratorProps = {
   value: string; // For AccordionItem
@@ -133,12 +134,12 @@ export function ProceduralAssetsGenerator({ value }: ProceduralAssetsGeneratorPr
                 className="rounded border mt-1 object-cover"
                 data-ai-hint="generated mesh"
               />
-              <p className="text-xs text-muted-foreground">Note: Mesh preview is shown as an image. Actual mesh data available.</p>
+              <ControlHint>Note: Mesh preview is shown as an image. Actual mesh data available.</ControlHint>
             </div>
           )}
         </div>
       )}
-      <p className="text-xs text-muted-foreground mt-2">Style-Transfer Shader: Placeholder</p>
+      <ControlHint className="mt-2">Style-Transfer Shader: Placeholder</ControlHint>
     </ControlPanelSection>
   );
 }

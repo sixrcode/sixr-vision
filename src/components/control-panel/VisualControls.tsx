@@ -7,6 +7,7 @@ import { Switch } from '@/components/ui/switch';
 import { useSettings } from '@/providers/SettingsProvider';
 import { ControlPanelSection } from './ControlPanelSection';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
+// Removed ControlHint as it's not used here after review
 
 type VisualControlsProps = {
   value: string; // For AccordionItem

@@ -18,6 +18,8 @@ import { ControlPanelSection } from '../ControlPanelSection';
 import { Layers, Wand2, Loader2 } from 'lucide-react';
 import { VALID_BLEND_MODES } from '@/types';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { ControlHint } from '../ControlHint';
+
 
 type AiVisualOverlayMixerProps = {
   value: string; // For AccordionItem
@@ -32,7 +34,11 @@ export function AiVisualOverlayMixer({ value }: AiVisualOverlayMixerProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [localPrompt, setLocalPrompt] = useState(settings.aiOverlayPrompt);
   
-  // Removed initialGenerationAttemptedRef as auto-generation on load is disabled.
+  useEffect(() => {
+    // This effect was removed to disable auto-generation on load.
+    // Users will now manually trigger overlay generation.
+  }, []);
+
 
   useEffect(() => {
     setLocalPrompt(settings.aiOverlayPrompt);
@@ -73,7 +79,7 @@ export function AiVisualOverlayMixer({ value }: AiVisualOverlayMixerProps) {
       let description = 'Could not generate overlay.';
       if (error instanceof Error) {
         description = error.message;
-        if (error.message.includes("500 Internal Server Error") || error.message.includes("internal error has occurred")) {
+        if (error.message.includes("500 Internal Server Error") || error.message.includes("internal error has occurred") || error.message.toLowerCase().includes("internal server error")) {
           description = "AI service encountered an internal error. This is often temporary. Please try again in a few moments, or try a different prompt.";
         }
       }
@@ -111,7 +117,7 @@ export function AiVisualOverlayMixer({ value }: AiVisualOverlayMixerProps) {
             </TooltipTrigger>
             <TooltipContent>
               <p>Describe the visual style or elements for the AI-generated overlay.</p>
-              <p className="text-xs text-muted-foreground">e.g., "swirling cosmic dust", "geometric neon lines", "water ripples"</p>
+              <ControlHint>e.g., "swirling cosmic dust", "geometric neon lines", "water ripples"</ControlHint>
             </TooltipContent>
           </Tooltip>
           <Input
@@ -150,7 +156,7 @@ export function AiVisualOverlayMixer({ value }: AiVisualOverlayMixerProps) {
           )}
           {isLoading ? 'Generating Overlay...' : 'Generate Overlay'}
         </Button>
-        {!currentScene && <p className="text-xs text-destructive text-center">Select a scene first to generate an overlay.</p>}
+        {!currentScene && <ControlHint className="text-destructive text-center">Select a scene first to generate an overlay.</ControlHint>}
 
         {settings.aiGeneratedOverlayUri && (
           <div className="mt-2 space-y-1">

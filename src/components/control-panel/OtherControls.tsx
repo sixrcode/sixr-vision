@@ -9,6 +9,7 @@ import { ControlPanelSection } from './ControlPanelSection';
 import { AlertTriangle, ZapOff, FileJson, Database } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
+import { ControlHint } from './ControlHint';
 
 type OtherControlsProps = {
   value: string; // For AccordionItem
@@ -76,7 +77,7 @@ export function OtherControls({ value }: OtherControlsProps) {
             <p>Loads a predefined sequence of scene changes and setting adjustments. (Placeholder)</p>
           </TooltipContent>
         </Tooltip>
-        <p className="text-xs text-muted-foreground">Cue list player is a placeholder.</p>
+        <ControlHint>Cue list player is a placeholder.</ControlHint>
         
         <Tooltip>
           <TooltipTrigger asChild>
@@ -88,7 +89,7 @@ export function OtherControls({ value }: OtherControlsProps) {
             <p>Exports a log of events and settings changes during the session. (Placeholder)</p>
           </TooltipContent>
         </Tooltip>
-        <p className="text-xs text-muted-foreground">IndexedDB logging & export are placeholders.</p>
+        <ControlHint>IndexedDB logging & export are placeholders.</ControlHint>
       </div>
 
       <div className="mt-4">

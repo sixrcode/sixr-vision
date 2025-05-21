@@ -9,6 +9,7 @@ import { useSettings } from '@/providers/SettingsProvider';
 import type { LogoAnimationType } from '@/types';
 import { ControlPanelSection } from './ControlPanelSection';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
+import { ControlHint } from './ControlHint';
 
 type LogoAnimationControlsProps = {
   value: string; // For AccordionItem
@@ -114,14 +115,14 @@ export function LogoAnimationControls({ value }: LogoAnimationControlsProps) {
             value={[logoAnimationSettings.speed]}
             onValueChange={([val]) => handleAnimationSettingChange('speed', val)}
           />
-          <p className="text-xs text-muted-foreground">
+          <ControlHint>
             {currentAnimType === 'blink' ? 'Higher is faster blinking.' :
              currentAnimType === 'pulse' ? 'Higher is faster pulsing.' :
              currentAnimType === 'rainbowCycle' ? 'Higher is faster color cycling.' : ''}
-          </p>
+          </ControlHint>
         </div>
       )}
-       <p className="text-xs text-muted-foreground mt-2">More animations (Chase, Sparkle, etc.) are placeholders.</p>
+       <ControlHint className="mt-2">More animations (Chase, Sparkle, etc.) are placeholders.</ControlHint>
     </ControlPanelSection>
   );
 }

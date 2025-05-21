@@ -6,6 +6,7 @@ import { Switch } from '@/components/ui/switch';
 import { useSettings } from '@/providers/SettingsProvider';
 import { ControlPanelSection } from './ControlPanelSection';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
+import { ControlHint } from './ControlHint';
 
 type WebcamControlsProps = {
   value: string; // For AccordionItem
@@ -49,8 +50,8 @@ export function WebcamControls({ value }: WebcamControlsProps) {
           />
         </div>
       )}
-      <p className="text-xs text-muted-foreground mt-2">AI Segmentation: Placeholder</p>
-      <p className="text-xs text-muted-foreground">Motion Energy Scalar: Placeholder</p>
+      <ControlHint className="mt-2">AI Segmentation: Placeholder</ControlHint>
+      <ControlHint>Motion Energy Scalar: Placeholder</ControlHint>
     </ControlPanelSection>
   );
 }
