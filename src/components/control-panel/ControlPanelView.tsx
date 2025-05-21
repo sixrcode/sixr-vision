@@ -23,12 +23,13 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { useSettings } from '@/providers/SettingsProvider';
 import { toast } from '@/hooks/use-toast';
 import { SIXR_S_COLOR, SIXR_I_COLOR, SIXR_X_COLOR, SIXR_R_COLOR, TORUS_FONT_FAMILY } from '@/lib/brandingConstants';
+import { cn } from '@/lib/utils';
 
 export function ControlPanelView() {
   const { initializeAudio, stopAudioAnalysis, isInitialized, error: audioError } = useAudioAnalysis();
   const { settings, updateSetting } = useSettings();
   const [isTogglingAudio, setIsTogglingAudio] = useState(false);
-  const [isTogglingWebcam, setIsTogglingWebcam] = useState(false); 
+  const [isTogglingWebcam, setIsTogglingWebcam] = useState(false);
 
   useEffect(() => {
     // Welcome Toast Logic
@@ -53,13 +54,16 @@ export function ControlPanelView() {
         await initializeAudio();
         setIsTogglingAudio(false);
       }
-      // Webcam auto-init is implicitly handled by its default setting
-      // and the WebcamFeed component. We can ensure showWebcam is true by default
-      // if that's the desired behavior (already set in constants).
+      if (!settings.showWebcam && !isTogglingWebcam) {
+        console.log("ControlPanelView: Auto-initializing webcam on load.");
+        setIsTogglingWebcam(true);
+        updateSetting('showWebcam', true);
+        setIsTogglingWebcam(false);
+      }
     };
     autoInit();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); 
+  }, []);
 
 
   const handleAudioToggle = async () => {
@@ -80,7 +84,7 @@ export function ControlPanelView() {
     console.log("ControlPanelView: Toggling webcam via button. Current state:", settings.showWebcam);
     setIsTogglingWebcam(true);
     updateSetting('showWebcam', !settings.showWebcam);
-    setIsTogglingWebcam(false); 
+    setIsTogglingWebcam(false);
     console.log("ControlPanelView: Webcam toggle finished. New showWebcam setting:", !settings.showWebcam);
   };
 
@@ -94,15 +98,19 @@ export function ControlPanelView() {
           </h2>
         </div>
 
-        <div className="flex items-center gap-2 mr-10"> {/* Changed gap-3 to gap-2 */}
+        <div className="flex items-center gap-2 mr-10">
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
                 size="icon"
                 variant="ghost"
                 onClick={handleAudioToggle}
-                className="h-7 w-7 text-sm"
+                className={cn(
+                  "h-7 w-7 text-sm",
+                  isInitialized && "bg-accent"
+                )}
                 disabled={isTogglingAudio}
+                aria-pressed={isInitialized}
                 aria-label={isInitialized ? "Stop Audio Input" : (audioError ? "Retry Audio Initialization" : "Start Audio Input")}
               >
                 {isTogglingAudio ? (
@@ -126,8 +134,12 @@ export function ControlPanelView() {
                 size="icon"
                 variant="ghost"
                 onClick={handleWebcamToggle}
-                className="h-7 w-7 text-sm"
+                className={cn(
+                  "h-7 w-7 text-sm",
+                  settings.showWebcam && "bg-accent"
+                )}
                 disabled={isTogglingWebcam}
+                aria-pressed={settings.showWebcam}
                 aria-label={settings.showWebcam ? "Stop Webcam" : "Start Webcam"}
               >
                 {isTogglingWebcam ? <Loader2 className="animate-spin" /> : settings.showWebcam ? <Camera className="text-info" /> : <CameraOff className="text-muted-foreground" />}
@@ -142,7 +154,7 @@ export function ControlPanelView() {
       {audioError && !isInitialized && <p className="p-2 text-xs text-destructive bg-destructive/20 text-center">Audio Error: {audioError}. Please check microphone permissions.</p>}
       <ScrollArea className="flex-1 min-h-0">
         <div
-          className="overflow-x-hidden control-panel-content-wrapper" 
+          className="overflow-x-hidden control-panel-content-wrapper"
           style={{
             maxWidth: 'var(--sidebar-width)',
             width: '100%'
@@ -182,4 +194,3 @@ export function ControlPanelView() {
     </div>
   );
 }
-
