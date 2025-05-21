@@ -29,7 +29,7 @@ Core Color Palette (Cosmic Grapevines Theme):
   - --card-foreground-hsl: 210 20% 98%;
   - --popover-hsl: 270 50% 22%; (Even Lighter Purple) - Background for popovers, tooltips.
   - --popover-foreground-hsl: 210 20% 98%;
-  - --primary-hsl: 180 70% 45%; (Interstellar Teal) - Primary interactive elements, buttons, active states.
+  - --primary-hsl: 180 70% 50%; (Interstellar Teal - Lightness increased from 45%) - Primary interactive elements, buttons, active states.
   - --primary-foreground-hsl: 210 20% 98%; (Light Text) - Text on primary-colored elements.
   - --secondary-hsl: 240 15% 75%; (Even Lighter Gray-Blue for Slider Tracks - for maximum visibility)
   - --secondary-foreground-hsl: 210 20% 98%;
@@ -65,14 +65,14 @@ Spacing & Layout:
 - Primarily use Tailwind's default spacing scale (e.g., `p-2`, `m-4`, `gap-2`) for consistency.
   These are tokenized values (e.g., `2` often maps to `0.5rem`).
 - Font sizes should also be managed as design tokens, typically through Tailwind's theme configuration.
-  Refer to `tailwind.config.ts` for `theme.fontSize`.
+  Refer to `tailwind.config.ts` for `theme.fontSize` and the `fontFamily` settings.
 - Avoid arbitrary pixel values for margins and paddings where possible. If custom spacing is
   needed frequently, consider adding it to the Tailwind theme configuration.
 
 Typography:
-- Primary Sans-Serif: Geist Sans (via `var(--font-geist-sans)`, mapped to `font-sans` in Tailwind config).
-- Primary Mono: Geist Mono (via `var(--font-geist-mono)`, mapped to `font-mono` in Tailwind config).
-- Branding/Logo Font: Torus Variations (via `var(--font-torus-variations)` if enabled, or fallback).
+- Primary Sans-Serif: Applied via `font-sans` utility, configured in `tailwind.config.ts` to use `var(--font-geist-sans)`.
+- Primary Mono: Applied via `font-mono` utility, configured in `tailwind.config.ts` to use `var(--font-geist-mono)`.
+- Branding/Logo Font: "Torus Variations" (conditionally loaded via `next/font/local` in `layout.tsx`, uses `var(--font-torus-variations)`).
 - Font sizes should follow Tailwind's scale (`text-sm`, `text-base`, `text-lg`, etc.) for consistency.
   These are also design tokens. If specific, non-standard font sizes are required repeatedly,
   they should be added to the Tailwind theme configuration rather than hardcoded.
@@ -95,7 +95,6 @@ Event Theming (e.g., "Cosmic Grapevines"):
      Example: .theme-new-event { --background-hsl: var(--custom-theme-bg-hsl); }
   4. Apply this class to the `<html>` or `<body>` tag to activate the theme.
 - This approach keeps theme changes modular and leverages the existing token system.
-
 --------------------------------------------------------------------------------
 */
 
@@ -111,10 +110,10 @@ Event Theming (e.g., "Cosmic Grapevines"):
     --popover-hsl: 270 50% 22%;
     --popover-foreground-hsl: 210 20% 98%;
 
-    --primary-hsl: 180 70% 45%;
+    --primary-hsl: 180 70% 50%; /* Lightness increased from 45% */
     --primary-foreground-hsl: 210 20% 98%;
 
-    --secondary-hsl: 240 15% 75%; /* Even Lighter Gray-Blue for Slider Tracks - for maximum visibility */
+    --secondary-hsl: 240 15% 75%; /* Even Lighter Gray-Blue for Slider Tracks */
     --secondary-foreground-hsl: 210 20% 98%;
 
     --muted-hsl: 270 30% 25%;
@@ -134,7 +133,7 @@ Event Theming (e.g., "Cosmic Grapevines"):
 
     --border-hsl: 270 40% 22%;
     --input-hsl: 270 25% 55%; /* Lighter Gray-Purple for Switch Tracks */
-    --ring-hsl: 180 70% 65%;
+    --ring-hsl: 180 70% 65%; /* Increased from 55% */
 
     --radius: 0.5rem;
 
