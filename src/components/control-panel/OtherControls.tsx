@@ -9,6 +9,7 @@ import { toast } from '@/hooks/use-toast';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import { ControlHint } from './ControlHint';
 import { LabelledSwitchControl } from './common/LabelledSwitchControl';
+import { cn } from '@/lib/utils';
 
 type OtherControlsProps = {
   value: string; // For AccordionItem
@@ -40,7 +41,12 @@ export function OtherControls({ value }: OtherControlsProps) {
         checked={settings.panicMode}
         onCheckedChange={(checked) => updateSetting('panicMode', checked)}
         tooltipContent={<p>Immediately blacks out the main visualizer output. Useful for emergencies.</p>}
-        switchProps={{ className: "data-[state=checked]:bg-destructive" }}
+        switchProps={{ 
+          className: cn(
+            "data-[state=checked]:bg-destructive",
+            settings.panicMode && "animate-destructive-pulse"
+          ) 
+        }}
         switchAriaLabel="Toggle Panic Mode"
       />
       <LabelledSwitchControl
