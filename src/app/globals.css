@@ -34,7 +34,7 @@ Core Color Palette (Cosmic Grapevines Theme):
   - --secondary-hsl: 240 15% 75%; (Even Lighter Gray-Blue for Slider Tracks - for maximum visibility)
   - --secondary-foreground-hsl: 210 20% 98%;
   - --muted-hsl: 270 30% 25%; (Muted Purple) - Muted backgrounds or less important elements.
-  - --muted-foreground-hsl: 210 15% 65%; (Darker Muted Text) - Text on muted backgrounds or less important text.
+  - --muted-foreground-hsl: 210 15% 70%; (Darker Muted Text - Lightness increased from 65%) - Text on muted backgrounds or less important text.
   - --accent-hsl: 180 70% 55%; (Lighter Interstellar Teal) - Hover states, secondary highlights.
   - --accent-foreground-hsl: 210 20% 98%;
   - --destructive-hsl: 0 72.2% 50.6%; (Red) - Error states, destructive actions.
@@ -72,7 +72,7 @@ Spacing & Layout:
 Typography:
 - Primary Sans-Serif: Applied via `font-sans` utility, configured in `tailwind.config.ts` to use `var(--font-geist-sans)`.
 - Primary Mono: Applied via `font-mono` utility, configured in `tailwind.config.ts` to use `var(--font-geist-mono)`.
-- Branding/Logo Font: "Torus Variations" (conditionally loaded via `next/font/local` in `layout.tsx`, uses `var(--font-torus-variations)`).
+- Branding/Logo Font: "Torus Variations" (conditionally loaded via `next/font/local` in `layout.tsx`, uses `var(--font-torus-variations)` when enabled).
 - Font sizes should follow Tailwind's scale (`text-sm`, `text-base`, `text-lg`, etc.) for consistency.
   These are also design tokens. If specific, non-standard font sizes are required repeatedly,
   they should be added to the Tailwind theme configuration rather than hardcoded.
@@ -117,7 +117,7 @@ Event Theming (e.g., "Cosmic Grapevines"):
     --secondary-foreground-hsl: 210 20% 98%;
 
     --muted-hsl: 270 30% 25%;
-    --muted-foreground-hsl: 210 15% 65%;
+    --muted-foreground-hsl: 210 15% 70%; /* Lightness increased from 65% */
 
     --accent-hsl: 180 70% 55%;
     --accent-foreground-hsl: 210 20% 98%;
