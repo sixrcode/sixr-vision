@@ -2,10 +2,10 @@
 import type { Metadata } from 'next';
 import { GeistSans } from 'geist/font/sans';
 import { GeistMono } from 'geist/font/mono';
-// import localFont from 'next/font/local'; // Temporarily commented out
+// import localFont from 'next/font/local'; // Re-enable import if Torus font file is correctly placed
 import './globals.css';
 // The fonts.css file can be re-imported here if it contains active @font-face rules.
-// import './fonts.css'; // Temporarily removed as it currently only contains comments.
+// import './fonts.css'; // Remains removed as it's not actively loading Torus and next/font/local handles it.
 import { Toaster } from '@/components/ui/toaster';
 import { AppProviders } from '@/providers/AppProviders';
 import { SidebarProvider } from '@/components/ui/sidebar';
@@ -18,15 +18,13 @@ import { CONTROL_PANEL_WIDTH_STRING } from '@/lib/constants';
 // 2. Placed your 'TorusVariations-VF.woff2' file there.
 // 3. The filename and casing MUST match EXACTLY.
 
-// === TORUS FONT TEMPORARILY DISABLED DUE TO LOADING ERRORS ===
+// === TORUS FONT CURRENTLY DISABLED DUE TO "FILE NOT FOUND" ERRORS ===
 // To re-enable:
-// 1. Ensure 'TorusVariations-VF.woff2' is in 'src/app/fonts/'
-// 2. Uncomment the 'localFont' import above.
-// 3. Uncomment the 'torusVariationsFont' constant definition below.
-// 4. Change 'torusVariations' to 'torusVariationsFont' in the body className.
-// 5. Update 'src/lib/brandingConstants.ts' to use '--font-torus-variations'.
-
-const torusVariations = { variable: '' }; // Placeholder to prevent errors if font loading is disabled
+// 1. Uncomment the 'localFont' import above.
+// 2. Uncomment the 'torusVariationsFont' constant definition below.
+// 3. Change 'torusVariations' to use the loaded font: const torusVariations = torusVariationsFont;
+// 4. Update 'src/lib/brandingConstants.ts' to use 'var(--font-torus-variations)'.
+// 5. Ensure the font file 'TorusVariations-VF.woff2' is in 'src/app/fonts/'.
 
 /*
 const torusVariationsFont = localFont({
@@ -41,6 +39,9 @@ const torusVariationsFont = localFont({
   display: 'swap', // Improves perceived loading performance
 });
 */
+
+// const torusVariations = torusVariationsFont; // Use this if font loading is re-enabled
+const torusVariations = { variable: '' }; // Placeholder if font loading is disabled
 
 export const metadata: Metadata = {
   title: 'SIXR Vision',
