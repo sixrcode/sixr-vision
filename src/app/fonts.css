@@ -1,7 +1,7 @@
 /*
   This file previously defined @font-face rules.
   Font loading for 'Torus Variations' is now handled by next/font/local in src/app/layout.tsx.
-  If you have other custom fonts to load manually, you can define their @font-face rules here.
+  This file can be used for other custom fonts loaded manually via @font-face if needed.
 */
 
 /*
@@ -10,7 +10,7 @@
 
   @font-face {
     font-family: 'AnotherCustomFont';
-    src: url('/fonts/AnotherCustomFont-Regular.woff2') format('woff2');
+    src: url('/path/to/your/font/AnotherCustomFont-Regular.woff2') format('woff2'); // Adjust path
     font-weight: 400; // or 'normal'
     font-style: normal;
     font-display: swap;
@@ -18,7 +18,7 @@
 
   @font-face {
     font-family: 'AnotherCustomFont';
-    src: url('/fonts/AnotherCustomFont-Bold.woff2') format('woff2');
+    src: url('/path/to/your/font/AnotherCustomFont-Bold.woff2') format('woff2'); // Adjust path
     font-weight: 700; // or 'bold'
     font-style: normal;
     font-display: swap;

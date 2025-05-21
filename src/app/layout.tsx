@@ -4,30 +4,23 @@ import { GeistSans } from 'geist/font/sans';
 import { GeistMono } from 'geist/font/mono';
 import localFont from 'next/font/local';
 import './globals.css';
-// import './fonts.css'; // Manual import no longer needed for Torus Variations
+// import './fonts.css'; // Manual import is primarily for @font-face rules not handled by next/font
 import { Toaster } from '@/components/ui/toaster';
 import { AppProviders } from '@/providers/AppProviders';
 import { SidebarProvider } from '@/components/ui/sidebar';
 import { CONTROL_PANEL_WIDTH_STRING } from '@/lib/constants';
 
-// For GeistSans and GeistMono, we can use them directly
-// const geistSans = GeistSans; 
-// const geistMono = GeistMono;
-
 // Configure Torus Variations font using next/font/local
+// IMPORTANT: This configuration expects the font file to be at src/app/fonts/TorusVariations-VF.woff2
+// Please ensure you have created the 'fonts' directory inside 'src/app/'
+// and placed your 'TorusVariations-VF.woff2' file there.
 const torusVariations = localFont({
   src: [
     {
-      path: '../../public/fonts/TorusVariations-VF.woff2', // This path expects the file at [ProjectRoot]/public/fonts/
-      weight: '100 900', 
+      path: './fonts/TorusVariations-VF.woff2', // Path relative to this file (src/app/layout.tsx)
+      weight: '100 900', // Assuming it's a variable font, specify the weight range
       style: 'normal',
     },
-    // Add other font files (e.g., .woff) if needed for broader compatibility or specific styles/weights
-    // {
-    //   path: '../../public/fonts/TorusVariations-VF.woff',
-    //   weight: '100 900',
-    //   style: 'normal',
-    // },
   ],
   variable: '--font-torus-variations', // CSS variable name
   display: 'swap', // Improves perceived loading performance
