@@ -54,7 +54,9 @@ Control Panel / Sidebar Specifics (Derived from Theme or Specific Variables):
 
 Spacing & Layout:
 - Primarily use Tailwind's default spacing scale (e.g., `p-2`, `m-4`, `gap-2`) for consistency.
-- These are tokenized values (e.g., `2` often maps to `0.5rem`).
+  These are tokenized values (e.g., `2` often maps to `0.5rem`).
+- Font sizes and spacing scales should also be managed as design tokens, typically
+  through Tailwind's theme configuration.
 - Avoid arbitrary pixel values for margins and paddings where possible. If custom spacing is
   needed frequently, consider adding it to the Tailwind theme configuration.
 
@@ -72,7 +74,8 @@ Adding New Components or Styles:
   by adjusting lightness or saturation, or if it warrants a new semantic variable in this file.
 - For reusable UI patterns, create React components (as done with ShadCN UI).
 - For complex animations or styles not achievable with Tailwind, use scoped CSS or
-  CSS Modules to avoid global namespace conflicts.
+  CSS Modules to avoid global namespace conflicts. Consider defining animations within
+  `tailwind.config.ts`'s `theme.extend.keyframes` and `theme.extend.animation` sections.
 
 Event Theming (e.g., "Cosmic Grapevines"):
 - The current theme *is* "Cosmic Grapevines," reflected in the core HSL palette.
@@ -97,12 +100,12 @@ body {
   :root {
     /* Cosmic Grapevines Theme */
     --background-hsl: 270 50% 10%;
-    --foreground-hsl: 210 20% 95%; /* Slightly reduced lightness from 98% */
+    --foreground-hsl: 210 20% 95%;
 
     --card-hsl: 270 50% 15%;
     --card-foreground-hsl: 210 20% 98%;
 
-    --popover-hsl: 270 50% 18%; /* Made lighter than card for better layering */
+    --popover-hsl: 270 50% 18%;
     --popover-foreground-hsl: 210 20% 98%;
 
     --primary-hsl: 180 70% 45%; /* Interstellar Teal */
@@ -127,8 +130,8 @@ body {
     --info-foreground-hsl: 210 20% 98%;
 
     --border-hsl: 270 40% 22%;
-    --input-hsl: 270 35% 35%; /* Increased lightness for better switch visibility */
-    --ring-hsl: 180 70% 55%; /* Lighter Teal, matches accent */
+    --input-hsl: 270 35% 35%;
+    --ring-hsl: 180 70% 55%;
 
     --radius: 0.5rem;
 
@@ -201,21 +204,5 @@ body {
     --chart-3: hsl(var(--chart-3-hsl));
     --chart-4: hsl(var(--chart-4-hsl));
     --chart-5: hsl(var(--chart-5-hsl));
-  }
-}
-
-/* Removed global '*' border rule to avoid style bloat and encourage explicit component borders.
-   Components should define their own borders using Tailwind utilities (e.g., `border`, `border-primary`).
-*/
-
-/* Keyframes for logo pulse animation */
-@keyframes logoPulseEffect {
-  0%, 100% {
-    opacity: var(--logo-pulse-start-opacity, 1); /* Fallback opacity if var not set */
-    transform: scale(1);
-  }
-  50% {
-    opacity: var(--logo-pulse-mid-opacity, 0.6); /* Fallback opacity if var not set */
-    transform: scale(0.95);
   }
 }

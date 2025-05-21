@@ -131,15 +131,14 @@ export function BrandingOverlay() {
       0 0 ${20 * rmsGlowIntensity}px ${centralTextGlowColor.replace('rgb', 'rgba').replace(')', ', 0.5)')}
     `,
   };
-
-  const pulseAnimationStyle: React.CSSProperties = animType === 'pulse' ? {
-    animationName: 'logoPulseEffect',
-    animationDuration: `${2 / animSpeed}s`,
-    animationIterationCount: 'infinite',
-    animationTimingFunction: 'ease-in-out',
+  
+  // CSS custom properties for pulse animation are set here, used by the Tailwind animation utility
+  const pulseCustomProperties: React.CSSProperties = animType === 'pulse' ? {
     ['--logo-pulse-start-opacity' as string]: masterOpacity,
     ['--logo-pulse-mid-opacity' as string]: masterOpacity * 0.6,
+    ['--logo-pulse-duration' as string]: `${2 / animSpeed}s`, // Pass duration via variable
   } : {};
+
 
   const logoWrapperBaseStyle: React.CSSProperties = {
     opacity: animType === 'pulse' ? undefined : masterOpacity, // Pulse animation handles its own opacity via CSS vars
@@ -148,8 +147,8 @@ export function BrandingOverlay() {
 
 
   // Styles for rotating watermark and beat-flash logo
-  const rotatingWatermarkStyle: React.CSSProperties = {...logoWrapperBaseStyle, ...(animType === 'pulse' ? pulseAnimationStyle : {})};
-  const beatFlashLogoStyle: React.CSSProperties = {...logoWrapperBaseStyle, ...(animType === 'pulse' ? pulseAnimationStyle : {})};
+  const rotatingWatermarkStyle: React.CSSProperties = {...logoWrapperBaseStyle, ...pulseCustomProperties};
+  const beatFlashLogoStyle: React.CSSProperties = {...logoWrapperBaseStyle, ...pulseCustomProperties};
 
   if (animType === 'blink' && !blinkOn) {
     rotatingWatermarkStyle.opacity = 0;
@@ -182,14 +181,14 @@ export function BrandingOverlay() {
           <div
             className={cn(
               "absolute top-4 right-4 pointer-events-none",
-              animType !== 'pulse' && "transition-opacity duration-200 ease-out",
-              animType !== 'pulse' && logoOpacity === 0 && "opacity-0" // Hide if opacity is 0 and not pulsing
+              animType === 'pulse' && 'animate-logo-pulse-effect',
+              animType !== 'pulse' && logoOpacity === 0 && "opacity-0"
             )}
             style={rotatingWatermarkStyle}
           >
             <SixrLogo
               className="w-16 h-auto animate-[spin_20s_linear_infinite]"
-              colorOverride={logoColorOverride} // This will apply solid, blink, or rainbow color
+              colorOverride={logoColorOverride}
             />
           </div>
 
@@ -197,12 +196,9 @@ export function BrandingOverlay() {
           <div
             className={cn(
               "absolute inset-0 flex items-center justify-center pointer-events-none",
-              // Pulse animation includes opacity, so direct transition-opacity might not be needed here
-              animType !== 'pulse' && "transition-opacity duration-300 ease-out" 
+              animType === 'pulse' && 'animate-logo-pulse-effect'
             )}
-            // Apply pulse to container if pulse is active, otherwise just the glow style.
-            // Base opacity for letters is handled in their individual style objects
-            style={animType === 'pulse' ? {...centralTextContainerStyle, ...pulseAnimationStyle } : centralTextContainerStyle}
+            style={animType === 'pulse' ? {...centralTextContainerStyle, ...pulseCustomProperties } : centralTextContainerStyle}
           >
             <h1 className="text-6xl md:text-8xl font-bold" style={{ fontFamily: TORUS_FONT_FAMILY }}>
               <span style={centralTextStyleS}>S</span>{' '}
@@ -216,14 +212,14 @@ export function BrandingOverlay() {
            <div
             className={cn(
               "absolute bottom-4 left-4 pointer-events-none",
-              animType !== 'pulse' && "transition-opacity duration-200 ease-out",
+              animType === 'pulse' && 'animate-logo-pulse-effect',
               animType !== 'pulse' && logoOpacity === 0 && "opacity-0"
             )}
-            style={{ ...beatFlashLogoStyle, ...beatFlashEffectStyle }}
+            style={{ ...beatFlashLogoStyle, ...beatFlashEffectStyle, ...pulseCustomProperties }}
           >
             <SixrLogo
                 className="w-20 h-auto"
-                colorOverride={logoColorOverride} // Applies solid, blink, or rainbow color
+                colorOverride={logoColorOverride}
             />
           </div>
         </>
