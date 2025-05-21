@@ -199,11 +199,13 @@ body {
   }
 }
 
+/* Removed global '*' border rule to avoid style bloat and encourage explicit component borders.
 @layer base {
   * {
     @apply border-border;
   }
 }
+*/
 
 /* Keyframes for logo pulse animation */
 @keyframes logoPulseEffect {
