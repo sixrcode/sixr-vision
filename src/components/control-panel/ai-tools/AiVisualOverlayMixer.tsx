@@ -19,6 +19,7 @@ import { VALID_BLEND_MODES } from '@/types';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { ControlHint } from '../ControlHint';
 import { LabelledSwitchControl } from '../common/LabelledSwitchControl';
+import { AiSuggestedPromptDisplay } from '../common/AiSuggestedPromptDisplay';
 
 
 type AiVisualOverlayMixerProps = {
@@ -115,25 +116,14 @@ export function AiVisualOverlayMixer({ value }: AiVisualOverlayMixerProps) {
             placeholder="e.g., ethereal wisps of light"
             disabled={isLoading}
           />
-           {settings.lastAISuggestedAssetPrompt && (
-             <div className="mt-1.5 p-1.5 border border-dashed rounded-md bg-background">
-                <div className="flex items-center justify-between">
-                <p className="text-xs text-muted-foreground">
-                    <Wand2 className="inline h-3 w-3 mr-1 text-primary/80" />
-                    Suggestion: <em className="text-primary/90">"{settings.lastAISuggestedAssetPrompt}"</em>
-                </p>
-                <Button
-                    size="xs" 
-                    variant="outline"
-                    onClick={() => setLocalPrompt(settings.lastAISuggestedAssetPrompt!)}
-                    className="px-2 py-1 h-auto text-xs"
-                    disabled={isLoading}
-                >
-                    Use
-                </Button>
-                </div>
-            </div>
-           )}
+          <AiSuggestedPromptDisplay
+            suggestedPrompt={settings.lastAISuggestedAssetPrompt}
+            onUsePrompt={setLocalPrompt}
+            isLoading={isLoading}
+            icon={Wand2}
+            labelText="Suggestion:"
+            containerClassName="mt-1.5 p-1.5"
+          />
         </div>
         
         <Button onClick={() => handleGenerateOverlay()} disabled={isLoading || !currentScene} className="w-full">

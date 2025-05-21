@@ -14,6 +14,7 @@ import { ImageIcon, Cuboid, Sparkles, Loader2 } from 'lucide-react';
 import { useSettings } from '@/providers/SettingsProvider';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import { ControlHint } from '../ControlHint';
+import { AiSuggestedPromptDisplay } from '../common/AiSuggestedPromptDisplay';
 
 type ProceduralAssetsGeneratorProps = {
   value: string; // For AccordionItem
@@ -73,25 +74,13 @@ export function ProceduralAssetsGenerator({ value }: ProceduralAssetsGeneratorPr
         />
       </div>
 
-      {settings.lastAISuggestedAssetPrompt && (
-        <div className="mt-2 p-2 border border-dashed rounded-md bg-background">
-          <div className="flex items-center justify-between">
-            <p className="text-xs text-muted-foreground">
-              <Sparkles className="inline h-3 w-3 mr-1 text-primary/80" />
-              AI suggestion: <em className="text-primary/90">"{settings.lastAISuggestedAssetPrompt}"</em>
-            </p>
-            <Button
-              size="xs"
-              variant="outline"
-              onClick={() => setPrompt(settings.lastAISuggestedAssetPrompt!)}
-              className="px-2 py-1 h-auto text-xs"
-              disabled={isLoading}
-            >
-              Use
-            </Button>
-          </div>
-        </div>
-      )}
+      <AiSuggestedPromptDisplay
+        suggestedPrompt={settings.lastAISuggestedAssetPrompt}
+        onUsePrompt={setPrompt}
+        isLoading={isLoading}
+        // Uses default icon (Sparkles) and labelText ("AI suggestion:")
+      />
+      
       <Tooltip>
         <TooltipTrigger asChild>
           <Button onClick={handleSubmit} disabled={isLoading} className="w-full mt-2">
