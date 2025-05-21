@@ -38,7 +38,7 @@ Core Color Palette (Cosmic Grapevines Theme):
   - --info-hsl: 200 75% 55%; (Bright Blue) - Informational elements, active webcam indicator.
   - --border-hsl: 270 40% 22%; (Purple-ish Border) - Default border color.
   - --input-hsl: 270 35% 35%; (Purple-ish Input BG) - Background for input fields, unchecked switches.
-  - --ring-hsl: 180 70% 55%; (Lighter Teal) - Focus rings.
+  - --ring-hsl: 180 70% 65%; (Bright Teal - increased from 55%) - Focus rings.
 
 SIXR Brand Colors (Used for Logo Elements - Defined as CSS Variables):
   - --sixr-s-color-hsl: 45 98% 53%; (Gold/Yellow)
@@ -94,12 +94,12 @@ Event Theming (e.g., "Cosmic Grapevines"):
   :root {
     /* Cosmic Grapevines Theme */
     --background-hsl: 270 50% 10%;
-    --foreground-hsl: 210 20% 90%; /* Lightness reduced from 95% to 90% */
+    --foreground-hsl: 210 20% 90%;
 
     --card-hsl: 270 50% 15%;
     --card-foreground-hsl: 210 20% 98%;
 
-    --popover-hsl: 270 50% 20%; /* Lightness increased from 18% to 20% for better layering */
+    --popover-hsl: 270 50% 20%;
     --popover-foreground-hsl: 210 20% 98%;
 
     --primary-hsl: 180 70% 45%; /* Interstellar Teal */
@@ -125,7 +125,7 @@ Event Theming (e.g., "Cosmic Grapevines"):
 
     --border-hsl: 270 40% 22%;
     --input-hsl: 270 35% 35%;
-    --ring-hsl: 180 70% 55%;
+    --ring-hsl: 180 70% 65%; /* Brightened Teal for focus rings */
 
     --radius: 0.5rem;
 
@@ -205,4 +205,3 @@ Event Theming (e.g., "Cosmic Grapevines"):
     min-height: 100vh;
   }
 }
-
