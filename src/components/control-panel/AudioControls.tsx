@@ -42,13 +42,13 @@ export function AudioControls({ value }: AudioControlsProps) {
             ))}
           </SelectContent>
         </Select>
-        <p className="text-xs text-[hsl(var(--muted-foreground))]">Controls the resolution of audio frequency analysis.</p>
+        <p className="text-xs text-muted-foreground">Controls the resolution of audio frequency analysis.</p>
       </div>
 
       <div className={cn("space-y-1", settings.enableAgc && "opacity-50 pointer-events-none")}>
         <Tooltip>
           <TooltipTrigger asChild>
-            <Label htmlFor="gain-slider" className={cn(settings.enableAgc && "text-[hsl(var(--muted-foreground))]")}>
+            <Label htmlFor="gain-slider" className={cn(settings.enableAgc && "text-muted-foreground")}>
               Manual Gain ({settings.gain.toFixed(2)}) {settings.enableAgc && "(AGC Active)"}
             </Label>
           </TooltipTrigger>
@@ -84,10 +84,9 @@ export function AudioControls({ value }: AudioControlsProps) {
           aria-label="Toggle Automatic Gain Control"
         />
       </div>
-       <p className="text-xs text-[hsl(var(--muted-foreground))]">
+       <p className="text-xs text-muted-foreground">
         {settings.enableAgc ? "AGC is active. Manual gain is disabled." : "Adjust gain manually or enable AGC."}
       </p>
     </ControlPanelSection>
   );
 }
-

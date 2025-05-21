@@ -97,16 +97,15 @@ export function AmbianceGenerator({ value }: AmbianceGeneratorProps) {
               value={ambianceText}
               readOnly
               rows={3}
-              className="bg-[hsl(var(--background))] text-[hsl(var(--foreground))]"
+              className="bg-background text-foreground"
               placeholder="AI generated ambiance text will appear here..."
             />
           </div>
         )}
       </div>
-      <p className="text-xs text-[hsl(var(--muted-foreground))] mt-2">
+      <p className="text-xs text-muted-foreground mt-2">
         Generates a poetic snippet reflecting the current audiovisual experience.
       </p>
     </ControlPanelSection>
   );
 }
-

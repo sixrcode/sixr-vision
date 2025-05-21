@@ -76,7 +76,7 @@ export function OtherControls({ value }: OtherControlsProps) {
             <p>Loads a predefined sequence of scene changes and setting adjustments. (Placeholder)</p>
           </TooltipContent>
         </Tooltip>
-        <p className="text-xs text-[hsl(var(--muted-foreground))]">Cue list player is a placeholder.</p>
+        <p className="text-xs text-muted-foreground">Cue list player is a placeholder.</p>
         
         <Tooltip>
           <TooltipTrigger asChild>
@@ -88,12 +88,12 @@ export function OtherControls({ value }: OtherControlsProps) {
             <p>Exports a log of events and settings changes during the session. (Placeholder)</p>
           </TooltipContent>
         </Tooltip>
-        <p className="text-xs text-[hsl(var(--muted-foreground))]">IndexedDB logging & export are placeholders.</p>
+        <p className="text-xs text-muted-foreground">IndexedDB logging & export are placeholders.</p>
       </div>
 
       <div className="mt-4">
-        <h4 className="text-xs font-semibold text-[hsl(var(--muted-foreground))]">Placeholders for Advanced Features:</h4>
-        <ul className="list-disc list-inside text-xs text-[hsl(var(--muted-foreground))] pl-2">
+        <h4 className="text-xs font-semibold text-muted-foreground">Placeholders for Advanced Features:</h4>
+        <ul className="list-disc list-inside text-xs text-muted-foreground pl-2">
           <li>WebSocket / OSC API</li>
           <li>Art-Net Bridge</li>
           <li>Adaptive Watchdog (FPS Monitor)</li>

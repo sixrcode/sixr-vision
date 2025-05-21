@@ -111,11 +111,11 @@ export function AiPresetChooser({ value }: AiPresetChooserProps) {
         </TooltipContent>
       </Tooltip>
       {suggestedSceneInfo && (
-        <div className="mt-3 p-2 border border-[hsl(var(--border))] rounded-md bg-[hsl(var(--background))]">
+        <div className="mt-3 p-2 border rounded-md bg-background">
           <p className="text-sm font-medium">Suggested Scene: <span className="text-primary">{suggestedSceneInfo.sceneId}</span></p>
-          <p className="text-xs text-[hsl(var(--muted-foreground))] mt-1">{suggestedSceneInfo.reason}</p>
+          <p className="text-xs text-muted-foreground mt-1">{suggestedSceneInfo.reason}</p>
           {suggestedSceneInfo.suggestedAssetPrompt && (
-            <p className="text-xs text-[hsl(var(--muted-foreground))] mt-1">Asset idea: <em className="text-primary/90">"{suggestedSceneInfo.suggestedAssetPrompt}"</em> (use in Procedural Assets)</p>
+            <p className="text-xs text-muted-foreground mt-1">Asset idea: <em className="text-primary/90">"{suggestedSceneInfo.suggestedAssetPrompt}"</em> (use in Procedural Assets)</p>
           )}
           {scenes.find(s => s.id === suggestedSceneInfo.sceneId) && !autoLoad && (
             <Button onClick={handleLoadSuggested} size="sm" className="mt-2 w-full" disabled={isLoading}>
@@ -135,8 +135,7 @@ export function AiPresetChooser({ value }: AiPresetChooserProps) {
         </Tooltip>
         <Switch id="auto-load-switch" checked={autoLoad} onCheckedChange={setAutoLoad} aria-label="Toggle auto-load scene suggestions" disabled={isLoading} />
       </div>
-      <p className="text-xs text-[hsl(var(--muted-foreground))] mt-1">When active, AI will periodically suggest & load scenes (every 30s).</p>
+      <p className="text-xs text-muted-foreground mt-1">When active, AI will periodically suggest & load scenes (every 30s).</p>
     </ControlPanelSection>
   );
 }
-

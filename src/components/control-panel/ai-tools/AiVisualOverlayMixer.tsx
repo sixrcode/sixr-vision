@@ -31,6 +31,8 @@ export function AiVisualOverlayMixer({ value }: AiVisualOverlayMixerProps) {
 
   const [isLoading, setIsLoading] = useState(false);
   const [localPrompt, setLocalPrompt] = useState(settings.aiOverlayPrompt);
+  
+  // Removed initialGenerationAttemptedRef as auto-generation on load is disabled.
 
   useEffect(() => {
     setLocalPrompt(settings.aiOverlayPrompt);
@@ -82,8 +84,6 @@ export function AiVisualOverlayMixer({ value }: AiVisualOverlayMixerProps) {
     }
   };
 
-  // Removed automatic initial generation useEffect block to reduce frequent AI calls on load.
-
   return (
     <ControlPanelSection title="AI: Visual Overlay Mixer" value={value}>
       <div className="space-y-3">
@@ -111,7 +111,7 @@ export function AiVisualOverlayMixer({ value }: AiVisualOverlayMixerProps) {
             </TooltipTrigger>
             <TooltipContent>
               <p>Describe the visual style or elements for the AI-generated overlay.</p>
-              <p className="text-xs text-[hsl(var(--muted-foreground))]">e.g., "swirling cosmic dust", "geometric neon lines", "water ripples"</p>
+              <p className="text-xs text-muted-foreground">e.g., "swirling cosmic dust", "geometric neon lines", "water ripples"</p>
             </TooltipContent>
           </Tooltip>
           <Input
@@ -122,9 +122,9 @@ export function AiVisualOverlayMixer({ value }: AiVisualOverlayMixerProps) {
             disabled={isLoading}
           />
            {settings.lastAISuggestedAssetPrompt && (
-             <div className="mt-1.5 p-1.5 border border-dashed border-[hsl(var(--border))] rounded-md bg-[hsl(var(--background))]">
+             <div className="mt-1.5 p-1.5 border border-dashed rounded-md bg-background">
                 <div className="flex items-center justify-between">
-                <p className="text-xs text-[hsl(var(--muted-foreground))]">
+                <p className="text-xs text-muted-foreground">
                     <Wand2 className="inline h-3 w-3 mr-1 text-primary/80" />
                     Suggestion: <em className="text-primary/90">"{settings.lastAISuggestedAssetPrompt}"</em>
                 </p>
@@ -160,7 +160,7 @@ export function AiVisualOverlayMixer({ value }: AiVisualOverlayMixerProps) {
               alt="AI Generated Overlay"
               width={100}
               height={100}
-              className="rounded border border-[hsl(var(--border))] object-cover"
+              className="rounded border object-cover"
               data-ai-hint="generated overlay"
             />
           </div>
@@ -218,4 +218,3 @@ export function AiVisualOverlayMixer({ value }: AiVisualOverlayMixerProps) {
     </ControlPanelSection>
   );
 }
-

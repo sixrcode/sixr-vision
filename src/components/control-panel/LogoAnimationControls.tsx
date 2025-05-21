@@ -114,14 +114,14 @@ export function LogoAnimationControls({ value }: LogoAnimationControlsProps) {
             value={[logoAnimationSettings.speed]}
             onValueChange={([val]) => handleAnimationSettingChange('speed', val)}
           />
-          <p className="text-xs text-[hsl(var(--muted-foreground))]">
+          <p className="text-xs text-muted-foreground">
             {currentAnimType === 'blink' ? 'Higher is faster blinking.' :
              currentAnimType === 'pulse' ? 'Higher is faster pulsing.' :
              currentAnimType === 'rainbowCycle' ? 'Higher is faster color cycling.' : ''}
           </p>
         </div>
       )}
-       <p className="text-xs text-[hsl(var(--muted-foreground))] mt-2">More animations (Chase, Sparkle, etc.) are placeholders.</p>
+       <p className="text-xs text-muted-foreground mt-2">More animations (Chase, Sparkle, etc.) are placeholders.</p>
     </ControlPanelSection>
   );
 }

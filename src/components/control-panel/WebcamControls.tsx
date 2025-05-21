@@ -23,7 +23,7 @@ export function WebcamControls({ value }: WebcamControlsProps) {
           </TooltipTrigger>
           <TooltipContent>
             <p>Toggles the webcam feed visibility in compatible scenes.</p>
-            <p className="text-xs text-[hsl(var(--muted-foreground))]">Requires camera permission.</p>
+            <p className="text-xs text-muted-foreground">Requires camera permission.</p>
           </TooltipContent>
         </Tooltip>
         <Switch
@@ -49,8 +49,8 @@ export function WebcamControls({ value }: WebcamControlsProps) {
           />
         </div>
       )}
-      <p className="text-xs text-[hsl(var(--muted-foreground))] mt-2">AI Segmentation: Placeholder</p>
-      <p className="text-xs text-[hsl(var(--muted-foreground))]">Motion Energy Scalar: Placeholder</p>
+      <p className="text-xs text-muted-foreground mt-2">AI Segmentation: Placeholder</p>
+      <p className="text-xs text-muted-foreground">Motion Energy Scalar: Placeholder</p>
     </ControlPanelSection>
   );
 }

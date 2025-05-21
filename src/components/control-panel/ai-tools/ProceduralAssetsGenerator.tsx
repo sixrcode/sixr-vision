@@ -73,9 +73,9 @@ export function ProceduralAssetsGenerator({ value }: ProceduralAssetsGeneratorPr
       </div>
 
       {settings.lastAISuggestedAssetPrompt && (
-        <div className="mt-2 p-2 border border-dashed border-[hsl(var(--border))] rounded-md bg-[hsl(var(--background))]">
+        <div className="mt-2 p-2 border border-dashed rounded-md bg-background">
           <div className="flex items-center justify-between">
-            <p className="text-xs text-[hsl(var(--muted-foreground))]">
+            <p className="text-xs text-muted-foreground">
               <Sparkles className="inline h-3 w-3 mr-1 text-primary/80" />
               AI suggestion: <em className="text-primary/90">"{settings.lastAISuggestedAssetPrompt}"</em>
             </p>
@@ -117,7 +117,7 @@ export function ProceduralAssetsGenerator({ value }: ProceduralAssetsGeneratorPr
                 alt="Generated Texture"
                 width={100}
                 height={100}
-                className="rounded border border-[hsl(var(--border))] mt-1 object-cover"
+                className="rounded border mt-1 object-cover"
                 data-ai-hint="generated texture"
               />
             </div>
@@ -130,15 +130,15 @@ export function ProceduralAssetsGenerator({ value }: ProceduralAssetsGeneratorPr
                 alt="Generated Mesh Preview"
                 width={100}
                 height={100}
-                className="rounded border border-[hsl(var(--border))] mt-1 object-cover"
+                className="rounded border mt-1 object-cover"
                 data-ai-hint="generated mesh"
               />
-              <p className="text-xs text-[hsl(var(--muted-foreground))]">Note: Mesh preview is shown as an image. Actual mesh data available.</p>
+              <p className="text-xs text-muted-foreground">Note: Mesh preview is shown as an image. Actual mesh data available.</p>
             </div>
           )}
         </div>
       )}
-      <p className="text-xs text-[hsl(var(--muted-foreground))] mt-2">Style-Transfer Shader: Placeholder</p>
+      <p className="text-xs text-muted-foreground mt-2">Style-Transfer Shader: Placeholder</p>
     </ControlPanelSection>
   );
 }
