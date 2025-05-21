@@ -13,7 +13,7 @@ export function VisualizerView() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const { settings } = useSettings();
   const { audioData } = useAudioData();
-  const { currentScene, scenes } = useScene(); 
+  const { currentScene, scenes } = useScene();
   const animationFrameIdRef = useRef<number | null>(null);
   const [webcamElement, setWebcamElement] = useState<HTMLVideoElement | null>(null);
   const [lastError, setLastError] = useState<string | null>(null);
@@ -61,13 +61,13 @@ export function VisualizerView() {
       };
       img.src = settings.aiGeneratedOverlayUri;
     } else {
-      aiOverlayImageRef.current = null; 
+      aiOverlayImageRef.current = null;
     }
   }, [settings.enableAiOverlay, settings.aiGeneratedOverlayUri]);
 
 
   const drawLoop = useCallback(() => {
-    animationFrameIdRef.current = null; 
+    animationFrameIdRef.current = null;
 
     const canvas = canvasRef.current;
     if (!canvas) {
@@ -94,29 +94,36 @@ export function VisualizerView() {
     }
 
     // DEBUG LOG: Check received audioData
-    if (Math.random() < 0.05) { 
-        const spectrumSum = audioData.spectrum.reduce((a,b) => a+b, 0);
-        if (audioData.rms > 0.001 || spectrumSum > 0 || audioData.beat) { 
-             console.log('VisualizerView - Received active audioData. RMS:', audioData.rms.toFixed(3), 'Beat:', audioData.beat, 'Spectrum Sum:', spectrumSum, 'First 5 bins:', audioData.spectrum.slice(0,5));
-        }
+    const spectrumSum = audioData.spectrum.reduce((a, b) => a + b, 0);
+    if (audioData.rms > 0.001 || spectrumSum > 0 || audioData.beat) {
+        console.log(
+            'VisualizerView - AudioData:',
+            'RMS:', audioData.rms.toFixed(3),
+            'Beat:', audioData.beat,
+            'Bass:', audioData.bassEnergy.toFixed(3),
+            'Mid:', audioData.midEnergy.toFixed(3),
+            'Treble:', audioData.trebleEnergy.toFixed(3),
+            'BPM:', audioData.bpm,
+            'Spectrum Sum:', spectrumSum,
+            'First 5 bins:', audioData.spectrum.slice(0,5)
+        );
     }
 
 
     try {
-      ctx.clearRect(0, 0, canvas.width, canvas.height); 
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
 
       if (lastError && !settings.panicMode) {
         ctx.fillStyle = 'hsl(var(--background-hsl))';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         ctx.font = '14px var(--font-geist-sans)';
-        
-        // Use themed destructive color for error text
+
         if (canvasRef.current) {
             const computedStyle = getComputedStyle(canvasRef.current);
             const destructiveColor = computedStyle.getPropertyValue('--destructive').trim();
-            ctx.fillStyle = destructiveColor || 'red'; // Fallback to red
+            ctx.fillStyle = destructiveColor || 'red';
         } else {
-            ctx.fillStyle = 'red'; // Fallback
+            ctx.fillStyle = 'red';
         }
 
         ctx.textAlign = 'center';
@@ -151,11 +158,11 @@ export function VisualizerView() {
 
         ctx.globalAlpha = 1 - progress;
         previousSceneRef.current.draw(ctx, audioData, settings, webcamElement ?? undefined);
-        
+
         ctx.globalAlpha = progress;
         currentScene.draw(ctx, audioData, settings, webcamElement ?? undefined);
-        
-        ctx.globalAlpha = 1; 
+
+        ctx.globalAlpha = 1;
 
         if (progress >= 1) {
           setIsTransitioning(false);
@@ -163,7 +170,7 @@ export function VisualizerView() {
         }
         if (lastError) setLastError(null);
       } else if (currentScene) {
-        ctx.globalAlpha = 1; 
+        ctx.globalAlpha = 1;
         currentScene.draw(ctx, audioData, settings, webcamElement ?? undefined);
         if (lastError) setLastError(null);
       } else {
@@ -185,16 +192,32 @@ export function VisualizerView() {
         ctx.drawImage(aiOverlayImageRef.current, 0, 0, canvas.width, canvas.height);
         // console.log('AI Overlay Drawn');
 
-        ctx.globalAlpha = originalAlpha; 
-        ctx.globalCompositeOperation = originalCompositeOperation; 
+        ctx.globalAlpha = originalAlpha;
+        ctx.globalCompositeOperation = originalCompositeOperation;
       }
 
-      // Draw FPS counter
+      // Draw FPS counter & Audio Data for Debugging
       if (!settings.panicMode && !lastError) {
-        ctx.font = '12px var(--font-geist-sans)';
-        ctx.fillStyle = 'hsl(var(--foreground))'; // Already using themed color
+        ctx.font = '12px var(--font-geist-mono)'; // Use mono for better alignment
+        ctx.fillStyle = 'hsl(var(--foreground))';
         ctx.textAlign = 'left';
         ctx.fillText(`FPS: ${fps}`, 10, 20);
+
+        // On-screen audio data display
+        ctx.textAlign = 'right';
+        const lineSpacing = 14;
+        let currentY = 20;
+        ctx.fillText(`RMS: ${audioData.rms.toFixed(3)}`, canvas.width - 10, currentY);
+        currentY += lineSpacing;
+        ctx.fillText(`Beat: ${audioData.beat}`, canvas.width - 10, currentY);
+        currentY += lineSpacing;
+        ctx.fillText(`Bass: ${audioData.bassEnergy.toFixed(3)}`, canvas.width - 10, currentY);
+        currentY += lineSpacing;
+        ctx.fillText(`Mid: ${audioData.midEnergy.toFixed(3)}`, canvas.width - 10, currentY);
+        currentY += lineSpacing;
+        ctx.fillText(`Treble: ${audioData.trebleEnergy.toFixed(3)}`, canvas.width - 10, currentY);
+        currentY += lineSpacing;
+        ctx.fillText(`BPM: ${audioData.bpm}`, canvas.width - 10, currentY);
       }
 
     } catch (error) {
@@ -206,7 +229,7 @@ export function VisualizerView() {
     }
 
     animationFrameIdRef.current = requestAnimationFrame(drawLoop);
-  }, [audioData, currentScene, settings, webcamElement, lastError, isTransitioning, fps, scenes]); // Added scenes to deps
+  }, [audioData, currentScene, settings, webcamElement, lastError, isTransitioning, fps, scenes]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -237,7 +260,7 @@ export function VisualizerView() {
         animationFrameIdRef.current = null;
       }
     };
-  }, [drawLoop, settings.currentSceneId]); 
+  }, [drawLoop, settings.currentSceneId]);
 
   return (
     <div className="w-full h-full relative">
