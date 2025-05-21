@@ -21,7 +21,7 @@ export function PresetSelector({ value }: PresetSelectorProps) {
       <ScrollArea className="w-full h-auto max-h-[300px]">
         <div className="grid grid-cols-3 gap-2 p-1">
           {scenes.map((scene) => (
-            <Tooltip key={scene.id} delayDuration={300}>
+            <Tooltip key={scene.id}> {/* Removed delayDuration for maximum simplicity */}
               <TooltipTrigger asChild>
                 <PresetCard
                   scene={scene}
@@ -30,11 +30,10 @@ export function PresetSelector({ value }: PresetSelectorProps) {
                   onKeyDown={(e) => e.key === 'Enter' && setCurrentSceneById(scene.id)}
                 />
               </TooltipTrigger>
-              {/* Rely on default portaling by TooltipContent */}
+              {/* Rely entirely on the base TooltipContent from /components/ui/tooltip for styling */}
               <TooltipContent
                 side="bottom"
                 align="center"
-                // No custom style or z-index here; rely on base TooltipContent
               >
                 <p className="font-semibold">{scene.name}</p>
                 {scene.dataAiHint && (
