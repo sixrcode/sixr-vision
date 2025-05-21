@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import { SixrLogo } from '@/components/icons/SixrLogo';
@@ -54,12 +54,13 @@ export function ControlPanelView() {
         await initializeAudio();
         setIsTogglingAudio(false);
       }
-      if (!settings.showWebcam && !isTogglingWebcam) {
-        console.log("ControlPanelView: Auto-initializing webcam on load.");
-        setIsTogglingWebcam(true);
-        updateSetting('showWebcam', true);
-        setIsTogglingWebcam(false);
-      }
+      // No automatic webcam init here as it's controlled by its own toggle now
+      // but if we wanted to, it would be:
+      // if (!settings.showWebcam && !isTogglingWebcam) {
+      //   setIsTogglingWebcam(true);
+      //   updateSetting('showWebcam', true);
+      //   setIsTogglingWebcam(false);
+      // }
     };
     autoInit();
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -106,7 +107,7 @@ export function ControlPanelView() {
                 variant="ghost"
                 onClick={handleAudioToggle}
                 className={cn(
-                  "h-7 w-7 text-sm",
+                  "relative h-7 w-7 text-sm after:content-[''] after:absolute after:-inset-2 after:rounded-full after:md:hidden",
                   isInitialized && "bg-accent"
                 )}
                 disabled={isTogglingAudio}
@@ -135,7 +136,7 @@ export function ControlPanelView() {
                 variant="ghost"
                 onClick={handleWebcamToggle}
                 className={cn(
-                  "h-7 w-7 text-sm",
+                  "relative h-7 w-7 text-sm after:content-[''] after:absolute after:-inset-2 after:rounded-full after:md:hidden",
                   settings.showWebcam && "bg-accent"
                 )}
                 disabled={isTogglingWebcam}
