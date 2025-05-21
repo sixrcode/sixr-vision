@@ -25,8 +25,8 @@ Theme System:
 Core Color Palette (Cosmic Grapevines Theme):
   - --background-hsl: 270 50% 10%; (Deep Cosmic Purple) - Main page background.
   - --foreground-hsl: 210 20% 95%; (Lighter Gray - brightened for readability) - Default text color.
-  - --card-hsl: 270 50% 15%; (Lighter Deep Purple) - Background for card-like elements.
-  - --popover-hsl: 270 50% 20%; (Even Lighter Purple - increased from 18%) - Background for popovers, tooltips.
+  - --card-hsl: 270 50% 16%; (Slightly Lighter Deep Purple) - Background for card-like elements.
+  - --popover-hsl: 270 50% 22%; (Even Lighter Purple) - Background for popovers, tooltips.
   - --primary-hsl: 180 70% 45%; (Interstellar Teal) - Primary interactive elements, buttons, active states.
   - --primary-foreground-hsl: 210 20% 98%; (Light Text) - Text on primary-colored elements.
   - --secondary-hsl: 240 40% 20%; (Muted Cosmic Blue) - Secondary elements or backgrounds.
@@ -55,10 +55,9 @@ Control Panel / Sidebar Specifics (Derived from Theme or Specific Variables):
 Spacing & Layout:
 - Primarily use Tailwind's default spacing scale (e.g., `p-2`, `m-4`, `gap-2`) for consistency.
   These are tokenized values (e.g., `2` often maps to `0.5rem`).
+- Font sizes should also be managed as design tokens, typically through Tailwind's theme configuration.
 - Avoid arbitrary pixel values for margins and paddings where possible. If custom spacing is
   needed frequently, consider adding it to the Tailwind theme configuration.
-- Font sizes and spacing scales should also be managed as design tokens, typically
-  through Tailwind's theme configuration.
 
 Typography:
 - Primary Sans-Serif: Geist Sans (via `var(--font-geist-sans)`, mapped to `font-sans` in Tailwind config).
@@ -96,10 +95,10 @@ Event Theming (e.g., "Cosmic Grapevines"):
     --background-hsl: 270 50% 10%;
     --foreground-hsl: 210 20% 95%; /* Adjusted for softer contrast */
 
-    --card-hsl: 270 50% 15%;
+    --card-hsl: 270 50% 16%; /* Slightly Lighter Deep Purple - Adjusted for depth */
     --card-foreground-hsl: 210 20% 98%;
 
-    --popover-hsl: 270 50% 20%; /* Adjusted for better layering */
+    --popover-hsl: 270 50% 22%; /* Even Lighter Purple - Adjusted for better layering */
     --popover-foreground-hsl: 210 20% 98%;
 
     --primary-hsl: 180 70% 45%; /* Interstellar Teal */
