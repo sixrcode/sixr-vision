@@ -21,7 +21,9 @@ const PresetCard = React.forwardRef<HTMLDivElement, PresetCardProps>(
         ref={ref} // Pass the ref to the Card component
         className={cn(
           "w-full h-auto shrink-0 cursor-pointer transition-all hover:shadow-lg hover:border-primary",
-          isActive && "border-primary ring-2 ring-primary bg-accent",
+          isActive
+            ? "border-primary ring-2 ring-primary bg-accent opacity-100" // Active state styles
+            : "opacity-75 hover:opacity-100", // Inactive state styles, full opacity on hover
           className
         )}
         onClick={onClick}
