@@ -24,7 +24,7 @@ Theme System:
 
 Core Color Palette (Cosmic Grapevines Theme):
   - --background-hsl: 270 50% 10%; (Deep Cosmic Purple) - Main page background.
-  - --foreground-hsl: 210 20% 90%; (Light Gray) - Default text color, softened for readability.
+  - --foreground-hsl: 210 20% 95%; (Lighter Gray - brightened for readability) - Default text color.
   - --card-hsl: 270 50% 15%; (Lighter Deep Purple) - Background for card-like elements.
   - --popover-hsl: 270 50% 20%; (Even Lighter Purple - increased from 18%) - Background for popovers, tooltips.
   - --primary-hsl: 180 70% 45%; (Interstellar Teal) - Primary interactive elements, buttons, active states.
@@ -94,12 +94,12 @@ Event Theming (e.g., "Cosmic Grapevines"):
   :root {
     /* Cosmic Grapevines Theme */
     --background-hsl: 270 50% 10%;
-    --foreground-hsl: 210 20% 90%;
+    --foreground-hsl: 210 20% 95%; /* Adjusted for softer contrast */
 
     --card-hsl: 270 50% 15%;
     --card-foreground-hsl: 210 20% 98%;
 
-    --popover-hsl: 270 50% 20%;
+    --popover-hsl: 270 50% 20%; /* Adjusted for better layering */
     --popover-foreground-hsl: 210 20% 98%;
 
     --primary-hsl: 180 70% 45%; /* Interstellar Teal */
@@ -168,7 +168,7 @@ Event Theming (e.g., "Cosmic Grapevines"):
 
     /* Specific for control panel, can use card variables too if suitable */
     --control-panel-background-hsl: 270 50% 8%;
-    --control-panel-foreground-hsl: 210 20% 90%;
+    --control-panel-foreground-hsl: 210 20% 90%; /* Text in Sidebar */
     --control-panel-border-hsl: 270 40% 18%;
 
     --control-panel-background: hsl(var(--control-panel-background-hsl));
