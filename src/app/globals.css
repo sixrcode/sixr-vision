@@ -195,28 +195,66 @@ Event Theming (e.g., "Cosmic Grapevines"):
     --chart-3: hsl(var(--chart-3-hsl));
     --chart-4: hsl(var(--chart-4-hsl));
     --chart-5: hsl(var(--chart-5-hsl));
+
+    /* Logo Pulse Animation - CSS Custom Properties */
+    --logo-pulse-start-opacity: 1; /* Default starting opacity */
+    --logo-pulse-mid-opacity: 0.6; /* Default mid-animation opacity */
+    --logo-pulse-duration: 2s; /* Default animation duration */
+  }
+
+  /*
+    The .dark class on <html> enables Tailwind's dark variants (e.g., dark:bg-gray-800).
+    Since this application is dark-by-default and all HSL variables are defined in :root
+    for the dark theme, this .dark block does not need to re-declare the HSL variables.
+    If a light theme were introduced, :root would contain light theme HSLs, and .dark
+    would contain the overriding dark theme HSLs.
+  */
+  .dark {
+    /* HSL variables are inherited from :root for the dark theme.
+       No need to re-declare them here if they are identical to :root.
+       If a light theme were to be introduced, this is where you would
+       override the HSL variables for the dark theme.
+       For example:
+       --background-hsl: 270 50% 10%; (This would be the dark theme value)
+    */
   }
 
   body {
     @apply bg-background text-foreground;
     min-height: 100vh;
   }
+}
 
-  /* Forceful Sidebar Styling - This is a high-specificity override */
-  /* This ensures the sidebar components get their intended dark background */
-  /* if Tailwind utility classes are being overridden elsewhere. */
-  div[data-sidebar="sidebar"]:not([data-mobile="true"]) {
-    background-color: hsl(var(--sidebar-background)) !important;
-    color: hsl(var(--sidebar-foreground)) !important;
+/* Keyframes for logo pulse, moved from inline style */
+@keyframes logoPulseEffect {
+  0%, 100% {
+    opacity: var(--logo-pulse-start-opacity);
+    transform: scale(1);
   }
-  /* Apply to the SheetContent used for mobile sidebar */
-  div[data-radix-dialog-content][data-sidebar="sidebar"][data-mobile="true"] {
-    background-color: hsl(var(--sidebar-background)) !important;
-    color: hsl(var(--sidebar-foreground)) !important;
-  }
-   /* Fallback if SheetContent structure varies or doesn't have data-radix-dialog-content directly */
-   div[data-sidebar="sidebar"][data-mobile="true"] {
-    background-color: hsl(var(--sidebar-background)) !important;
-    color: hsl(var(--sidebar-foreground)) !important;
+  50% {
+    opacity: var(--logo-pulse-mid-opacity);
+    transform: scale(0.95);
   }
 }
+
+
+/* Forceful Sidebar Styling - This is a high-specificity override */
+/* This ensures the sidebar components get their intended dark background */
+/* if Tailwind utility classes are being overridden elsewhere. */
+/* These rules are placed AFTER @tailwind utilities to ensure higher specificity */
+div[data-sidebar="sidebar"]:not([data-mobile="true"]) {
+  background-color: hsl(var(--sidebar-background)) !important;
+  color: hsl(var(--sidebar-foreground)) !important;
+}
+/* Apply to the SheetContent used for mobile sidebar */
+div[data-radix-dialog-content][data-sidebar="sidebar"][data-mobile="true"] {
+  background-color: hsl(var(--sidebar-background)) !important;
+  color: hsl(var(--sidebar-foreground)) !important;
+}
+ /* Fallback if SheetContent structure varies or doesn't have data-radix-dialog-content directly */
+ div[data-sidebar="sidebar"][data-mobile="true"] {
+  background-color: hsl(var(--sidebar-background)) !important;
+  color: hsl(var(--sidebar-foreground)) !important;
+}
+
+    
