@@ -8,7 +8,7 @@
 SIXR Vision - Global Styles & Theming Guide
 --------------------------------------------------------------------------------
 
-This file defines the base styles and the core theming system for the SIXR Vision application.
+This file defines the base styles and the core theming system for the SIXR Vision application,
 It uses Tailwind CSS utility classes and CSS custom properties (variables) for a consistent
 and maintainable design.
 
@@ -26,19 +26,28 @@ Core Color Palette (Cosmic Grapevines Theme):
   - --background-hsl: 270 50% 10%; (Deep Cosmic Purple) - Main page background.
   - --foreground-hsl: 210 20% 95%; (Lighter Gray - brightened for readability) - Default text color.
   - --card-hsl: 270 50% 16%; (Slightly Lighter Deep Purple) - Background for card-like elements.
+  - --card-foreground-hsl: 210 20% 98%;
   - --popover-hsl: 270 50% 22%; (Even Lighter Purple) - Background for popovers, tooltips.
+  - --popover-foreground-hsl: 210 20% 98%;
   - --primary-hsl: 180 70% 45%; (Interstellar Teal) - Primary interactive elements, buttons, active states.
   - --primary-foreground-hsl: 210 20% 98%; (Light Text) - Text on primary-colored elements.
-  - --secondary-hsl: 240 20% 50%; (Lighter Muted Cosmic Blue for Slider Tracks) - Secondary elements or backgrounds.
+  - --secondary-hsl: 240 15% 65%; (Very Light Gray-Blue for Slider Tracks) - Secondary elements or backgrounds.
+  - --secondary-foreground-hsl: 210 20% 98%;
   - --muted-hsl: 270 30% 25%; (Muted Purple) - Muted backgrounds or less important elements.
   - --muted-foreground-hsl: 210 15% 65%; (Darker Muted Text) - Text on muted backgrounds or less important text.
   - --accent-hsl: 180 70% 55%; (Lighter Interstellar Teal) - Hover states, secondary highlights.
+  - --accent-foreground-hsl: 210 20% 98%;
   - --destructive-hsl: 0 72.2% 50.6%; (Red) - Error states, destructive actions.
+  - --destructive-foreground-hsl: 210 20% 98%;
   - --success-hsl: 130 60% 45%; (Vibrant Green) - Success states, active audio indicator.
+  - --success-foreground-hsl: 210 20% 98%;
   - --info-hsl: 200 75% 55%; (Bright Blue) - Informational elements, active webcam indicator.
+  - --info-foreground-hsl: 210 20% 98%;
   - --border-hsl: 270 40% 22%; (Purple-ish Border) - Default border color.
   - --input-hsl: 270 25% 55%; (Lighter Gray-Purple for Switch Tracks) - Background for input fields, unchecked switches.
   - --ring-hsl: 180 70% 65%; (Bright Teal - increased from 55%) - Focus rings.
+
+  - --radius: 0.5rem;
 
 SIXR Brand Colors (Used for Logo Elements - Defined as CSS Variables):
   - --sixr-s-color-hsl: 45 98% 53%; (Gold/Yellow)
@@ -105,7 +114,7 @@ Event Theming (e.g., "Cosmic Grapevines"):
     --primary-hsl: 180 70% 45%;
     --primary-foreground-hsl: 210 20% 98%;
 
-    --secondary-hsl: 240 20% 50%; /* Updated for slider tracks */
+    --secondary-hsl: 240 15% 65%; /* Updated for slider tracks - Lighter Gray-Blue */
     --secondary-foreground-hsl: 210 20% 98%;
 
     --muted-hsl: 270 30% 25%;
@@ -124,7 +133,7 @@ Event Theming (e.g., "Cosmic Grapevines"):
     --info-foreground-hsl: 210 20% 98%;
 
     --border-hsl: 270 40% 22%;
-    --input-hsl: 270 25% 55%; /* Updated for switch tracks */
+    --input-hsl: 270 25% 55%; /* Updated for switch tracks - Lighter Gray-Purple */
     --ring-hsl: 180 70% 65%;
 
     --radius: 0.5rem;
@@ -228,3 +237,5 @@ div[data-radix-dialog-content][data-sidebar="sidebar"][data-mobile="true"] {
   background-color: hsl(var(--sidebar-background)) !important;
   color: hsl(var(--sidebar-foreground)) !important;
 }
+
+    
