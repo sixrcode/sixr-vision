@@ -3,7 +3,7 @@
 
 import { useScene } from '@/providers/SceneProvider';
 import { useSettings } from '@/providers/SettingsProvider';
-// import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area'; // Temporarily removed
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area'; // Restored
 import { ControlPanelSection } from './ControlPanelSection';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import { PresetCard } from './PresetCard';
@@ -18,10 +18,10 @@ export function PresetSelector({ value }: PresetSelectorProps) {
 
   return (
     <ControlPanelSection title="Presets" value={value}>
-      {/* <ScrollArea className="w-full h-auto max-h-[300px]"> */} {/* Temporarily removed */}
-        <div className="grid grid-cols-3 gap-2 p-1 overflow-y-auto max-h-[300px]"> {/* Added overflow-y-auto and max-h here as a basic replacement */}
+      <ScrollArea className="w-full h-auto max-h-[300px]"> {/* Restored */}
+        <div className="grid grid-cols-3 gap-2 p-1">
           {scenes.map((scene) => (
-            <Tooltip key={scene.id}>
+            <Tooltip key={scene.id} >
               <TooltipTrigger asChild>
                 <PresetCard
                   scene={scene}
@@ -33,6 +33,7 @@ export function PresetSelector({ value }: PresetSelectorProps) {
               <TooltipContent
                 side="bottom"
                 align="center"
+                // No custom className or style here, rely on base component
               >
                 <p className="font-semibold">{scene.name}</p>
                 {scene.dataAiHint && (
@@ -45,10 +46,8 @@ export function PresetSelector({ value }: PresetSelectorProps) {
             </Tooltip>
           ))}
         </div>
-        {/* <ScrollBar orientation="vertical" /> */} {/* Temporarily removed */}
-      {/* </ScrollArea> */} {/* Temporarily removed */}
+        <ScrollBar orientation="vertical" /> {/* Restored */}
+      </ScrollArea>
     </ControlPanelSection>
   );
 }
-
-    
