@@ -20,6 +20,7 @@ Theme System:
 - These HSL variables are then used to generate direct HSL color values (e.g., `--background: hsl(var(--background-hsl));`).
 - Tailwind's theme configuration in `tailwind.config.ts` maps these CSS variables
   to Tailwind utility classes (e.g., `bg-background`, `text-primary`).
+- This token-based approach ensures that theme changes can be made centrally and consistently.
 
 Core Color Palette (Cosmic Grapevines Theme):
   - --background-hsl: 270 50% 10%; (Deep Cosmic Purple) - Main page background.
@@ -39,13 +40,13 @@ Core Color Palette (Cosmic Grapevines Theme):
   - --input-hsl: 270 35% 35%; (Purple-ish Input BG) - Background for input fields, unchecked switches.
   - --ring-hsl: 180 70% 55%; (Lighter Teal) - Focus rings.
 
-SIXR Brand Colors (Used for Logo Elements):
+SIXR Brand Colors (Used for Logo Elements - Defined as CSS Variables):
   - --sixr-s-color-hsl: 45 98% 53%; (Gold/Yellow)
   - --sixr-i-color-hsl: 197 90% 58%; (Bright Blue)
   - --sixr-x-color-hsl: 337 81% 51%; (Pink/Magenta)
   - --sixr-r-color-hsl: 107 47% 50%; (Green)
 
-Control Panel / Sidebar Specifics:
+Control Panel / Sidebar Specifics (Derived from Theme or Specific Variables):
   - --control-panel-background-hsl: 270 50% 8%; (Darker Deep Purple) - Sidebar/Control Panel BG.
   - --control-panel-foreground-hsl: 210 20% 90%; (Slightly Darker Light Text) - Text in Sidebar.
   - --control-panel-border-hsl: 270 40% 18%; (Darker Purple Border) - Borders within Sidebar.
@@ -53,24 +54,28 @@ Control Panel / Sidebar Specifics:
 
 Spacing & Layout:
 - Primarily use Tailwind's default spacing scale (e.g., `p-2`, `m-4`, `gap-2`) for consistency.
-- Avoid arbitrary pixel values for margins and paddings where possible.
+- These are tokenized values (e.g., `2` often maps to `0.5rem`).
+- Avoid arbitrary pixel values for margins and paddings where possible. If custom spacing is
+  needed frequently, consider adding it to the Tailwind theme configuration.
 
 Typography:
 - Primary Sans-Serif: Geist Sans (via `var(--font-geist-sans)`, mapped to `font-sans` in Tailwind config).
 - Primary Mono: Geist Mono (via `var(--font-geist-mono)`, mapped to `font-mono` in Tailwind config).
 - Branding/Logo Font: Torus Variations (via `var(--font-torus-variations)` if enabled, or fallback).
-- Font sizes should follow Tailwind's scale (`text-sm`, `text-lg`, etc.) for consistency.
+- Font sizes should follow Tailwind's scale (`text-sm`, `text-base`, `text-lg`, etc.) for consistency.
+  These are also design tokens. If specific, non-standard font sizes are required repeatedly,
+  they should be added to the Tailwind theme configuration rather than hardcoded.
 
 Adding New Components or Styles:
-- Strive to use existing Tailwind utility classes and defined theme colors.
+- Strive to use existing Tailwind utility classes and defined theme colors, spacing, and font size tokens.
 - If a new color is needed, consider if it can be derived from the existing HSL palette
-  by adjusting lightness or saturation, or if it warrants a new semantic variable.
+  by adjusting lightness or saturation, or if it warrants a new semantic variable in this file.
 - For reusable UI patterns, create React components (as done with ShadCN UI).
 - For complex animations or styles not achievable with Tailwind, use scoped CSS or
   CSS Modules to avoid global namespace conflicts.
 
 Event Theming (e.g., "Cosmic Grapevines"):
-- The current theme *is* "Cosmic Grapevines."
+- The current theme *is* "Cosmic Grapevines," reflected in the core HSL palette.
 - Future event themes can be implemented by:
   1. Defining a new set of HSL variables (e.g., `--event-background-hsl`).
   2. Creating a theme-specific class (e.g., `.theme-new-event`).
@@ -92,38 +97,38 @@ body {
   :root {
     /* Cosmic Grapevines Theme */
     --background-hsl: 270 50% 10%;
-    --foreground-hsl: 210 20% 95%;
+    --foreground-hsl: 210 20% 95%; /* Slightly reduced lightness from 98% */
 
     --card-hsl: 270 50% 15%;
     --card-foreground-hsl: 210 20% 98%;
 
-    --popover-hsl: 270 50% 18%;
+    --popover-hsl: 270 50% 18%; /* Made lighter than card for better layering */
     --popover-foreground-hsl: 210 20% 98%;
 
-    --primary-hsl: 180 70% 45%;
+    --primary-hsl: 180 70% 45%; /* Interstellar Teal */
     --primary-foreground-hsl: 210 20% 98%;
 
-    --secondary-hsl: 240 40% 20%;
+    --secondary-hsl: 240 40% 20%; /* Muted Cosmic Blue */
     --secondary-foreground-hsl: 210 20% 98%;
 
-    --muted-hsl: 270 30% 25%;
+    --muted-hsl: 270 30% 25%; /* Muted Purple */
     --muted-foreground-hsl: 210 15% 65%;
 
-    --accent-hsl: 180 70% 55%;
+    --accent-hsl: 180 70% 55%; /* Lighter Interstellar Teal */
     --accent-foreground-hsl: 210 20% 98%;
 
     --destructive-hsl: 0 72.2% 50.6%;
     --destructive-foreground-hsl: 210 20% 98%;
 
-    --success-hsl: 130 60% 45%;
+    --success-hsl: 130 60% 45%; /* Vibrant Green */
     --success-foreground-hsl: 210 20% 98%;
 
-    --info-hsl: 200 75% 55%;
+    --info-hsl: 200 75% 55%; /* Bright Blue */
     --info-foreground-hsl: 210 20% 98%;
 
     --border-hsl: 270 40% 22%;
-    --input-hsl: 270 35% 35%;
-    --ring-hsl: 180 70% 55%;
+    --input-hsl: 270 35% 35%; /* Increased lightness for better switch visibility */
+    --ring-hsl: 180 70% 55%; /* Lighter Teal, matches accent */
 
     --radius: 0.5rem;
 
@@ -200,11 +205,7 @@ body {
 }
 
 /* Removed global '*' border rule to avoid style bloat and encourage explicit component borders.
-@layer base {
-  * {
-    @apply border-border;
-  }
-}
+   Components should define their own borders using Tailwind utilities (e.g., `border`, `border-primary`).
 */
 
 /* Keyframes for logo pulse animation */
@@ -218,4 +219,3 @@ body {
     transform: scale(0.95);
   }
 }
-
