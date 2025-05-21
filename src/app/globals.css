@@ -90,12 +90,6 @@ Event Theming (e.g., "Cosmic Grapevines"):
 --------------------------------------------------------------------------------
 */
 
-body {
-  @apply bg-background text-foreground;
-  min-height: 100vh;
-  overflow-x: hidden;
-}
-
 @layer base {
   :root {
     /* Cosmic Grapevines Theme */
@@ -204,5 +198,10 @@ body {
     --chart-3: hsl(var(--chart-3-hsl));
     --chart-4: hsl(var(--chart-4-hsl));
     --chart-5: hsl(var(--chart-5-hsl));
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    min-height: 100vh;
   }
 }
