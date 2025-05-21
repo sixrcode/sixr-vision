@@ -1,0 +1,6 @@
+# Firebase App Hosting configuration
+# Limits the maximum number of server instances to 10
+# This can help manage costs and stay within quota limits during rollouts or high traffic.
+
+runConfig:
+  maxInstances: 10
