@@ -2,14 +2,13 @@
 "use client";
 
 import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
 import { useSettings } from '@/providers/SettingsProvider';
 import { ControlPanelSection } from './ControlPanelSection';
 import { AlertTriangle, ZapOff, FileJson, Database } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import { ControlHint } from './ControlHint';
+import { LabelledSwitchControl } from './common/LabelledSwitchControl';
 
 type OtherControlsProps = {
   value: string; // For AccordionItem
@@ -30,41 +29,34 @@ export function OtherControls({ value }: OtherControlsProps) {
 
   return (
     <ControlPanelSection title="System & Safety" value={value}>
-      <div className="flex items-center justify-between">
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Label htmlFor="panic-mode-switch" className="flex items-center text-destructive flex-1 min-w-0 mr-2">
-              <AlertTriangle className="mr-2 h-4 w-4" /> Panic Mode (Blackout)
-            </Label>
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>Immediately blacks out the main visualizer output. Useful for emergencies.</p>
-          </TooltipContent>
-        </Tooltip>
-        <Switch
-          id="panic-mode-switch"
-          checked={settings.panicMode}
-          onCheckedChange={(checked) => updateSetting('panicMode', checked)}
-          className="data-[state=checked]:bg-destructive"
-        />
-      </div>
-      <div className="flex items-center justify-between mt-3">
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Label htmlFor="logo-blackout-switch" className="flex items-center flex-1 min-w-0 mr-2">
-              <ZapOff className="mr-2 h-4 w-4" /> Logo Blackout
-            </Label>
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>Hides all logo and watermark elements from the visualizer.</p>
-          </TooltipContent>
-        </Tooltip>
-        <Switch
-          id="logo-blackout-switch"
-          checked={settings.logoBlackout}
-          onCheckedChange={(checked) => updateSetting('logoBlackout', checked)}
-        />
-      </div>
+      <LabelledSwitchControl
+        labelContent={
+          <span className="flex items-center text-destructive">
+            <AlertTriangle className="mr-2 h-4 w-4" /> Panic Mode (Blackout)
+          </span>
+        }
+        labelHtmlFor="panic-mode-switch"
+        switchId="panic-mode-switch"
+        checked={settings.panicMode}
+        onCheckedChange={(checked) => updateSetting('panicMode', checked)}
+        tooltipContent={<p>Immediately blacks out the main visualizer output. Useful for emergencies.</p>}
+        switchProps={{ className: "data-[state=checked]:bg-destructive" }}
+        switchAriaLabel="Toggle Panic Mode"
+      />
+      <LabelledSwitchControl
+        labelContent={
+          <span className="flex items-center">
+            <ZapOff className="mr-2 h-4 w-4" /> Logo Blackout
+          </span>
+        }
+        labelHtmlFor="logo-blackout-switch"
+        switchId="logo-blackout-switch"
+        checked={settings.logoBlackout}
+        onCheckedChange={(checked) => updateSetting('logoBlackout', checked)}
+        tooltipContent={<p>Hides all logo and watermark elements from the visualizer.</p>}
+        containerClassName="mt-3"
+        switchAriaLabel="Toggle Logo Blackout"
+      />
       
       <div className="mt-4 space-y-1">
         <Tooltip>

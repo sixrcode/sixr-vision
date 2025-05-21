@@ -1,13 +1,12 @@
 
 "use client";
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
-import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { useSettings } from '@/providers/SettingsProvider';
@@ -19,6 +18,7 @@ import { Layers, Wand2, Loader2 } from 'lucide-react';
 import { VALID_BLEND_MODES } from '@/types';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { ControlHint } from '../ControlHint';
+import { LabelledSwitchControl } from '../common/LabelledSwitchControl';
 
 
 type AiVisualOverlayMixerProps = {
@@ -34,12 +34,6 @@ export function AiVisualOverlayMixer({ value }: AiVisualOverlayMixerProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [localPrompt, setLocalPrompt] = useState(settings.aiOverlayPrompt);
   
-  useEffect(() => {
-    // This effect was removed to disable auto-generation on load.
-    // Users will now manually trigger overlay generation.
-  }, []);
-
-
   useEffect(() => {
     setLocalPrompt(settings.aiOverlayPrompt);
   }, [settings.aiOverlayPrompt]);
@@ -93,22 +87,16 @@ export function AiVisualOverlayMixer({ value }: AiVisualOverlayMixerProps) {
   return (
     <ControlPanelSection title="AI: Visual Overlay Mixer" value={value}>
       <div className="space-y-3">
-        <div className="flex items-center justify-between">
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Label htmlFor="enable-ai-overlay-switch">Enable AI Overlay</Label>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Toggles the visibility of the AI-generated visual overlay.</p>
-            </TooltipContent>
-          </Tooltip>
-          <Switch
-            id="enable-ai-overlay-switch"
-            checked={settings.enableAiOverlay}
-            onCheckedChange={(checked) => updateSetting('enableAiOverlay', checked)}
-            disabled={!settings.aiGeneratedOverlayUri || isLoading}
-          />
-        </div>
+        <LabelledSwitchControl
+          labelContent="Enable AI Overlay"
+          labelHtmlFor="enable-ai-overlay-switch"
+          switchId="enable-ai-overlay-switch"
+          checked={settings.enableAiOverlay}
+          onCheckedChange={(checked) => updateSetting('enableAiOverlay', checked)}
+          tooltipContent={<p>Toggles the visibility of the AI-generated visual overlay.</p>}
+          switchProps={{ disabled: !settings.aiGeneratedOverlayUri || isLoading }}
+          switchAriaLabel="Toggle Enable AI Overlay"
+        />
 
         <div>
           <Tooltip>
@@ -191,6 +179,7 @@ export function AiVisualOverlayMixer({ value }: AiVisualOverlayMixerProps) {
                 value={[settings.aiOverlayOpacity]}
                 onValueChange={([val]) => updateSetting('aiOverlayOpacity', val)}
                 disabled={isLoading}
+                aria-label={`AI Overlay Opacity: ${settings.aiOverlayOpacity.toFixed(2)}`}
               />
             </div>
 
@@ -208,7 +197,7 @@ export function AiVisualOverlayMixer({ value }: AiVisualOverlayMixerProps) {
                 onValueChange={(val) => updateSetting('aiOverlayBlendMode', val as CanvasRenderingContext2D['globalCompositeOperation'])}
                 disabled={isLoading}
               >
-                <SelectTrigger id="ai-overlay-blend-mode-select">
+                <SelectTrigger id="ai-overlay-blend-mode-select" aria-label="Select AI Overlay Blend Mode">
                   <SelectValue placeholder="Select blend mode" />
                 </SelectTrigger>
                 <SelectContent>

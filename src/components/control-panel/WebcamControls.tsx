@@ -1,12 +1,10 @@
 
 "use client";
 
-import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
 import { useSettings } from '@/providers/SettingsProvider';
 import { ControlPanelSection } from './ControlPanelSection';
-import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import { ControlHint } from './ControlHint';
+import { LabelledSwitchControl } from './common/LabelledSwitchControl';
 
 type WebcamControlsProps = {
   value: string; // For AccordionItem
@@ -17,38 +15,29 @@ export function WebcamControls({ value }: WebcamControlsProps) {
 
   return (
     <ControlPanelSection title="Webcam Layer" value={value}>
-      <div className="flex items-center justify-between">
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Label htmlFor="show-webcam-switch" className="flex-1 min-w-0 mr-2">Show Webcam</Label>
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>Toggles the webcam feed visibility in compatible scenes.</p>
-            <p className="text-xs text-muted-foreground">Requires camera permission.</p>
-          </TooltipContent>
-        </Tooltip>
-        <Switch
-          id="show-webcam-switch"
-          checked={settings.showWebcam}
-          onCheckedChange={(checked) => updateSetting('showWebcam', checked)}
-        />
-      </div>
+      <LabelledSwitchControl
+        labelContent="Show Webcam"
+        labelHtmlFor="show-webcam-switch"
+        switchId="show-webcam-switch"
+        checked={settings.showWebcam}
+        onCheckedChange={(checked) => updateSetting('showWebcam', checked)}
+        tooltipContent={<>
+          <p>Toggles the webcam feed visibility in compatible scenes.</p>
+          <p className="text-xs text-muted-foreground">Requires camera permission.</p>
+        </>}
+        switchAriaLabel="Toggle show webcam"
+      />
       {settings.showWebcam && (
-        <div className="flex items-center justify-between mt-3">
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Label htmlFor="mirror-webcam-switch" className="flex-1 min-w-0 mr-2">Mirror Webcam</Label>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Flips the webcam image horizontally.</p>
-            </TooltipContent>
-          </Tooltip>
-          <Switch
-            id="mirror-webcam-switch"
-            checked={settings.mirrorWebcam}
-            onCheckedChange={(checked) => updateSetting('mirrorWebcam', checked)}
-          />
-        </div>
+        <LabelledSwitchControl
+          labelContent="Mirror Webcam"
+          labelHtmlFor="mirror-webcam-switch"
+          switchId="mirror-webcam-switch"
+          checked={settings.mirrorWebcam}
+          onCheckedChange={(checked) => updateSetting('mirrorWebcam', checked)}
+          tooltipContent={<p>Flips the webcam image horizontally.</p>}
+          containerClassName="mt-3"
+          switchAriaLabel="Toggle mirror webcam"
+        />
       )}
       <ControlHint className="mt-2">AI Segmentation: Placeholder</ControlHint>
       <ControlHint>Motion Energy Scalar: Placeholder</ControlHint>

@@ -3,7 +3,6 @@
 
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
-import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useSettings } from '@/providers/SettingsProvider';
 import { FFT_SIZES } from '@/lib/constants';
@@ -11,6 +10,7 @@ import { ControlPanelSection } from './ControlPanelSection';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 import { ControlHint } from './ControlHint';
+import { LabelledSwitchControl } from './common/LabelledSwitchControl';
 
 type AudioControlsProps = {
   value: string; // For AccordionItem
@@ -34,7 +34,7 @@ export function AudioControls({ value }: AudioControlsProps) {
           value={String(settings.fftSize)}
           onValueChange={(val) => updateSetting('fftSize', Number(val) as typeof settings.fftSize)}
         >
-          <SelectTrigger id="fftSize-select">
+          <SelectTrigger id="fftSize-select" aria-label="Select FFT Bins">
             <SelectValue placeholder="Select FFT size" />
           </SelectTrigger>
           <SelectContent>
@@ -65,26 +65,23 @@ export function AudioControls({ value }: AudioControlsProps) {
           value={[settings.gain]}
           onValueChange={([val]) => updateSetting('gain', val)}
           disabled={settings.enableAgc}
+          aria-label={`Manual Gain: ${settings.gain.toFixed(2)}${settings.enableAgc ? " (AGC Active)" : ""}`}
         />
       </div>
       
-      <div className="flex items-center justify-between pt-2">
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Label htmlFor="agc-switch" className="flex-1 min-w-0 mr-2">Automatic Gain Control (AGC)</Label>
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>Automatically adjusts gain to maintain a consistent audio level.</p>
-            {settings.enableAgc && <p className="text-xs text-primary">AGC is currently managing audio levels.</p>}
-          </TooltipContent>
-        </Tooltip>
-        <Switch
-          id="agc-switch"
-          checked={settings.enableAgc}
-          onCheckedChange={(checked) => updateSetting('enableAgc', checked)}
-          aria-label="Toggle Automatic Gain Control"
-        />
-      </div>
+      <LabelledSwitchControl
+        labelContent="Automatic Gain Control (AGC)"
+        labelHtmlFor="agc-switch"
+        switchId="agc-switch"
+        checked={settings.enableAgc}
+        onCheckedChange={(checked) => updateSetting('enableAgc', checked)}
+        tooltipContent={<>
+          <p>Automatically adjusts gain to maintain a consistent audio level.</p>
+          {settings.enableAgc && <p className="text-xs text-primary">AGC is currently managing audio levels.</p>}
+        </>}
+        containerClassName="pt-2"
+        switchAriaLabel="Toggle Automatic Gain Control"
+      />
        <ControlHint>
         {settings.enableAgc ? "AGC is active. Manual gain is disabled." : "Adjust gain manually or enable AGC."}
       </ControlHint>
