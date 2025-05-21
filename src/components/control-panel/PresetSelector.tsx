@@ -6,8 +6,7 @@ import { useSettings } from '@/providers/SettingsProvider';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { ControlPanelSection } from './ControlPanelSection';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
-// PresetCard import is removed for this test
-// import { PresetCard } from './PresetCard';
+import { PresetCard } from './PresetCard'; // Restore PresetCard import
 
 type PresetSelectorProps = {
   value: string; // For AccordionItem
@@ -22,18 +21,18 @@ export function PresetSelector({ value }: PresetSelectorProps) {
       <ScrollArea className="w-full h-auto max-h-[300px]">
         <div className="grid grid-cols-3 gap-2 p-1">
           {scenes.map((scene) => (
-            <Tooltip key={scene.id}>
+            <Tooltip key={scene.id} delayDuration={300}>
               <TooltipTrigger asChild>
-                {/* Temporarily replaced PresetCard with a simple button for testing */}
-                <button
-                  className="p-2 border rounded-md hover:bg-accent focus:outline-none focus:ring-2 focus:ring-primary w-full h-full min-h-[76px] text-xs flex items-center justify-center text-center break-all"
+                <PresetCard
+                  scene={scene}
+                  isActive={settings.currentSceneId === scene.id}
                   onClick={() => setCurrentSceneById(scene.id)}
-                  onKeyDown={(e) => e.key === 'Enter' && setCurrentSceneById(scene.id)}
-                  aria-label={`Activate ${scene.name} preset`}
-                  aria-pressed={settings.currentSceneId === scene.id}
-                >
-                  {scene.name} {/* Display scene name on button for identification */}
-                </button>
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      setCurrentSceneById(scene.id);
+                    }
+                  }}
+                />
               </TooltipTrigger>
               <TooltipContent
                 side="bottom"
@@ -44,7 +43,7 @@ export function PresetSelector({ value }: PresetSelectorProps) {
                   <p className="text-xs text-muted-foreground">{scene.dataAiHint}</p>
                 )}
                 {!scene.dataAiHint && (
-                   <p className="text-xs text-muted-foreground">Test: This is the tooltip for {scene.name}.</p>
+                   <p className="text-xs text-muted-foreground">Tooltip for {scene.name}.</p>
                 )}
               </TooltipContent>
             </Tooltip>
@@ -55,3 +54,4 @@ export function PresetSelector({ value }: PresetSelectorProps) {
     </ControlPanelSection>
   );
 }
+
