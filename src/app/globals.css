@@ -14,7 +14,7 @@ and maintainable design.
 
 Theme System:
 - The application primarily uses a dark theme, defined by HSL (Hue, Saturation, Lightness)
-  CSS variables.
+  CSS variables. The theme is "Cosmic Grapevines."
 - Core colors (background, foreground, primary, accent, etc.) are defined in the `:root`
   scope using `--<property>-hsl` variables (e.g., `--background-hsl`).
 - These HSL variables are then used to generate direct HSL color values (e.g., `--background: hsl(var(--background-hsl));`).
@@ -24,7 +24,7 @@ Theme System:
 
 Core Color Palette (Cosmic Grapevines Theme):
   - --background-hsl: 270 50% 10%; (Deep Cosmic Purple) - Main page background.
-  - --foreground-hsl: 210 20% 95%; (Off-White/Light Gray) - Default text color.
+  - --foreground-hsl: 210 20% 90%; (Light Gray) - Default text color, softened for readability.
   - --card-hsl: 270 50% 15%; (Lighter Deep Purple) - Background for card-like elements.
   - --popover-hsl: 270 50% 18%; (Even Lighter Purple) - Background for popovers, tooltips.
   - --primary-hsl: 180 70% 45%; (Interstellar Teal) - Primary interactive elements, buttons, active states.
@@ -55,10 +55,10 @@ Control Panel / Sidebar Specifics (Derived from Theme or Specific Variables):
 Spacing & Layout:
 - Primarily use Tailwind's default spacing scale (e.g., `p-2`, `m-4`, `gap-2`) for consistency.
   These are tokenized values (e.g., `2` often maps to `0.5rem`).
-- Font sizes and spacing scales should also be managed as design tokens, typically
-  through Tailwind's theme configuration.
 - Avoid arbitrary pixel values for margins and paddings where possible. If custom spacing is
   needed frequently, consider adding it to the Tailwind theme configuration.
+- Font sizes and spacing scales should also be managed as design tokens, typically
+  through Tailwind's theme configuration.
 
 Typography:
 - Primary Sans-Serif: Geist Sans (via `var(--font-geist-sans)`, mapped to `font-sans` in Tailwind config).
@@ -94,12 +94,12 @@ Event Theming (e.g., "Cosmic Grapevines"):
   :root {
     /* Cosmic Grapevines Theme */
     --background-hsl: 270 50% 10%;
-    --foreground-hsl: 210 20% 95%;
+    --foreground-hsl: 210 20% 90%; /* Lightness reduced from 95% to 90% */
 
     --card-hsl: 270 50% 15%;
     --card-foreground-hsl: 210 20% 98%;
 
-    --popover-hsl: 270 50% 18%;
+    --popover-hsl: 270 50% 18%; /* Lightness increased from 12% to 18% */
     --popover-foreground-hsl: 210 20% 98%;
 
     --primary-hsl: 180 70% 45%; /* Interstellar Teal */
@@ -205,3 +205,4 @@ Event Theming (e.g., "Cosmic Grapevines"):
     min-height: 100vh;
   }
 }
+
