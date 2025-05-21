@@ -4,8 +4,10 @@
 @tailwind utilities;
 
 body {
-  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
-  /* Ensure body directly uses the theme background */
+  /* The primary font-family is now driven by the `font-sans` utility class applied in layout.tsx, 
+     which uses `var(--font-geist-sans)` via tailwind.config.ts.
+     Keeping generic fallbacks here is good practice. */
+  font-family: Arial, Helvetica, sans-serif;
   @apply bg-background text-foreground;
   min-height: 100vh;
   overflow-x: hidden;
@@ -102,22 +104,22 @@ body {
   /* .dark block is no longer strictly necessary if :root contains all dark theme vars by default.
      Kept for clarity or future light/dark mode switching.
   */
+  /*
   .dark {
-    /* All variables are defined in :root and are inherently dark.
+     All variables are defined in :root and are inherently dark.
        This block is kept for potential future light/dark mode switching,
        but for a dark-only theme, explicit re-declarations here are redundant
        if identical to :root. The :root definitions will apply.
        If you were to add a light theme, this .dark block would contain
        the specific HSL values for the dark theme.
-    */
   }
+  */
 }
 
 @layer base {
   * {
     @apply border-border;
   }
-  /* body is already styled above to use bg-background text-foreground */
 }
 
 /* Keyframes for logo pulse animation */
