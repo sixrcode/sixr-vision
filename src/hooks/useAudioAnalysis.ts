@@ -5,14 +5,14 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import type { AudioData } from '@/types';
 import { useAudioData } from '@/providers/AudioDataProvider';
 import { useSettings } from '@/providers/SettingsProvider';
-import { INITIAL_AUDIO_DATA } from '@/lib/constants';
+import { INITIAL_AUDIO_DATA, DEFAULT_SETTINGS } from '@/lib/constants';
 
 // Beat Detection Parameters
-const BEAT_DETECTION_BASS_THRESHOLD = 0.35; // Lowered from 0.7, then 0.4
-const BEAT_DETECTION_RMS_INCREASE_FACTOR = 1.1; // Lowered from 1.2, then 1.15 (10% increase)
-const BEAT_DETECTION_RMS_MIN_THRESHOLD = 0.05; // Lowered from 0.1, then 0.08
-const BEAT_REFRACTORY_BASS_MS = 100; // Shortened from 200, then 150
-const BEAT_REFRACTORY_RMS_MS = 80;  // Shortened from 150, then 100
+const BEAT_DETECTION_BASS_THRESHOLD = 0.35; 
+const BEAT_DETECTION_RMS_INCREASE_FACTOR = 1.1; 
+const BEAT_DETECTION_RMS_MIN_THRESHOLD = 0.05; 
+const BEAT_REFRACTORY_BASS_MS = 100; 
+const BEAT_REFRACTORY_RMS_MS = 80;  
 
 const RMS_SMOOTHING_FACTOR = 0.1; 
 
@@ -23,6 +23,7 @@ const AGC_MAX_GAIN = 4.0;
 const AGC_ATTACK_TIME_CONSTANT = 0.03; 
 const AGC_RELEASE_TIME_CONSTANT = 0.4; 
 
+const EFFECTIVE_SILENCE_THRESHOLD_SUM = 5; // If sum of all spectrum bins is less than this, consider it silence.
 
 export function useAudioAnalysis() {
   const { settings } = useSettings();
@@ -50,32 +51,34 @@ export function useAudioAnalysis() {
     const bassEndFreq = 250; 
     const midEndFreq = 4000; 
 
-    const bassBins = Math.floor((bassEndFreq / nyquist) * spectrum.length);
-    const midBins = Math.floor((midEndFreq / nyquist) * spectrum.length);
+    const spectrumLength = spectrum.length > 0 ? spectrum.length : DEFAULT_SETTINGS.fftSize / 2; // Use default if spectrum is empty (e.g. during silence)
+
+    const bassBins = Math.floor((bassEndFreq / nyquist) * spectrumLength);
+    const midBins = Math.floor((midEndFreq / nyquist) * spectrumLength);
 
     let bassSum = 0;
     for (let i = 0; i < bassBins; i++) {
-      bassSum += spectrum[i];
+      bassSum += spectrum[i] || 0;
     }
     const bassEnergy = bassBins > 0 ? (bassSum / bassBins) / 255 : 0;
 
     let midSum = 0;
     for (let i = bassBins; i < midBins; i++) {
-      midSum += spectrum[i];
+      midSum += spectrum[i] || 0;
     }
     const midEnergy = (midBins - bassBins) > 0 ? (midSum / (midBins - bassBins)) / 255 : 0;
     
     let trebleSum = 0;
-    for (let i = midBins; i < spectrum.length; i++) {
-      trebleSum += spectrum[i];
+    for (let i = midBins; i < spectrumLength; i++) {
+      trebleSum += spectrum[i] || 0;
     }
-    const trebleEnergy = (spectrum.length - midBins) > 0 ? (trebleSum / (spectrum.length - midBins)) / 255 : 0;
+    const trebleEnergy = (spectrumLength - midBins) > 0 ? (trebleSum / (spectrumLength - midBins)) / 255 : 0;
     
     let sumOfSquares = 0;
-    for (let i = 0; i < spectrum.length; i++) {
-      sumOfSquares += (spectrum[i] / 255) * (spectrum[i] / 255);
+    for (let i = 0; i < spectrumLength; i++) {
+      sumOfSquares += ((spectrum[i] || 0) / 255) * ((spectrum[i] || 0) / 255);
     }
-    let rms = Math.sqrt(sumOfSquares / spectrum.length);
+    let rms = Math.sqrt(sumOfSquares / spectrumLength);
     rms = previousRms + (rms - previousRms) * RMS_SMOOTHING_FACTOR; 
     setPreviousRms(rms);
 
@@ -95,7 +98,7 @@ export function useAudioAnalysis() {
     }
 
     return { bassEnergy, midEnergy, trebleEnergy, rms, beat };
-  }, [lastBeatTime, previousRms]);
+  }, [lastBeatTime, previousRms]); // Removed audioContextRef.current from dependencies as it's a ref
 
   const estimateBPM = useCallback((): number => {
     if (beatTimestamps.length < 5) return currentGlobalAudioData.bpm || 120;
@@ -110,11 +113,11 @@ export function useAudioAnalysis() {
     intervals.sort((a, b) => a - b);
     const medianInterval = intervals[Math.floor(intervals.length / 2)];
     
-    if (medianInterval === 0 || medianInterval < 50 ) return currentGlobalAudioData.bpm || 120;
+    if (medianInterval === 0 || medianInterval < 50 ) return currentGlobalAudioData.bpm || 120; // Avoid division by zero or unrealistically low intervals
     
     const bpm = 60000 / medianInterval;
-    const smoothedBpm = Math.round(currentGlobalAudioData.bpm * 0.8 + bpm * 0.2);
-    return smoothedBpm;
+    const smoothedBpm = Math.round(currentGlobalAudioData.bpm * 0.8 + bpm * 0.2); // Apply smoothing
+    return smoothedBpm > 0 ? smoothedBpm : 120; // Ensure BPM is positive
   }, [beatTimestamps, currentGlobalAudioData.bpm]);
 
   const analyze = useCallback(() => {
@@ -126,19 +129,32 @@ export function useAudioAnalysis() {
     }
 
     analyserRef.current.getByteFrequencyData(dataArrayRef.current);
-    
-    if (Math.random() < 0.05) { 
-      const sum = dataArrayRef.current.reduce((a, b) => a + b, 0);
-      if (sum > 0) {
-        // console.log('useAudioAnalysis - Raw Spectrum has energy. Sum:', sum, 'First 5 bins:', dataArrayRef.current.slice(0,5));
+    const currentSpectrum = new Uint8Array(dataArrayRef.current); // Copy for processing
+    const spectrumSum = currentSpectrum.reduce((a, b) => a + b, 0);
+
+    let energyAndRms: Pick<AudioData, 'bassEnergy' | 'midEnergy' | 'trebleEnergy' | 'rms' | 'beat'>;
+    let bpm: number;
+    let finalSpectrum: Uint8Array;
+
+    if (spectrumSum < EFFECTIVE_SILENCE_THRESHOLD_SUM) {
+      // Effective silence
+      energyAndRms = { bassEnergy: 0, midEnergy: 0, trebleEnergy: 0, rms: 0, beat: false };
+      bpm = currentGlobalAudioData.bpm; // Maintain last known BPM or default
+      finalSpectrum = new Uint8Array(currentSpectrum.length).fill(0);
+      setPreviousRms(0); // Reset smoothed RMS during silence
+      // console.log('useAudioAnalysis - Effective Silence Detected. Sum:', spectrumSum);
+    } else {
+      // Active audio
+      if (spectrumSum > 10) { // Only log if there's some meaningful energy
+        // console.log('useAudioAnalysis - Raw Spectrum has energy. Sum:', spectrumSum, 'First 5 bins:', currentSpectrum.slice(0,5));
       }
+      energyAndRms = calculateEnergy(currentSpectrum);
+      bpm = estimateBPM();
+      finalSpectrum = currentSpectrum;
     }
-
-    const energyAndRms = calculateEnergy(dataArrayRef.current);
-    const bpm = estimateBPM();
-
+    
     setAudioData({
-      spectrum: new Uint8Array(dataArrayRef.current), 
+      spectrum: finalSpectrum, 
       ...energyAndRms,
       bpm,
     });
@@ -169,7 +185,7 @@ export function useAudioAnalysis() {
         }
     }
     animationFrameIdRef.current = requestAnimationFrame(analyze);
-  }, [settings.enableAgc, calculateEnergy, estimateBPM, setAudioData, isInitialized]);
+  }, [settings.enableAgc, calculateEnergy, estimateBPM, setAudioData, isInitialized, currentGlobalAudioData.bpm]);
 
 
   const stopAudioAnalysis = useCallback(async () => {
@@ -232,6 +248,7 @@ export function useAudioAnalysis() {
     }
     
     // Comprehensive cleanup before re-initialization
+    console.log("Performing cleanup before audio initialization...");
     if (animationFrameIdRef.current) cancelAnimationFrame(animationFrameIdRef.current);
     animationFrameIdRef.current = null;
     if (sourceNodeRef.current) sourceNodeRef.current.disconnect();
@@ -241,6 +258,7 @@ export function useAudioAnalysis() {
     analyserRef.current = null;
     dataArrayRef.current = null;
     if (mediaStreamRef.current) {
+      console.log("Stopping existing media stream tracks...");
       mediaStreamRef.current.getTracks().forEach(track => track.stop());
       mediaStreamRef.current = null;
     }
@@ -249,6 +267,7 @@ export function useAudioAnalysis() {
       await audioContextRef.current.close().catch(e => console.warn("Error closing existing audio context during re-init", e));
       audioContextRef.current = null; 
     }
+    console.log("Cleanup finished.");
     
     // Reset local state for beat detection etc.
     setLastBeatTime(0);
@@ -345,8 +364,6 @@ export function useAudioAnalysis() {
   }, [settings.fftSize, isInitialized, setAudioData]);
 
   useEffect(() => {
-    // This effect is primarily for starting the analysis loop when initialized.
-    // The main cleanup (stopping audio context, etc.) is handled by the effect with an empty dependency array.
     if (isInitialized && audioContextRef.current && audioContextRef.current.state === 'running') {
       if (animationFrameIdRef.current) { 
         cancelAnimationFrame(animationFrameIdRef.current);
@@ -359,43 +376,16 @@ export function useAudioAnalysis() {
       animationFrameIdRef.current = null;
     }
 
-    return () => {
-      if (animationFrameIdRef.current) {
-        cancelAnimationFrame(animationFrameIdRef.current);
-        animationFrameIdRef.current = null;
-        // console.log("Audio analysis loop's animationFrame cancelled by its own (isInitialized effect) cleanup.");
-      }
-    };
+    // No explicit cleanup here as the main unmount effect handles stopAudioAnalysis
   }, [isInitialized, analyze]);
 
   useEffect(() => {
-    // console.log("useAudioAnalysis hook's main lifecycle effect (mount/unmount).");
+    // Main hook lifecycle cleanup: ensures audio is stopped when the component using this hook unmounts.
     return () => {
       console.log("useAudioAnalysis hook is unmounting, calling stopAudioAnalysis for final cleanup.");
-      // Ensure to call stopAudioAnalysis directly here
-      // Need to be careful if stopAudioAnalysis itself relies on states that might be stale during unmount
-      // The current stopAudioAnalysis is mostly based on refs, which should be fine.
-      const localStop = async () => {
-          if (animationFrameIdRef.current) {
-              cancelAnimationFrame(animationFrameIdRef.current);
-              animationFrameIdRef.current = null;
-          }
-          if (sourceNodeRef.current) sourceNodeRef.current.disconnect();
-          if (gainNodeRef.current) gainNodeRef.current.disconnect();
-          if (mediaStreamRef.current) mediaStreamRef.current.getTracks().forEach(track => track.stop());
-          if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
-              await audioContextRef.current.close().catch(e => console.error("Unmount: Error closing AudioContext", e));
-          }
-          sourceNodeRef.current = null;
-          gainNodeRef.current = null;
-          analyserRef.current = null;
-          mediaStreamRef.current = null;
-          audioContextRef.current = null;
-          console.log("Final cleanup on unmount complete.");
-      };
-      localStop();
+      stopAudioAnalysis();
     };
-  }, []); 
+  }, [stopAudioAnalysis]); // Add stopAudioAnalysis to dependency array as it's now a useCallback
 
 
   return { initializeAudio, stopAudioAnalysis, isInitialized, error };
