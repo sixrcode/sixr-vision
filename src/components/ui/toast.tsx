@@ -1,3 +1,4 @@
+
 "use client"
 
 import * as React from "react"
@@ -29,7 +30,7 @@ const toastVariants = cva(
   {
     variants: {
       variant: {
-        default: "border-[hsl(var(--border))] bg-[hsl(var(--background))] text-[hsl(var(--foreground))]",
+        default: "border", // Keeps border style, color handled by inline style
         destructive:
           "destructive group border-destructive bg-destructive text-destructive-foreground",
       },
@@ -49,6 +50,12 @@ const Toast = React.forwardRef<
     <ToastPrimitives.Root
       ref={ref}
       className={cn(toastVariants({ variant }), className)}
+      style={variant === 'default' ? {
+        backgroundColor: 'hsl(var(--background-hsl))',
+        color: 'hsl(var(--foreground-hsl))',
+        borderColor: 'hsl(var(--border-hsl))',
+        // borderWidth: '1px', // border class from cva handles this
+      } : {}}
       {...props}
     />
   )
