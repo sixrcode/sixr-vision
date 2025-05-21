@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import { SixrLogo } from '@/components/icons/SixrLogo';
@@ -46,18 +46,23 @@ export function ControlPanelView() {
 
     // Auto-initialize Audio and Webcam
     const autoInit = async () => {
+      console.log("ControlPanelView: Attempting auto-init. Audio initialized:", isInitialized, "Webcam show:", settings.showWebcam, "Audio error:", audioError);
       if (!isInitialized && !audioError && !isTogglingAudio) {
         console.log("ControlPanelView: Auto-initializing audio on load.");
         setIsTogglingAudio(true);
         await initializeAudio();
         setIsTogglingAudio(false);
       }
-      // Auto-init webcam removed to give user explicit control via its toggle.
-      // The 'showWebcam' default in settings determines its initial state.
+      if (!settings.showWebcam && !isTogglingWebcam) {
+        console.log("ControlPanelView: Auto-enabling webcam on load.");
+        setIsTogglingWebcam(true);
+        updateSetting('showWebcam', true); // This will trigger WebcamFeed.tsx to initialize
+        setIsTogglingWebcam(false);
+      }
     };
     autoInit();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); 
+  }, []); // Runs once on mount
 
 
   const handleAudioToggle = async () => {
@@ -108,7 +113,7 @@ export function ControlPanelView() {
                 {isTogglingAudio ? (
                   <Loader2 className="animate-spin" />
                 ) : isInitialized ? (
-                  <Mic className="text-green-400" />
+                  <Mic className="text-success" />
                 ) : (
                   <MicOff className="text-destructive" />
                 )}
@@ -130,7 +135,7 @@ export function ControlPanelView() {
                 disabled={isTogglingWebcam}
                 aria-label={settings.showWebcam ? "Stop Webcam" : "Start Webcam"}
               >
-                {isTogglingWebcam ? <Loader2 className="animate-spin" /> : settings.showWebcam ? <Camera className="text-sky-400" /> : <CameraOff className="text-muted-foreground" />}
+                {isTogglingWebcam ? <Loader2 className="animate-spin" /> : settings.showWebcam ? <Camera className="text-info" /> : <CameraOff className="text-muted-foreground" />}
               </Button>
             </TooltipTrigger>
             <TooltipContent>

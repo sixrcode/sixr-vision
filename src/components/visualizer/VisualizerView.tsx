@@ -96,7 +96,7 @@ export function VisualizerView() {
     // DEBUG LOG: Check received audioData
     if (Math.random() < 0.05) { 
         const spectrumSum = audioData.spectrum.reduce((a,b) => a+b, 0);
-        if (audioData.rms > 0.001 || spectrumSum > 0 || audioData.beat) { // Added audioData.beat
+        if (audioData.rms > 0.001 || spectrumSum > 0 || audioData.beat) { 
              console.log('VisualizerView - Received active audioData. RMS:', audioData.rms.toFixed(3), 'Beat:', audioData.beat, 'Spectrum Sum:', spectrumSum, 'First 5 bins:', audioData.spectrum.slice(0,5));
         }
     }
@@ -109,7 +109,16 @@ export function VisualizerView() {
         ctx.fillStyle = 'hsl(var(--background-hsl))';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         ctx.font = '14px var(--font-geist-sans)';
-        ctx.fillStyle = 'red';
+        
+        // Use themed destructive color for error text
+        if (canvasRef.current) {
+            const computedStyle = getComputedStyle(canvasRef.current);
+            const destructiveColor = computedStyle.getPropertyValue('--destructive').trim();
+            ctx.fillStyle = destructiveColor || 'red'; // Fallback to red
+        } else {
+            ctx.fillStyle = 'red'; // Fallback
+        }
+
         ctx.textAlign = 'center';
         const title = 'Visualizer Error (see console):';
         const lines = [title];
@@ -183,7 +192,7 @@ export function VisualizerView() {
       // Draw FPS counter
       if (!settings.panicMode && !lastError) {
         ctx.font = '12px var(--font-geist-sans)';
-        ctx.fillStyle = 'hsl(var(--foreground))';
+        ctx.fillStyle = 'hsl(var(--foreground))'; // Already using themed color
         ctx.textAlign = 'left';
         ctx.fillText(`FPS: ${fps}`, 10, 20);
       }
@@ -238,4 +247,3 @@ export function VisualizerView() {
     </div>
   );
 }
-
