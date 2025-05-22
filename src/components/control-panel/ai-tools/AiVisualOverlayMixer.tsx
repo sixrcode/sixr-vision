@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -34,12 +34,13 @@ export function AiVisualOverlayMixer({ value }: AiVisualOverlayMixerProps) {
 
   const [isLoading, setIsLoading] = useState(false);
   const [localPrompt, setLocalPrompt] = useState(settings.aiOverlayPrompt);
+  const initialGenerationAttempted = useRef(false);
   
   useEffect(() => {
     setLocalPrompt(settings.aiOverlayPrompt);
   }, [settings.aiOverlayPrompt]);
 
-  const handleGenerateOverlay = useCallback(async (promptToUse: string = localPrompt): Promise<boolean> => {
+  const handleGenerateOverlay = useCallback(async (promptToUse: string): Promise<boolean> => {
     if (!currentScene) {
       toast({ title: 'No Scene Active', description: 'Please select a scene first to provide context for the overlay.', variant: 'destructive' });
       return false;
@@ -68,7 +69,7 @@ export function AiVisualOverlayMixer({ value }: AiVisualOverlayMixerProps) {
       updateSetting('aiGeneratedOverlayUri', result.overlayImageDataUri);
       updateSetting('aiOverlayPrompt', promptToUse); 
       toast({ title: 'AI Overlay Generated', description: 'New visual overlay created!' });
-      // Auto-enable after first successful generation if it's not already enabled
+      
       if (result.overlayImageDataUri && !settings.enableAiOverlay) {
         updateSetting('enableAiOverlay', true);
       }
@@ -89,7 +90,18 @@ export function AiVisualOverlayMixer({ value }: AiVisualOverlayMixerProps) {
     } finally {
       setIsLoading(false);
     }
-  }, [currentScene, audioData, updateSetting, toast, localPrompt, settings.enableAiOverlay]);
+  }, [currentScene, audioData, updateSetting, toast, settings.enableAiOverlay]);
+
+
+  // Initial overlay generation on load
+  useEffect(() => {
+    if (!settings.aiGeneratedOverlayUri && currentScene && !initialGenerationAttempted.current && !isLoading) {
+      console.log("AiVisualOverlayMixer: Attempting initial AI overlay generation on load.");
+      initialGenerationAttempted.current = true; 
+      handleGenerateOverlay(settings.aiOverlayPrompt || DEFAULT_SETTINGS.aiOverlayPrompt);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentScene, settings.aiGeneratedOverlayUri, isLoading]); // handleGenerateOverlay removed from deps to prevent loop if it changes
 
 
   // Periodic overlay regeneration
@@ -135,7 +147,7 @@ export function AiVisualOverlayMixer({ value }: AiVisualOverlayMixerProps) {
           checked={settings.enableAiOverlay}
           onCheckedChange={(checked) => updateSetting('enableAiOverlay', checked)}
           tooltipContent={<p>Toggles the visibility of the AI-generated visual overlay on the main visualizer.</p>}
-          switchProps={{ disabled: !settings.aiGeneratedOverlayUri && !isLoading }} // Disable if no URI and not loading one
+          switchProps={{ disabled: !settings.aiGeneratedOverlayUri && !isLoading }} 
           switchAriaLabel="Toggle Enable AI Overlay"
         />
 
@@ -160,8 +172,6 @@ export function AiVisualOverlayMixer({ value }: AiVisualOverlayMixerProps) {
             suggestedPrompt={settings.lastAISuggestedAssetPrompt}
             onUsePrompt={(prompt) => {
               setLocalPrompt(prompt);
-              // Optionally immediately update settings.aiOverlayPrompt if desired, or wait for generate
-              // updateSetting('aiOverlayPrompt', prompt); 
             }}
             isLoading={isLoading}
             icon={Wand2}
@@ -176,7 +186,7 @@ export function AiVisualOverlayMixer({ value }: AiVisualOverlayMixerProps) {
           ) : (
             <Layers className="mr-2 h-4 w-4" />
           )}
-          {isLoading ? 'Generating...' : 'Generate New Overlay'}
+          {isLoading ? 'Generating...' : (settings.aiGeneratedOverlayUri ? 'Update Overlay' : 'Generate New Overlay')}
         </Button>
         {!currentScene && <ControlHint className="text-destructive text-center">Select a scene first to generate an overlay.</ControlHint>}
 
@@ -188,7 +198,7 @@ export function AiVisualOverlayMixer({ value }: AiVisualOverlayMixerProps) {
               alt="AI Generated Overlay"
               width={100}
               height={100}
-              className="rounded border object-cover"
+              className="rounded border object-cover border-border"
               data-ai-hint="generated overlay"
             />
           </div>
@@ -219,8 +229,8 @@ export function AiVisualOverlayMixer({ value }: AiVisualOverlayMixerProps) {
                 </Tooltip>
                 <Slider
                   id="ai-overlay-regeneration-interval-slider"
-                  min={15} // Min 15 seconds
-                  max={120} // Max 2 minutes
+                  min={15} 
+                  max={120} 
                   step={5}
                   value={[settings.aiOverlayRegenerationInterval]}
                   onValueChange={([val]) => updateSetting('aiOverlayRegenerationInterval', val)}
