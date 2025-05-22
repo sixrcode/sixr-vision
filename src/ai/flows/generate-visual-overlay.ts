@@ -36,6 +36,9 @@ const GenerateVisualOverlayOutputSchema = z.object({
 });
 export type GenerateVisualOverlayOutput = z.infer<typeof GenerateVisualOverlayOutputSchema>;
 
+// In-memory cache for this flow
+const generateOverlayCache = new Map<string, GenerateVisualOverlayOutput>();
+
 export async function generateVisualOverlay(input: GenerateVisualOverlayInput): Promise<GenerateVisualOverlayOutput> {
   return generateVisualOverlayFlow(input);
 }
@@ -55,7 +58,15 @@ const generateVisualOverlayFlow = ai.defineFlow(
     inputSchema: GenerateVisualOverlayInputSchema,
     outputSchema: GenerateVisualOverlayOutputSchema,
   },
-  async (input) => {
+  async (input: GenerateVisualOverlayInput): Promise<GenerateVisualOverlayOutput> => {
+    // Simplified cache key: uses prompt and scene name, omits dynamic audioContext for basic caching
+    const cacheKey = `prompt:${input.prompt}_scene:${input.currentSceneName}`;
+    if (generateOverlayCache.has(cacheKey)) {
+      console.log(`[Cache Hit] generateVisualOverlayFlow: Returning cached overlay for key: ${cacheKey} (audioContext not part of cache key)`);
+      return generateOverlayCache.get(cacheKey)!;
+    }
+    console.log(`[Cache Miss] generateVisualOverlayFlow: Generating overlay for key: ${cacheKey}`);
+
     let audioDescription = "The audio is";
     if (input.audioContext.rms < 0.2) audioDescription += " calm and quiet";
     else if (input.audioContext.rms > 0.7) audioDescription += " loud and energetic";
@@ -95,9 +106,12 @@ const generateVisualOverlayFlow = ai.defineFlow(
       throw new Error('Overlay image generation failed to return a media URL.');
     }
 
-    return {
+    const result: GenerateVisualOverlayOutput = {
       overlayImageDataUri: media.url,
     };
+
+    generateOverlayCache.set(cacheKey, result);
+    console.log(`[Cache Set] generateVisualOverlayFlow: Cached overlay for key: ${cacheKey}`);
+    return result;
   }
 );
-

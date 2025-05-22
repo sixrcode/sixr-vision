@@ -35,6 +35,9 @@ const GenerateSceneAmbianceOutputSchema = z.object({
 });
 export type GenerateSceneAmbianceOutput = z.infer<typeof GenerateSceneAmbianceOutputSchema>;
 
+// In-memory cache for this flow
+const generateAmbianceCache = new Map<string, GenerateSceneAmbianceOutput>();
+
 export async function generateSceneAmbiance(input: GenerateSceneAmbianceInput): Promise<GenerateSceneAmbianceOutput> {
   return generateSceneAmbianceFlow(input);
 }
@@ -79,12 +82,22 @@ const generateSceneAmbianceFlow = ai.defineFlow(
     inputSchema: GenerateSceneAmbianceInputSchema,
     outputSchema: GenerateSceneAmbianceOutputSchema,
   },
-  async (input) => {
+  async (input: GenerateSceneAmbianceInput): Promise<GenerateSceneAmbianceOutput> => {
+    // Simplified cache key: uses scene ID and name, omits dynamic audioData for basic caching
+    const cacheKey = `sceneId:${input.currentSceneId}_sceneName:${input.currentSceneName}`;
+    if (generateAmbianceCache.has(cacheKey)) {
+      console.log(`[Cache Hit] generateSceneAmbianceFlow: Returning cached ambiance for key: ${cacheKey} (audioData not part of cache key)`);
+      return generateAmbianceCache.get(cacheKey)!;
+    }
+    console.log(`[Cache Miss] generateSceneAmbianceFlow: Generating ambiance for key: ${cacheKey}`);
+    
     const {output} = await prompt(input);
     if (!output) {
       throw new Error('AI failed to generate ambiance text.');
     }
+
+    generateAmbianceCache.set(cacheKey, output);
+    console.log(`[Cache Set] generateSceneAmbianceFlow: Cached ambiance for key: ${cacheKey}`);
     return output;
   }
 );
-

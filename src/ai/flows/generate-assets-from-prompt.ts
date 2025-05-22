@@ -32,6 +32,9 @@ const GenerateAssetsOutputSchema = z.object({
 });
 export type GenerateAssetsOutput = z.infer<typeof GenerateAssetsOutputSchema>;
 
+// In-memory cache for this flow
+const generateAssetsCache = new Map<string, GenerateAssetsOutput>();
+
 /**
  * Generates procedural assets (texture and mesh preview) based on a text prompt.
  * @param {GenerateAssetsInput} input - The input object containing the text prompt.
@@ -56,6 +59,14 @@ const generateAssetsFlow = ai.defineFlow(
     outputSchema: GenerateAssetsOutputSchema,
   },
   async (input: GenerateAssetsInput): Promise<GenerateAssetsOutput> => {
+    const cacheKey = input.prompt;
+    if (generateAssetsCache.has(cacheKey)) {
+      console.log(`[Cache Hit] generateAssetsFlow: Returning cached assets for prompt: ${cacheKey}`);
+      return generateAssetsCache.get(cacheKey)!;
+    }
+
+    console.log(`[Cache Miss] generateAssetsFlow: Generating assets for prompt: ${cacheKey}`);
+
     const {media: textureMedia} = await ai.generate({
       model: 'googleai/gemini-2.0-flash-exp', 
       prompt: `Generate a seamless tileable texture based on the following artistic prompt: "${input.prompt}". Focus on abstract patterns and material qualities rather than literal depictions unless specified. Output as a square image suitable for texturing.`,
@@ -81,10 +92,13 @@ const generateAssetsFlow = ai.defineFlow(
         throw new Error('Mesh preview generation failed to return a media URL.');
     }
 
-    return {
+    const result: GenerateAssetsOutput = {
       textureDataUri: textureMedia.url,
       meshDataUri: meshMedia.url,
     };
+    
+    generateAssetsCache.set(cacheKey, result);
+    console.log(`[Cache Set] generateAssetsFlow: Cached assets for prompt: ${cacheKey}`);
+    return result;
   }
 );
-

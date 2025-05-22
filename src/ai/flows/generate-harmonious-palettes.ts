@@ -37,6 +37,9 @@ export type GenerateHarmoniousPalettesOutput = z.infer<
   typeof GenerateHarmoniousPalettesOutputSchema
 >;
 
+// In-memory cache for this flow
+const generatePalettesCache = new Map<string, GenerateHarmoniousPalettesOutput>();
+
 export async function generateHarmoniousPalettes(
   input: GenerateHarmoniousPalettesInput
 ): Promise<GenerateHarmoniousPalettesOutput> {
@@ -77,9 +80,22 @@ const generateHarmoniousPalettesFlow = ai.defineFlow(
     inputSchema: GenerateHarmoniousPalettesInputSchema,
     outputSchema: GenerateHarmoniousPalettesOutputSchema,
   },
-  async input => {
+  async (input: GenerateHarmoniousPalettesInput): Promise<GenerateHarmoniousPalettesOutput> => {
+    const cacheKey = JSON.stringify(input);
+    if (generatePalettesCache.has(cacheKey)) {
+      console.log(`[Cache Hit] generateHarmoniousPalettesFlow: Returning cached palette for input: ${cacheKey}`);
+      return generatePalettesCache.get(cacheKey)!;
+    }
+
+    console.log(`[Cache Miss] generateHarmoniousPalettesFlow: Generating palette for input: ${cacheKey}`);
     const {output} = await prompt(input);
-    return output!;
+    
+    if (!output) {
+        throw new Error('AI failed to generate a palette.');
+    }
+    
+    generatePalettesCache.set(cacheKey, output);
+    console.log(`[Cache Set] generateHarmoniousPalettesFlow: Cached palette for input: ${cacheKey}`);
+    return output;
   }
 );
-

@@ -34,6 +34,9 @@ export type SuggestSceneFromAudioOutput = z.infer<
   typeof SuggestSceneFromAudioOutputSchema
 >;
 
+// In-memory cache for this flow
+const suggestSceneCache = new Map<string, SuggestSceneFromAudioOutput>();
+
 export async function suggestSceneFromAudio(
   input: SuggestSceneFromAudioInput
 ): Promise<SuggestSceneFromAudioOutput> {
@@ -87,16 +90,21 @@ const suggestSceneFromAudioFlow = ai.defineFlow(
     inputSchema: SuggestSceneFromAudioInputSchema,
     outputSchema: SuggestSceneFromAudioOutputSchema,
   },
-  async input => {
-    const response = await prompt(input);
-    if (!response.output) {
-        // This case should ideally be caught by Genkit if the output schema is defined 
-        // and the model fails to produce it, or if the API call itself failed.
-        // Adding an explicit check for robustness.
-        console.error('AI prompt for scene suggestion returned no output despite a successful API call.');
+  async (input: SuggestSceneFromAudioInput): Promise<SuggestSceneFromAudioOutput> => {
+    const cacheKey = JSON.stringify(input);
+    if (suggestSceneCache.has(cacheKey)) {
+      console.log(`[Cache Hit] suggestSceneFromAudioFlow: Returning cached scene suggestion for input: ${cacheKey}`);
+      return suggestSceneCache.get(cacheKey)!;
+    }
+    console.log(`[Cache Miss] suggestSceneFromAudioFlow: Generating scene suggestion for input: ${cacheKey}`);
+
+    const {output} = await prompt(input);
+    if (!output) {
         throw new Error('AI failed to suggest a scene (no output returned from model).');
     }
-    return response.output;
+
+    suggestSceneCache.set(cacheKey, output);
+    console.log(`[Cache Set] suggestSceneFromAudioFlow: Cached scene suggestion for input: ${cacheKey}`);
+    return output;
   }
 );
-
