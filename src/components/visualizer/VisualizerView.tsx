@@ -9,6 +9,7 @@ import { useScene } from '@/providers/SceneProvider';
 import { BrandingOverlay } from './BrandingOverlay';
 import { WebcamFeed } from './WebcamFeed';
 import * as THREE from 'three';
+import { SBNF_BODY_FONT_FAMILY } from '@/lib/constants';
 
 /**
  * @fileOverview The main component responsible for rendering the visualizer canvas.
@@ -38,6 +39,7 @@ export function VisualizerView() {
   const webGLSceneRef = useRef<THREE.Scene | null>(null);
   const webGLCameraRef = useRef<THREE.PerspectiveCamera | null>(null);
   const currentSceneWebGLAssetsRef = useRef<any>(null);
+  const previousSceneWebGLAssetsRef = useRef<any>(null); // Added declaration
 
   // Scene transition refs
   const previousSceneRef = useRef<SceneDefinition | null>(null);
@@ -53,7 +55,7 @@ export function VisualizerView() {
   const frameCountRef = useRef(0);
   const [fps, setFps] = useState(0);
   const lastLoggedFpsRef = useRef<number>(0);
-  const fpsDropThreshold = 10;
+  const fpsDropThreshold = 10; // Example threshold
   const fpsLogIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
 
@@ -71,7 +73,7 @@ export function VisualizerView() {
 
       if (prevSceneObject && currentScene && prevSceneObject.rendererType !== currentScene.rendererType) {
         console.log(`Renderer type changed from ${prevSceneObject.rendererType || '2d'} to ${currentScene.rendererType || '2d'}. Remounting canvas.`);
-        setCanvasKey(prevKey => prevKey + 1);
+        setCanvasKey(prevKey => prevKey + 1); // Force re-mount of canvas
       }
 
       if (settings.sceneTransitionActive && settings.sceneTransitionDuration > 0 && prevSceneObject) {
@@ -86,13 +88,13 @@ export function VisualizerView() {
             prevSceneObject.cleanupWebGL(previousSceneWebGLAssetsRef.current);
           }
           previousSceneWebGLAssetsRef.current = null;
-        } else if (prevSceneObject.rendererType !== 'webgl' && currentScene.rendererType !== 'webgl') { // Only 2D-to-2D transitions for now
+        } else if (prevSceneObject.rendererType !== 'webgl' && currentScene.rendererType !== 'webgl') {
           previousSceneRef.current = prevSceneObject;
           setIsTransitioning(true);
           transitionStartTimeRef.current = performance.now();
         } else {
           previousSceneRef.current = null;
-          setIsTransitioning(false); // No transitions for WebGL or mixed for now
+          setIsTransitioning(false); 
         }
       } else {
         previousSceneRef.current = null;
@@ -112,62 +114,73 @@ export function VisualizerView() {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    const oldSceneDef = scenes.find(s => s.id === lastSceneIdRef.current && s.id !== currentScene?.id);
-    if (currentSceneWebGLAssetsRef.current && oldSceneDef?.rendererType === 'webgl' && oldSceneDef?.cleanupWebGL) {
-        if (oldSceneDef.id !== currentScene?.id || (currentScene?.rendererType || '2d') !== 'webgl') {
-             console.log(`Cleaning up WebGL assets for old scene: ${oldSceneDef.id}`);
-             oldSceneDef.cleanupWebGL(currentSceneWebGLAssetsRef.current);
-             currentSceneWebGLAssetsRef.current = null;
-        }
+    // Cleanup logic for the *current* scene's WebGL assets if it's being replaced by a non-WebGL scene
+    // or if the current scene changes *from* a WebGL scene to another scene.
+    if (currentSceneWebGLAssetsRef.current && currentScene?.id !== lastSceneIdRef.current && scenes.find(s => s.id === lastSceneIdRef.current)?.rendererType === 'webgl') {
+      const oldSceneDef = scenes.find(s => s.id === lastSceneIdRef.current);
+      if (oldSceneDef?.cleanupWebGL) {
+        console.log(`Cleaning up WebGL assets for old scene: ${oldSceneDef.id}`);
+        oldSceneDef.cleanupWebGL(currentSceneWebGLAssetsRef.current);
+      }
+      currentSceneWebGLAssetsRef.current = null;
     }
-
+    
+    // Dispose main WebGL renderer if the new scene isn't WebGL
     if (webGLRendererRef.current && ((currentScene?.rendererType || '2d') !== 'webgl' || !currentScene) ) {
       console.log("Disposing main WebGL renderer and scene refs as scene is not WebGL or not current.");
       webGLRendererRef.current.dispose();
       webGLRendererRef.current = null;
       webGLSceneRef.current = null;
       webGLCameraRef.current = null;
-      currentSceneWebGLAssetsRef.current = null; // Also clear assets here
+      currentSceneWebGLAssetsRef.current = null; 
     }
 
 
     if (currentScene && (currentScene.rendererType === 'webgl') && currentScene.initWebGL) {
-      console.log(`Initializing WebGL for scene: ${currentScene.id} on canvas (key: ${canvasKey})`);
-      try {
-        const { renderer, scene, camera, ...assets } = currentScene.initWebGL(canvas, settings);
-        webGLRendererRef.current = renderer;
-        webGLSceneRef.current = scene;
-        webGLCameraRef.current = camera;
-        currentSceneWebGLAssetsRef.current = assets;
-        // lastSceneIdRef.current = currentScene.id; // This ref is managed by the other effect
-      } catch (e) {
-        console.error("Error during WebGL initialization for scene:", currentScene.id, e);
-        setLastError(e instanceof Error ? e.message : String(e));
-        if (webGLRendererRef.current) {
-          webGLRendererRef.current.dispose();
-          webGLRendererRef.current = null;
+      // Only initialize if it's a new WebGL scene or if the canvas was re-keyed
+      if (!webGLRendererRef.current || currentScene.id !== lastSceneIdRef.current || !currentSceneWebGLAssetsRef.current) {
+          console.log(`Initializing WebGL for scene: ${currentScene.id} on canvas (key: ${canvasKey})`);
+        try {
+          // Ensure previous scene's WebGL assets are cleaned up before initializing new ones
+          if (currentSceneWebGLAssetsRef.current && scenes.find(s => s.id === lastSceneIdRef.current)?.cleanupWebGL) {
+            scenes.find(s => s.id === lastSceneIdRef.current)!.cleanupWebGL(currentSceneWebGLAssetsRef.current);
+          }
+          currentSceneWebGLAssetsRef.current = null; // Clear old assets
+
+          const { renderer, scene, camera, ...assets } = currentScene.initWebGL(canvas, settings);
+          webGLRendererRef.current = renderer;
+          webGLSceneRef.current = scene;
+          webGLCameraRef.current = camera;
+          currentSceneWebGLAssetsRef.current = assets; 
+        } catch (e) {
+          console.error("Error during WebGL initialization for scene:", currentScene.id, e);
+          setLastError(e instanceof Error ? e.message : String(e));
+          if (webGLRendererRef.current) {
+            webGLRendererRef.current.dispose();
+            webGLRendererRef.current = null;
+          }
         }
       }
     }
 
     return () => {
-      // This cleanup runs if currentScene, settings, or scenes change, OR if the component unmounts
-      // It's critical if the scene was WebGL and is now changing.
+      // This cleanup runs if currentScene, settings, scenes, or canvasKey change, OR if the component unmounts.
+      // It's critical if the scene was WebGL and is now changing OR if canvas is re-keyed.
       if ((currentScene?.rendererType === 'webgl') && currentSceneWebGLAssetsRef.current && currentScene?.cleanupWebGL) {
-        console.log(`Cleaning up WebGL assets for scene: ${currentScene.id} due to effect re-run or unmount`);
+        console.log(`Cleaning up WebGL assets for scene: ${currentScene.id} due to effect re-run or unmount (WebGL init effect)`);
         currentScene.cleanupWebGL(currentSceneWebGLAssetsRef.current);
         currentSceneWebGLAssetsRef.current = null;
       }
-      // General renderer disposal if this effect cleans up and no new WebGL scene is set
+      // General renderer disposal if this effect cleans up and no new WebGL scene is set by the next render
       if (webGLRendererRef.current && ((currentScene?.rendererType || '2d') !== 'webgl' || !currentScene)) {
-        console.log("Disposing main WebGL renderer on effect cleanup (VisualizerView).");
+        console.log("Disposing main WebGL renderer on effect cleanup (VisualizerView - WebGL init effect).");
         webGLRendererRef.current.dispose();
         webGLRendererRef.current = null;
         webGLSceneRef.current = null;
         webGLCameraRef.current = null;
       }
     };
-  }, [currentScene, settings, scenes, canvasKey]); // Added canvasKey
+  }, [currentScene, settings, scenes, canvasKey]); 
 
   useEffect(() => {
     if (settings.enableAiOverlay && settings.aiGeneratedOverlayUri) {
@@ -189,9 +202,9 @@ export function VisualizerView() {
     const now = performance.now();
     const delta = now - lastFrameTimeRef.current;
     frameCountRef.current++;
-    if (delta >= 1000) {
-      const currentFps = frameCountRef.current;
-      setFps(currentFps);
+    if (delta >= 1000) { // Update FPS every second
+      const currentFpsValue = frameCountRef.current;
+      setFps(currentFpsValue);
       frameCountRef.current = 0;
       lastFrameTimeRef.current = now;
     }
@@ -207,7 +220,7 @@ export function VisualizerView() {
         }
         lastLoggedFpsRef.current = fps;
       }
-    }, 5000);
+    }, 5000); // Log FPS every 5 seconds
     return () => {
       if (fpsLogIntervalRef.current) clearInterval(fpsLogIntervalRef.current);
     };
@@ -237,10 +250,11 @@ export function VisualizerView() {
       ctx.globalAlpha = originalAlpha;
       ctx.globalCompositeOperation = originalCompositeOperation;
     }
-  }, [settings.enableAiOverlay, settings.aiOverlayOpacity, settings.aiOverlayBlendMode, settings.aiGeneratedOverlayUri]); // Re-added aiGeneratedOverlayUri
+  }, [settings.enableAiOverlay, settings.aiOverlayOpacity, settings.aiOverlayBlendMode, settings.aiGeneratedOverlayUri]);
 
   const drawDebugInfo = useCallback((ctx: CanvasRenderingContext2D | null) => {
-    if (!ctx || (currentScene?.rendererType === 'webgl')) return; // Hide for WebGL scenes
+    if (!ctx || (currentScene?.rendererType === 'webgl')) return; 
+    const canvas = ctx.canvas;
     ctx.font = '12px var(--font-geist-mono, monospace)';
     ctx.fillStyle = 'hsl(var(--foreground-hsl))';
     ctx.textAlign = 'left';
@@ -264,12 +278,12 @@ export function VisualizerView() {
     ctx.textAlign = 'right';
     const lineSpacing = 14;
     let currentY = 20;
-    ctx.fillText(`RMS: ${audioData.rms.toFixed(3)}`, ctx.canvas.width - 10, currentY); currentY += lineSpacing;
-    ctx.fillText(`Beat: ${audioData.beat}`, ctx.canvas.width - 10, currentY); currentY += lineSpacing;
-    ctx.fillText(`Bass: ${audioData.bassEnergy.toFixed(3)}`, ctx.canvas.width - 10, currentY); currentY += lineSpacing;
-    ctx.fillText(`Mid: ${audioData.midEnergy.toFixed(3)}`, ctx.canvas.width - 10, currentY); currentY += lineSpacing;
-    ctx.fillText(`Treble: ${audioData.trebleEnergy.toFixed(3)}`, ctx.canvas.width - 10, currentY); currentY += lineSpacing;
-    ctx.fillText(`BPM: ${audioData.bpm}`, ctx.canvas.width - 10, currentY);
+    ctx.fillText(`RMS: ${audioData.rms.toFixed(3)}`, canvas.width - 10, currentY); currentY += lineSpacing;
+    ctx.fillText(`Beat: ${audioData.beat}`, canvas.width - 10, currentY); currentY += lineSpacing;
+    ctx.fillText(`Bass: ${audioData.bassEnergy.toFixed(3)}`, canvas.width - 10, currentY); currentY += lineSpacing;
+    ctx.fillText(`Mid: ${audioData.midEnergy.toFixed(3)}`, canvas.width - 10, currentY); currentY += lineSpacing;
+    ctx.fillText(`Treble: ${audioData.trebleEnergy.toFixed(3)}`, canvas.width - 10, currentY); currentY += lineSpacing;
+    ctx.fillText(`BPM: ${audioData.bpm}`, canvas.width - 10, currentY);
   }, [fps, audioData, currentScene?.rendererType]);
 
   const drawErrorState = useCallback((ctx: CanvasRenderingContext2D | null) => {
@@ -277,7 +291,7 @@ export function VisualizerView() {
     const canvas = ctx.canvas;
     ctx.fillStyle = 'hsl(var(--background-hsl))';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.font = '14px var(--font-poppins, sans-serif)';
+    ctx.font = `14px ${SBNF_BODY_FONT_FAMILY}`;
     let errorColor = 'red'; 
     const computedStyle = getComputedStyle(canvas);
     const destructiveColorValue = computedStyle.getPropertyValue('--destructive').trim();
@@ -289,7 +303,6 @@ export function VisualizerView() {
     const errorMessage = lastError || "Unknown error occurred.";
     const lines = [title];
     
-    // Simple text wrapping
     const words = errorMessage.split(' ');
     let currentLine = "";
     for (const word of words) {
@@ -307,7 +320,7 @@ export function VisualizerView() {
 
     const lineHeight = 20;
     const totalHeight = lines.length * lineHeight;
-    let startY = canvas.height / 2 - totalHeight / 2 + lineHeight / 2; // Adjust for better vertical centering
+    let startY = canvas.height / 2 - totalHeight / 2 + lineHeight / 2; 
 
     lines.forEach((line) => {
         ctx.fillText(line, canvas.width / 2, startY);
@@ -350,26 +363,24 @@ export function VisualizerView() {
             canvasHeight: canvas.height,
           });
           webGLRendererRef.current.render(webGLSceneRef.current, webGLCameraRef.current);
-          // AI overlay and Debug info on top of WebGL would need a second canvas or render-to-texture.
-          // For now, these are skipped for WebGL scenes to keep it simple.
         } else {
-          const ctx = get2DContext(); // Fallback if WebGL init failed or scene misconfigured
+          const ctx = get2DContext(); 
           if (ctx) {
             ctx.fillStyle = 'hsl(var(--background-hsl))';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
             ctx.fillStyle = 'hsl(var(--muted-foreground-hsl))';
             ctx.textAlign = 'center';
             ctx.font = '20px var(--font-poppins)';
-            ctx.fillText(currentScene.initWebGL ? 'Initializing WebGL scene...' : 'WebGL scene misconfigured', canvas.width / 2, canvas.height / 2);
+            ctx.fillText(currentScene?.initWebGL ? 'Initializing WebGL scene...' : 'WebGL scene misconfigured', canvas.width / 2, canvas.height / 2);
           }
         }
-        if (lastError && currentScene.initWebGL) setLastError(null); // Clear error if WebGL scene is valid
-      } else { // 2D Canvas rendering path
+        if (lastError && currentScene?.initWebGL) setLastError(null);
+      } else { 
         const ctx = get2DContext();
         if (!ctx) {
           setLastError("Failed to get 2D context. Visualizer cannot draw.");
         } else {
-          ctx.clearRect(0, 0, canvas.width, canvas.height); // Ensure clear for 2D
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
            if (lastError) {
              drawErrorState(ctx);
            } else if (currentScene && currentScene.draw) {
@@ -383,7 +394,7 @@ export function VisualizerView() {
               drawPrimary2DSceneContent(ctx, currentScene);
             }
             drawAiGeneratedOverlay(ctx);
-            if (!settings.panicMode) drawDebugInfo(ctx); // Only draw debug for 2D scenes for now
+            if (!settings.panicMode) drawDebugInfo(ctx); 
           } else {
             ctx.fillStyle = 'hsl(var(--background-hsl))';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -405,7 +416,7 @@ export function VisualizerView() {
       isTransitioning, setIsTransitioning, 
       lastError, setLastError, 
       get2DContext, drawPrimary2DSceneContent, drawAiGeneratedOverlay, drawDebugInfo, drawErrorState, updateFps,
-      canvasKey // Add canvasKey to dependencies of drawLoop
+      canvasKey 
   ]);
 
   useEffect(() => {
@@ -416,33 +427,35 @@ export function VisualizerView() {
         const resizeObserver = new ResizeObserver(() => {
           const newWidth = parent.clientWidth;
           const newHeight = parent.clientHeight;
-          canvas.width = newWidth;
-          canvas.height = newHeight;
-          if (webGLRendererRef.current && webGLCameraRef.current) {
-            webGLRendererRef.current.setSize(newWidth, newHeight);
-            webGLCameraRef.current.aspect = newWidth / newHeight;
-            webGLCameraRef.current.updateProjectionMatrix();
+          if(canvas.width !== newWidth || canvas.height !== newHeight) {
+            canvas.width = newWidth;
+            canvas.height = newHeight;
+            if (webGLRendererRef.current && webGLCameraRef.current) {
+              webGLRendererRef.current.setSize(newWidth, newHeight);
+              webGLCameraRef.current.aspect = newWidth / newHeight;
+              webGLCameraRef.current.updateProjectionMatrix();
+            }
           }
         });
         resizeObserver.observe(parent);
-        // Initial size set
+        
         const newWidth = parent.clientWidth;
         const newHeight = parent.clientHeight;
-        canvas.width = newWidth;
-        canvas.height = newHeight;
-         if (webGLRendererRef.current && webGLCameraRef.current) {
-            webGLRendererRef.current.setSize(newWidth, newHeight);
-            webGLCameraRef.current.aspect = newWidth / newHeight;
-            webGLCameraRef.current.updateProjectionMatrix();
-          }
+        if(canvas.width !== newWidth || canvas.height !== newHeight) {
+            canvas.width = newWidth;
+            canvas.height = newHeight;
+            if (webGLRendererRef.current && webGLCameraRef.current) {
+                webGLRendererRef.current.setSize(newWidth, newHeight);
+                webGLCameraRef.current.aspect = newWidth / newHeight;
+                webGLCameraRef.current.updateProjectionMatrix();
+            }
+        }
         return () => resizeObserver.disconnect();
       }
     }
-  }, [canvasKey]); // Re-run resize observer setup if canvasKey changes
+  }, [canvasKey]); 
 
   useEffect(() => {
-    // This effect should always try to start the loop if not already running.
-    // The drawLoop itself will check conditions like canvas availability.
     if (!animationFrameIdRef.current) {
       animationFrameIdRef.current = requestAnimationFrame(drawLoop);
     }
@@ -463,3 +476,4 @@ export function VisualizerView() {
   );
 }
 
+    
