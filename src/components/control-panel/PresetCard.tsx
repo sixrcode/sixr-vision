@@ -12,24 +12,25 @@ type PresetCardProps = {
   isActive: boolean;
   onClick: () => void;
   onKeyDown: (event: React.KeyboardEvent<HTMLDivElement>) => void;
-} & React.HTMLAttributes<HTMLDivElement>; // Allow other HTMLDivElement props like ref
+} & React.HTMLAttributes<HTMLDivElement>;
 
 const PresetCard = React.forwardRef<HTMLDivElement, PresetCardProps>(
   ({ scene, isActive, onClick, onKeyDown, className, ...props }, ref) => {
-    // Manage text color with inline style for direct control over text on card background
+    // Style object for text and border color, reacting to isActive state
     const cardTextStyle: React.CSSProperties = {
       color: isActive ? 'hsl(var(--accent-foreground-hsl))' : 'hsl(var(--card-foreground-hsl))',
+      borderColor: isActive ? 'hsl(var(--primary-hsl))' : 'hsl(var(--border-hsl))',
     };
 
     return (
       <Card
         ref={ref}
-        style={cardTextStyle} // Apply text color style here
+        style={cardTextStyle} // Apply text and border color style here
         className={cn(
           "w-full h-auto shrink-0 cursor-pointer transition-all hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
           isActive
-            ? "bg-accent border-primary ring-2 ring-primary opacity-100" // Active: accent bg, primary border/ring
-            : "bg-card border-border", // Inactive: card bg, default border
+            ? "ring-2 ring-primary opacity-100 bg-[hsl(36,98%,63%)]" // Active: SBNF Orange-Yellow
+            : "bg-[hsl(258,56%,40%)]", // Inactive: SBNF Deep Purple (for card bg)
           className
         )}
         onClick={onClick}
@@ -39,22 +40,22 @@ const PresetCard = React.forwardRef<HTMLDivElement, PresetCardProps>(
         aria-pressed={isActive}
         {...props}
       >
-        <CardContent className="p-0 flex flex-col items-center">
+        {/* Added p-2 to CardContent for diagnostic purposes */}
+        <CardContent className="p-2 flex flex-col items-center">
           {scene.thumbnailUrl ? (
             <Image
               src={scene.thumbnailUrl}
               alt={scene.name}
               width={80}
               height={60}
-              className="rounded-md object-cover w-full" // Rounded on all corners
+              className="rounded-md object-cover w-full"
               data-ai-hint={scene.dataAiHint || "abstract visual"}
             />
           ) : (
             <div className="w-full h-[60px] flex items-center justify-center bg-muted rounded-md p-1">
-              {/* Text inside placeholder div, explicitly set color for contrast with bg-muted */}
               <span className={cn(
                 "text-xs text-center break-words",
-                isActive ? "text-accent-foreground" : "text-card-foreground" 
+                isActive ? "text-accent-foreground" : "text-card-foreground"
               )}>
                 {scene.name}
               </span>
