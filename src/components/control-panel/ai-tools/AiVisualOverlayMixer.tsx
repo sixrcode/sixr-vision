@@ -14,9 +14,9 @@ import { useAudioData } from '@/providers/AudioDataProvider';
 import { useScene } from '@/providers/SceneProvider';
 import { generateVisualOverlay, type GenerateVisualOverlayInput, type GenerateVisualOverlayOutput } from '@/ai/flows/generate-visual-overlay';
 import { ControlPanelSection } from '../ControlPanelSection';
-import { Layers, Wand2, Loader2, Repeat } from 'lucide-react';
+import { Layers, Wand2, Loader2 } from 'lucide-react'; // Removed Repeat as it's not used
 import { VALID_BLEND_MODES, type Settings } from '@/types';
-import { DEFAULT_SETTINGS } from '@/lib/constants'; // Added import
+import { DEFAULT_SETTINGS } from '@/lib/constants';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { ControlHint } from '../ControlHint';
 import { LabelledSwitchControl } from '../common/LabelledSwitchControl';
@@ -68,7 +68,7 @@ export function AiVisualOverlayMixer({ value }: AiVisualOverlayMixerProps) {
         currentSceneName: currentScene.name,
       };
 
-      console.log("[AI Flow Debug] Generating AI Visual Overlay with prompt:", input.prompt); // Log the prompt
+      console.log("[AI Flow Debug] Generating AI Visual Overlay with prompt:", input.prompt);
 
       const result: GenerateVisualOverlayOutput = await generateVisualOverlay(input);
       updateSetting('aiGeneratedOverlayUri', result.overlayImageDataUri);
@@ -89,7 +89,7 @@ export function AiVisualOverlayMixer({ value }: AiVisualOverlayMixerProps) {
       }
       toast({ title: 'Overlay Generation Failed', description, variant: 'destructive' });
       updateSetting('aiGeneratedOverlayUri', null);
-      if (autoEnableAfterSuccess) {
+      if (autoEnableAfterSuccess) { // Also ensure it's disabled on failure if it was an auto-enable attempt
          updateSetting('enableAiOverlay', false);
       }
       return false;
@@ -98,18 +98,16 @@ export function AiVisualOverlayMixer({ value }: AiVisualOverlayMixerProps) {
     }
   }, [currentScene, audioData, updateSetting, toast, localPrompt]);
 
-  // Initial overlay generation on load - removed auto-generation
+  // Initial overlay generation on load
   useEffect(() => {
     if (!initialGenerationAttempted && currentScene && audioData.rms > 0.005 && !settings.aiGeneratedOverlayUri && settings.aiOverlayPrompt === DEFAULT_SETTINGS.aiOverlayPrompt) {
-      console.log("AiVisualOverlayMixer: Attempting initial AI overlay generation with default SBNF prompt.");
-      // No longer auto-generate on load to reduce API errors
-      // handleGenerateOverlay(settings.aiOverlayPrompt, true).then(() => {
-      //   setInitialGenerationAttempted(true);
-      // });
-      setInitialGenerationAttempted(true); // Mark as attempted so it doesn't retry
+      console.log("AiVisualOverlayMixer: Attempting initial AI overlay generation with SBNF default prompt.");
+      handleGenerateOverlay(settings.aiOverlayPrompt, true).then(() => { // Pass true to auto-enable on success
+        setInitialGenerationAttempted(true);
+      });
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentScene, audioData.rms, settings.aiGeneratedOverlayUri, settings.aiOverlayPrompt]);
+  }, [currentScene, audioData.rms, settings.aiGeneratedOverlayUri, settings.aiOverlayPrompt, initialGenerationAttempted, handleGenerateOverlay]);
 
 
   // Periodic overlay regeneration
@@ -119,9 +117,9 @@ export function AiVisualOverlayMixer({ value }: AiVisualOverlayMixerProps) {
     if (settings.enableAiOverlay && settings.enablePeriodicAiOverlay && !isLoading) {
       console.log(`AiVisualOverlayMixer: Starting periodic regeneration every ${PERIODIC_REGENERATION_INTERVAL / 1000}s.`);
       intervalId = setInterval(() => {
-        if (!isLoading) { // Double check isLoading before calling
+        if (!isLoading) { 
           console.log("AiVisualOverlayMixer: Triggering periodic overlay regeneration.");
-          handleGenerateOverlay(settings.aiOverlayPrompt, false); // autoEnable is false as it's already enabled
+          handleGenerateOverlay(settings.aiOverlayPrompt, false); 
         }
       }, PERIODIC_REGENERATION_INTERVAL);
     } else {
@@ -276,3 +274,4 @@ export function AiVisualOverlayMixer({ value }: AiVisualOverlayMixerProps) {
   );
 }
 
+    
