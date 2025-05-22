@@ -5,8 +5,7 @@ import { Poppins } from 'next/font/google';
 // import { GeistMono } from 'geist/font/mono'; // Temporarily disabled due to 403 errors in Firebase Studio
 import localFont from 'next/font/local';
 
-// The fonts.css file can be re-imported here if it contains active @font-face rules.
-// import './fonts.css'; // Currently only contains comments and commented out Torus font
+// import './fonts.css'; // No longer needed for Torus as it's handled by next/font/local
 import './globals.css';
 
 import { Toaster } from '@/components/ui/toaster';
@@ -37,19 +36,13 @@ const data70Font = localFont({
   ],
   variable: '--font-data70',
   display: 'swap',
-  // Fallback if Data70 fails to load or is not yet available
-  fallback: ['monospace'], // Use system monospace as fallback
+  fallback: ['monospace'], 
 });
 // const data70Font = { variable: ''}; // Use this if Data70.ttf is confirmed unavailable & causing build errors
 
 // === TORUS FONT CONFIGURATION ===
-// Currently commented out due to font file not found issues.
-// To re-enable:
-// 1. Ensure 'Fontspring-DEMO-toruspro-variable.ttf' is in 'src/app/fonts/'.
-// 2. Uncomment the 'torusVariationsFont' definition below.
-// 3. Uncomment its usage in the body className.
-// 4. Uncomment its usage in `src/lib/brandingConstants.ts`.
-/*
+// Now using Fontspring-DEMO-toruspro-variable.ttf
+// IMPORTANT: Ensure 'Fontspring-DEMO-toruspro-variable.ttf' is in 'src/app/fonts/'.
 const torusVariationsFont = localFont({
   src: [
     {
@@ -61,8 +54,7 @@ const torusVariationsFont = localFont({
   display: 'swap',
   fallback: ['monospace'], // Use system monospace as fallback
 });
-*/
-const torusVariationsFont = { variable: '' }; // Placeholder if Torus font loading is disabled
+// const torusVariationsFont = { variable: '' }; // Placeholder if Torus font loading is disabled
 
 export const metadata: Metadata = {
   title: 'SIXR Vision - SBNF Cosmic Grapevines',
