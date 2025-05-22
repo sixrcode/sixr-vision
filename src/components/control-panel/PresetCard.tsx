@@ -22,8 +22,8 @@ const PresetCard = React.forwardRef<HTMLDivElement, PresetCardProps>(
         className={cn(
           "w-full h-auto shrink-0 cursor-pointer transition-all hover:shadow-lg",
           isActive
-            ? "border-primary ring-2 ring-primary bg-accent opacity-100"
-            : "opacity-75 hover:opacity-100 border-border", // Ensure inactive cards have a default border
+            ? "border-primary ring-2 ring-primary bg-accent opacity-100" // Active: Orange-Yellow bg, Orange-Red border/ring
+            : "border-border bg-card", // Inactive: Dark Purple bg, Lighter Purple border. Fully opaque.
           className
         )}
         onClick={onClick}
