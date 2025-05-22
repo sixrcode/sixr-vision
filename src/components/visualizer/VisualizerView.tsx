@@ -42,6 +42,7 @@ export function VisualizerView() {
   const frameCountRef = useRef(0);
   const [fps, setFps] = useState(0);
 
+
   // Effect to handle scene transitions
   useEffect(() => {
     if (settings.currentSceneId !== lastSceneIdRef.current) {
@@ -81,11 +82,143 @@ export function VisualizerView() {
   }, [settings.enableAiOverlay, settings.aiGeneratedOverlayUri]);
 
 
-  /**
-   * The main drawing loop, called via requestAnimationFrame.
-   * Handles clearing the canvas, drawing the current scene (with transitions),
-   * AI overlays, FPS counter, and error messages.
-   */
+  const updateFps = useCallback(() => {
+    const now = performance.now();
+    const delta = now - lastFrameTimeRef.current;
+    frameCountRef.current++;
+    if (delta >= 1000) {
+      setFps(frameCountRef.current);
+      frameCountRef.current = 0;
+      lastFrameTimeRef.current = now;
+    }
+  }, []);
+
+  const drawPrimarySceneContent = useCallback((ctx: CanvasRenderingContext2D) => {
+    if (isTransitioning && previousSceneRef.current && currentScene) {
+      const elapsedTime = performance.now() - transitionStartTimeRef.current;
+      const progress = Math.min(1, elapsedTime / settings.sceneTransitionDuration);
+
+      ctx.globalAlpha = 1 - progress;
+      previousSceneRef.current.draw(ctx, audioData, settings, webcamElement ?? undefined);
+
+      ctx.globalAlpha = progress;
+      currentScene.draw(ctx, audioData, settings, webcamElement ?? undefined);
+
+      ctx.globalAlpha = 1;
+
+      if (progress >= 1) {
+        setIsTransitioning(false);
+        previousSceneRef.current = null;
+      }
+    } else if (currentScene) {
+      ctx.globalAlpha = 1;
+      currentScene.draw(ctx, audioData, settings, webcamElement ?? undefined);
+    } else {
+      ctx.fillStyle = 'hsl(var(--background-hsl))';
+      ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+      ctx.fillStyle = 'hsl(var(--muted-foreground-hsl))';
+      ctx.textAlign = 'center';
+      ctx.font = '20px var(--font-poppins)';
+      ctx.fillText('No scene selected', ctx.canvas.width / 2, ctx.canvas.height / 2);
+    }
+  }, [audioData, currentScene, settings, webcamElement, isTransitioning, setIsTransitioning]);
+
+  const drawAiGeneratedOverlay = useCallback((ctx: CanvasRenderingContext2D) => {
+    if (settings.enableAiOverlay && aiOverlayImageRef.current) {
+      const originalAlpha = ctx.globalAlpha;
+      const originalCompositeOperation = ctx.globalCompositeOperation;
+
+      ctx.globalAlpha = settings.aiOverlayOpacity;
+      ctx.globalCompositeOperation = settings.aiOverlayBlendMode;
+      ctx.drawImage(aiOverlayImageRef.current, 0, 0, ctx.canvas.width, ctx.canvas.height);
+      // console.log('AI Overlay Drawn');
+
+      ctx.globalAlpha = originalAlpha;
+      ctx.globalCompositeOperation = originalCompositeOperation;
+    }
+  }, [settings.enableAiOverlay, settings.aiGeneratedOverlayUri, settings.aiOverlayOpacity, settings.aiOverlayBlendMode, aiOverlayImageRef]);
+
+  const drawDebugInfo = useCallback((ctx: CanvasRenderingContext2D) => {
+    ctx.font = '12px var(--font-geist-mono)';
+    ctx.fillStyle = 'hsl(var(--foreground-hsl))';
+    ctx.textAlign = 'left';
+    ctx.fillText(`FPS: ${fps}`, 10, 20);
+
+    const spectrumSum = audioData.spectrum.reduce((a, b) => a + b, 0);
+    const firstFiveBins = Array.from(audioData.spectrum.slice(0,5));
+
+    console.log(
+        'VisualizerView - AudioData:',
+        'RMS:', audioData.rms.toFixed(3),
+        'Beat:', audioData.beat,
+        'Bass:', audioData.bassEnergy.toFixed(3),
+        'Mid:', audioData.midEnergy.toFixed(3),
+        'Treble:', audioData.trebleEnergy.toFixed(3),
+        'BPM:', audioData.bpm,
+        'Spectrum Sum:', spectrumSum,
+        'First 5 bins:', firstFiveBins
+    );
+
+    ctx.textAlign = 'right';
+    const lineSpacing = 14;
+    let currentY = 20;
+    ctx.fillText(`RMS: ${audioData.rms.toFixed(3)}`, ctx.canvas.width - 10, currentY);
+    currentY += lineSpacing;
+    ctx.fillText(`Beat: ${audioData.beat}`, ctx.canvas.width - 10, currentY);
+    currentY += lineSpacing;
+    ctx.fillText(`Bass: ${audioData.bassEnergy.toFixed(3)}`, ctx.canvas.width - 10, currentY);
+    currentY += lineSpacing;
+    ctx.fillText(`Mid: ${audioData.midEnergy.toFixed(3)}`, ctx.canvas.width - 10, currentY);
+    currentY += lineSpacing;
+    ctx.fillText(`Treble: ${audioData.trebleEnergy.toFixed(3)}`, ctx.canvas.width - 10, currentY);
+    currentY += lineSpacing;
+    ctx.fillText(`BPM: ${audioData.bpm}`, ctx.canvas.width - 10, currentY);
+  }, [fps, audioData]);
+
+  const drawErrorState = useCallback((ctx: CanvasRenderingContext2D) => {
+    ctx.fillStyle = 'hsl(var(--background-hsl))';
+    ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+    ctx.font = '14px var(--font-geist-sans)';
+
+    let errorColor = 'red'; // Default fallback
+    if (canvasRef.current) {
+        const computedStyle = getComputedStyle(canvasRef.current);
+        errorColor = computedStyle.getPropertyValue('--destructive').trim() || 'red';
+    }
+    ctx.fillStyle = errorColor;
+
+    ctx.textAlign = 'center';
+    const title = 'Visualizer Error (see console):';
+    const lines = [title];
+    const errorMessageLines = [];
+    const maxTextWidth = ctx.canvas.width * 0.9;
+    let currentLine = "";
+    (lastError || "Unknown error").split(" ").forEach(word => {
+        if (ctx.measureText(currentLine + word).width > maxTextWidth && currentLine.length > 0) {
+            errorMessageLines.push(currentLine.trim());
+            currentLine = word + " ";
+        } else {
+            currentLine += word + " ";
+        }
+    });
+    errorMessageLines.push(currentLine.trim());
+    const allLines = [...lines, ...errorMessageLines];
+    const lineHeight = 20;
+    const totalHeight = allLines.length * lineHeight;
+    let startY = ctx.canvas.height / 2 - totalHeight / 2;
+    allLines.forEach((line, index) => {
+        ctx.fillText(line, ctx.canvas.width / 2, startY + (index * lineHeight));
+    });
+  }, [lastError]);
+
+  const drawSceneAndOverlays = useCallback((ctx: CanvasRenderingContext2D) => {
+    drawPrimarySceneContent(ctx);
+    if (lastError) return; // Don't draw overlays or debug info if there's a scene error
+    drawAiGeneratedOverlay(ctx);
+    drawDebugInfo(ctx);
+  }, [drawPrimarySceneContent, drawAiGeneratedOverlay, drawDebugInfo, lastError]);
+
+
   const drawLoop = useCallback(() => {
     animationFrameIdRef.current = null; // Clear ref for next request
 
@@ -103,139 +236,20 @@ export function VisualizerView() {
       return;
     }
 
-    // FPS Calculation
-    const now = performance.now();
-    const delta = now - lastFrameTimeRef.current;
-    frameCountRef.current++;
-    if (delta >= 1000) {
-      setFps(frameCountRef.current);
-      frameCountRef.current = 0;
-      lastFrameTimeRef.current = now;
-    }
-
-    const spectrumSum = audioData.spectrum.reduce((a, b) => a + b, 0);
-    if (audioData.rms > 0.001 || spectrumSum > 0 || audioData.beat) {
-        // console.log( // Kept for debugging if needed, but can be verbose
-        //     'VisualizerView - AudioData:',
-        //     'RMS:', audioData.rms.toFixed(3),
-        //     'Beat:', audioData.beat,
-        //     'Bass:', audioData.bassEnergy.toFixed(3),
-        //     'Mid:', audioData.midEnergy.toFixed(3),
-        //     'Treble:', audioData.trebleEnergy.toFixed(3),
-        //     'BPM:', audioData.bpm,
-        //     'Spectrum Sum:', spectrumSum,
-        //     'First 5 bins:', Array.from(audioData.spectrum.slice(0,5))
-        // );
-    }
-
+    updateFps();
 
     try {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
       if (lastError && !settings.panicMode) {
-        ctx.fillStyle = 'hsl(var(--background-hsl))';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.font = '14px var(--font-geist-sans)';
-
-        if (canvasRef.current) {
-            const computedStyle = getComputedStyle(canvasRef.current);
-            const destructiveColor = computedStyle.getPropertyValue('--destructive').trim() || 'red';
-            ctx.fillStyle = destructiveColor;
-        } else {
-            ctx.fillStyle = 'red';
-        }
-
-        ctx.textAlign = 'center';
-        const title = 'Visualizer Error (see console):';
-        const lines = [title];
-        const errorMessageLines = [];
-        const maxTextWidth = canvas.width * 0.9;
-        let currentLine = "";
-        lastError.split(" ").forEach(word => {
-            if (ctx.measureText(currentLine + word).width > maxTextWidth && currentLine.length > 0) {
-                errorMessageLines.push(currentLine.trim());
-                currentLine = word + " ";
-            } else {
-                currentLine += word + " ";
-            }
-        });
-        errorMessageLines.push(currentLine.trim());
-        const allLines = [...lines, ...errorMessageLines];
-        const lineHeight = 20;
-        const totalHeight = allLines.length * lineHeight;
-        let startY = canvas.height / 2 - totalHeight / 2;
-        allLines.forEach((line, index) => {
-            ctx.fillText(line, canvas.width / 2, startY + (index * lineHeight));
-        });
+        drawErrorState(ctx);
       } else if (settings.panicMode) {
         ctx.fillStyle = 'black';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
-        if (lastError) setLastError(null);
-      } else if (isTransitioning && previousSceneRef.current && currentScene) {
-        const elapsedTime = performance.now() - transitionStartTimeRef.current;
-        const progress = Math.min(1, elapsedTime / settings.sceneTransitionDuration);
-
-        ctx.globalAlpha = 1 - progress;
-        previousSceneRef.current.draw(ctx, audioData, settings, webcamElement ?? undefined);
-
-        ctx.globalAlpha = progress;
-        currentScene.draw(ctx, audioData, settings, webcamElement ?? undefined);
-
-        ctx.globalAlpha = 1;
-
-        if (progress >= 1) {
-          setIsTransitioning(false);
-          previousSceneRef.current = null;
-        }
-        if (lastError) setLastError(null);
-      } else if (currentScene) {
-        ctx.globalAlpha = 1;
-        currentScene.draw(ctx, audioData, settings, webcamElement ?? undefined);
-        if (lastError) setLastError(null);
+        if (lastError) setLastError(null); // Clear error if panic mode is activated
       } else {
-        ctx.fillStyle = 'hsl(var(--background-hsl))';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.fillStyle = 'hsl(var(--muted-foreground-hsl))';
-        ctx.textAlign = 'center';
-        ctx.font = '20px var(--font-geist-sans)';
-        ctx.fillText('No scene selected', canvas.width / 2, canvas.height / 2);
-        if (lastError) setLastError(null);
-      }
-
-      if (settings.enableAiOverlay && aiOverlayImageRef.current && !settings.panicMode && !lastError) {
-        const originalAlpha = ctx.globalAlpha;
-        const originalCompositeOperation = ctx.globalCompositeOperation;
-
-        ctx.globalAlpha = settings.aiOverlayOpacity;
-        ctx.globalCompositeOperation = settings.aiOverlayBlendMode;
-        ctx.drawImage(aiOverlayImageRef.current, 0, 0, canvas.width, canvas.height);
-        // console.log('AI Overlay Drawn');
-
-        ctx.globalAlpha = originalAlpha;
-        ctx.globalCompositeOperation = originalCompositeOperation;
-      }
-
-      // Draw FPS counter & Audio Data for Debugging
-      if (!settings.panicMode && !lastError) {
-        ctx.font = '12px var(--font-geist-mono)';
-        ctx.fillStyle = 'hsl(var(--foreground-hsl))'; // Use themed foreground
-        ctx.textAlign = 'left';
-        ctx.fillText(`FPS: ${fps}`, 10, 20);
-
-        ctx.textAlign = 'right';
-        const lineSpacing = 14;
-        let currentY = 20;
-        ctx.fillText(`RMS: ${audioData.rms.toFixed(3)}`, canvas.width - 10, currentY);
-        currentY += lineSpacing;
-        ctx.fillText(`Beat: ${audioData.beat}`, canvas.width - 10, currentY);
-        currentY += lineSpacing;
-        ctx.fillText(`Bass: ${audioData.bassEnergy.toFixed(3)}`, canvas.width - 10, currentY);
-        currentY += lineSpacing;
-        ctx.fillText(`Mid: ${audioData.midEnergy.toFixed(3)}`, canvas.width - 10, currentY);
-        currentY += lineSpacing;
-        ctx.fillText(`Treble: ${audioData.trebleEnergy.toFixed(3)}`, canvas.width - 10, currentY);
-        currentY += lineSpacing;
-        ctx.fillText(`BPM: ${audioData.bpm}`, canvas.width - 10, currentY);
+         if (lastError) setLastError(null); // Clear previous error if now drawing successfully
+        drawSceneAndOverlays(ctx);
       }
 
     } catch (error) {
@@ -247,7 +261,7 @@ export function VisualizerView() {
     }
 
     animationFrameIdRef.current = requestAnimationFrame(drawLoop);
-  }, [audioData, currentScene, settings, webcamElement, lastError, isTransitioning, fps, scenes]);
+  }, [settings.panicMode, lastError, updateFps, drawSceneAndOverlays, drawErrorState, setLastError]);
 
   // Effect to handle canvas resizing
   useEffect(() => {
@@ -258,9 +272,8 @@ export function VisualizerView() {
         const resizeObserver = new ResizeObserver(() => {
           canvas.width = parent.clientWidth;
           canvas.height = parent.clientHeight;
-          if(lastError) { // Re-trigger error display if canvas resizes during error
-            setLastError(prev => prev ? prev + " " : "Canvas resized.");
-          }
+          // No need to explicitly re-trigger error display on resize here,
+          // the drawLoop will handle it on its next frame.
         });
         resizeObserver.observe(parent);
         // Initial size set
@@ -269,11 +282,10 @@ export function VisualizerView() {
         return () => resizeObserver.disconnect();
       }
     }
-  }, [lastError]); // Re-run if lastError changes to ensure error text is redrawn after resize
+  }, []);
 
   // Effect to start and stop the main animation loop
   useEffect(() => {
-    // lastSceneIdRef.current = settings.currentSceneId; // Not needed here as it's handled by transition effect
     animationFrameIdRef.current = requestAnimationFrame(drawLoop);
     return () => {
       if (animationFrameIdRef.current) {
@@ -281,7 +293,7 @@ export function VisualizerView() {
         animationFrameIdRef.current = null;
       }
     };
-  }, [drawLoop]); // drawLoop is stable due to useCallback
+  }, [drawLoop]);
 
   return (
     <div className="w-full h-full relative">
