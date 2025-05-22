@@ -1,5 +1,6 @@
 
 import type { Settings, SceneDefinition, AudioData } from '@/types';
+import * as THREE from 'three';
 
 export const FFT_SIZES = [128, 256, 512] as const;
 
@@ -11,30 +12,28 @@ export const DEFAULT_SETTINGS: Settings = {
   dither: 0.0,
   brightCap: 1.0,
   logoOpacity: 0.25,
-  showWebcam: false,
+  showWebcam: false, // Defaulting to false, user must enable
   mirrorWebcam: true,
-  currentSceneId: 'radial_burst', // SBNF Default: Radial Burst for more initial activity
+  currentSceneId: 'radial_burst',
   panicMode: false,
   logoBlackout: false,
   logoAnimationSettings: {
-    type: 'pulse', // SBNF Default
+    type: 'pulse',
     speed: 1,
-    color: '#FF441A', // SBNF Orange-Red for solid/blink
+    color: '#FF441A',
   },
   lastAISuggestedAssetPrompt: undefined,
   sceneTransitionDuration: 500,
   sceneTransitionActive: true,
   monitorAudio: false,
   selectedAudioInputDeviceId: undefined,
-
-  // AI Visual Overlay Mixer Settings
   enableAiOverlay: false,
   aiGeneratedOverlayUri: null,
   aiOverlayOpacity: 0.5,
   aiOverlayBlendMode: 'overlay',
-  aiOverlayPrompt: "Afrofuturistic cosmic vine with glowing purple grapes, starry nebula background, high contrast, transparent", // SBNF Themed Prompt
+  aiOverlayPrompt: "Afrofuturistic cosmic vine with glowing purple grapes, starry nebula background, high contrast, transparent",
   enablePeriodicAiOverlay: false,
-  aiOverlayRegenerationInterval: 45, // Default to 45 seconds
+  aiOverlayRegenerationInterval: 45,
 };
 
 export const INITIAL_AUDIO_DATA: AudioData = {
@@ -47,40 +46,38 @@ export const INITIAL_AUDIO_DATA: AudioData = {
   beat: false,
 };
 
+const PARTICLE_FINALE_NUM_PARTICLES = 10000; // Number of particles for WebGL scene
+
 export const SCENES: SceneDefinition[] = [
   {
     id: 'mirror_silhouette',
     name: 'Mirror Silhouette',
+    rendererType: '2d',
     thumbnailUrl: 'https://placehold.co/120x80/5A36BB/FFECDA.png?text=Mirror', // SBNF Colors
     dataAiHint: 'silhouette reflection webcam',
     draw: (ctx, audioData, settings, webcamFeed) => {
       const { width, height } = ctx.canvas;
-      ctx.fillStyle = 'hsl(var(--background-hsl))'; // SBNF Deep Purple
+      ctx.fillStyle = 'hsl(var(--background-hsl))';
       ctx.fillRect(0,0,width,height);
 
       if (webcamFeed && settings.showWebcam && webcamFeed.readyState >= webcamFeed.HAVE_METADATA && webcamFeed.videoWidth > 0 && webcamFeed.videoHeight > 0) {
         const camWidth = webcamFeed.videoWidth;
         const camHeight = webcamFeed.videoHeight;
+        const canvasAspect = width / height;
+        const camAspect = camWidth / camHeight;
 
-        let sx = 0;
-        let sy = 0;
-        let sWidth = camWidth;
-        let sHeight = camHeight;
+        let sx = 0, sy = 0, sWidth = camWidth, sHeight = camHeight;
 
-        // Cover scaling logic:
-        // If canvas is wider than video proportionally, video height matches canvas height, crop video width
-        if (width / height > camWidth / camHeight) {
-          sHeight = camHeight;
-          sWidth = camHeight * (width / height);
-          sx = (camWidth - sWidth) / 2;
-          sy = 0;
-        } else { // If canvas is taller or same aspect, video width matches canvas width, crop video height
-          sWidth = camWidth;
-          sHeight = camWidth * (height / width);
-          sx = 0;
-          sy = (camHeight - sHeight) / 2;
+        if (canvasAspect > camAspect) { // Canvas is wider than video: fit height, crop width
+            sHeight = camHeight;
+            sWidth = camHeight * canvasAspect;
+            sx = (camWidth - sWidth) / 2;
+        } else { // Canvas is taller or same aspect: fit width, crop height
+            sWidth = camWidth;
+            sHeight = camWidth / canvasAspect;
+            sy = (camHeight - sHeight) / 2;
         }
-
+        
         ctx.save();
         if (settings.mirrorWebcam) {
           ctx.translate(width, 0);
@@ -92,7 +89,7 @@ export const SCENES: SceneDefinition[] = [
         ctx.restore();
 
         ctx.globalCompositeOperation = 'difference';
-        const baseAccentHue = 36; // SBNF Orange-Yellow base
+        const baseAccentHue = 36; 
         const energyColor = (baseAccentHue + audioData.bassEnergy * 40 + audioData.midEnergy * 20 + performance.now()/80) % 360;
 
         const differenceAlpha = Math.min(1, (0.95 + audioData.rms * 0.1 + (audioData.beat ? 0.05 : 0)) * settings.brightCap);
@@ -118,7 +115,7 @@ export const SCENES: SceneDefinition[] = [
       } else {
         ctx.fillStyle = 'hsl(var(--muted-foreground-hsl))';
         ctx.textAlign = 'center';
-        ctx.font = `16px var(--font-poppins)`; // Use Poppins
+        ctx.font = `16px ${SBNF_BODY_FONT_FAMILY}`;
         if (!settings.showWebcam) {
           ctx.fillText('Webcam not enabled for this scene', width / 2, height / 2);
         } else {
@@ -130,11 +127,12 @@ export const SCENES: SceneDefinition[] = [
   {
     id: 'echoing_shapes',
     name: 'Echoing Shapes',
-    thumbnailUrl: 'https://placehold.co/120x80/FF441A/FFECDA.png?text=Echoes', // SBNF Orange-Red on Cream
+    rendererType: '2d',
+    thumbnailUrl: 'https://placehold.co/120x80/FF441A/FFECDA.png?text=Echoes', 
     dataAiHint: 'glowing orbs abstract shapes',
     draw: (ctx, audioData, settings) => {
       const { width, height } = ctx.canvas;
-      ctx.fillStyle = `hsla(var(--background-hsl), ${settings.sceneTransitionActive && settings.sceneTransitionDuration > 0 ? 0.08 : 0.05})`;
+      ctx.fillStyle = `hsla(var(--background-hsl-raw), ${settings.sceneTransitionActive && settings.sceneTransitionDuration > 0 ? 0.08 : 0.05})`; // use raw HSL
       ctx.fillRect(0, 0, width, height);
 
       if (audioData.beat || audioData.rms > 0.02) {
@@ -172,7 +170,8 @@ export const SCENES: SceneDefinition[] = [
    {
     id: 'frequency_rings',
     name: 'Frequency Rings',
-    thumbnailUrl: 'https://placehold.co/120x80/FDB143/000000.png?text=Rings', // SBNF Orange-Yellow on Black
+    rendererType: '2d',
+    thumbnailUrl: 'https://placehold.co/120x80/FDB143/000000.png?text=Rings',
     dataAiHint: 'frequency audio rings',
     draw: (ctx, audioData, settings) => {
       const { width, height } = ctx.canvas;
@@ -180,12 +179,12 @@ export const SCENES: SceneDefinition[] = [
       const centerY = height / 2;
       const maxRingRadius = Math.min(width, height) * 0.45;
 
-      ctx.fillStyle = `hsla(var(--background-hsl), ${settings.sceneTransitionActive && settings.sceneTransitionDuration > 0 ? 0.15 : 0.1})`;
+      ctx.fillStyle = `hsla(var(--background-hsl-raw), ${settings.sceneTransitionActive && settings.sceneTransitionDuration > 0 ? 0.15 : 0.1})`; // use raw HSL
       ctx.fillRect(0, 0, width, height);
 
       const energies = [audioData.bassEnergy, audioData.midEnergy, audioData.trebleEnergy];
       // SBNF Hues: Orange-Red (13), Orange-Yellow (36), Lavender (267)
-      const baseHues = [13, 36, 267];
+      const baseHues = [13, 36, 267]; 
       const numSteps = 6 + Math.floor(audioData.rms * 12);
 
       for (let i = 0; i < energies.length; i++) {
@@ -218,11 +217,12 @@ export const SCENES: SceneDefinition[] = [
   {
     id: 'neon_pulse_grid',
     name: 'Neon Pulse Grid',
-    thumbnailUrl: 'https://placehold.co/120x80/E1CCFF/5A36BB.png?text=Grid', // SBNF Light Lavender on Deep Purple
+    rendererType: '2d',
+    thumbnailUrl: 'https://placehold.co/120x80/E1CCFF/5A36BB.png?text=Grid',
     dataAiHint: 'neon grid pulse',
     draw: (ctx, audioData, settings) => {
       const { width, height } = ctx.canvas;
-      ctx.fillStyle = `hsla(var(--background-hsl), ${settings.sceneTransitionActive && settings.sceneTransitionDuration > 0 ? 0.28 : 0.22})`;
+      ctx.fillStyle = `hsla(var(--background-hsl-raw), ${settings.sceneTransitionActive && settings.sceneTransitionDuration > 0 ? 0.28 : 0.22})`; // use raw HSL
       ctx.fillRect(0, 0, width, height);
 
       const gridSize = 8 + Math.floor(audioData.rms * 12);
@@ -244,8 +244,7 @@ export const SCENES: SceneDefinition[] = [
           const radius = maxRadius * energy * settings.brightCap * (0.25 + audioData.rms * 0.7 + audioData.bassEnergy * 0.35);
           if (radius < 1.5) continue;
 
-          // SBNF Hues: Orange-Red (13), Orange-Yellow (36), Lavender (267), Deep Purple (258)
-          const hueOptions = [13, 36, 267, 258];
+          const hueOptions = [13, 36, 267, 258]; // SBNF Palette
           const baseHue = hueOptions[ (i*gridSize + j) % hueOptions.length ];
           const hue = (baseHue + energy * 60 + (performance.now()/70)*10 + (audioData.beat ? 20:0) ) % 360;
           const lightness = 45 + energy * 30;
@@ -267,25 +266,24 @@ export const SCENES: SceneDefinition[] = [
   {
     id: 'spectrum_bars',
     name: 'Spectrum Bars',
-    thumbnailUrl: 'https://placehold.co/120x80/5A36BB/FDB143.png?text=Bars', // SBNF Deep Purple on Orange-Yellow
+    rendererType: '2d',
+    thumbnailUrl: 'https://placehold.co/120x80/5A36BB/FDB143.png?text=Bars', 
     dataAiHint: 'audio spectrum analysis',
     draw: (ctx, audioData, settings) => {
       const { width, height } = ctx.canvas;
-      ctx.fillStyle = 'hsl(var(--background-hsl))'; // SBNF Deep Purple
+      ctx.fillStyle = 'hsl(var(--background-hsl))'; 
       ctx.fillRect(0,0,width,height);
 
       const spectrumSumForSilenceCheck = audioData.spectrum.reduce((s, v) => s + v, 0);
       const isAudioSilent = audioData.rms < 0.01 && spectrumSumForSilenceCheck < (audioData.spectrum.length * 0.5);
 
-
       if (isAudioSilent) {
         ctx.fillStyle = 'hsl(var(--muted-foreground-hsl))';
         ctx.textAlign = 'center';
-        ctx.font = `16px var(--font-poppins)`; // Use Poppins
+        ctx.font = `16px ${SBNF_BODY_FONT_FAMILY}`;
         ctx.fillText('Low audio signal. Make some noise or check input gain.', width / 2, height / 2);
-
         const barWidth = width / audioData.spectrum.length;
-        ctx.strokeStyle = 'hsla(var(--muted-foreground-hsl), 0.2)';
+        ctx.strokeStyle = 'hsla(var(--muted-foreground-hsl-raw), 0.2)'; // use raw HSL
         ctx.lineWidth = 1;
         for(let i=0; i < audioData.spectrum.length; i++) {
             ctx.strokeRect(i * barWidth, height - (height * 0.05), barWidth -2, (height * 0.05));
@@ -295,25 +293,22 @@ export const SCENES: SceneDefinition[] = [
 
       const barWidth = width / audioData.spectrum.length;
       const effectiveBrightCap = Math.max(0.1, settings.brightCap);
-      // SBNF Hues: Orange-Red (13), Orange-Yellow (36), Lavender (267), Deep Purple (258)
-      const hueCycle = [13, 36, 267, 258];
+      const hueCycle = [13, 36, 267, 258]; // SBNF Palette
 
       audioData.spectrum.forEach((value, i) => {
         const normalizedValue = value / 255;
         const barHeight = Math.max(1, normalizedValue * height * effectiveBrightCap * 1.1);
-
         const hueIndex = Math.floor((i / audioData.spectrum.length) * hueCycle.length);
         const baseHue = hueCycle[hueIndex % hueCycle.length];
         const hue = (baseHue + normalizedValue * 30 + (audioData.beat ? 20 : 0)) % 360;
-
         const saturation = 85 + normalizedValue * 15;
-        const lightness = 40 + normalizedValue * 35;
+        const lightness = 40 + normalizedValue * 35 + (settings.gamma - 1) * 10; // Gamma influence
 
-        ctx.fillStyle = `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+        ctx.fillStyle = `hsl(${hue}, ${saturation}%, ${Math.min(90, lightness)}%)`; // Cap lightness
         ctx.fillRect(i * barWidth, height - barHeight, barWidth - 1.2, barHeight);
 
         if (normalizedValue > 0.35) {
-          ctx.fillStyle = `hsla(${(hue + 25) % 360}, ${saturation + 10}%, ${lightness + 25}%, 0.65)`;
+          ctx.fillStyle = `hsla(${(hue + 25) % 360}, ${saturation + 10}%, ${Math.min(95, lightness + 25)}%, 0.65)`;
           ctx.fillRect(i * barWidth, height - barHeight * 1.05, barWidth - 1.2, barHeight * 0.25);
         }
       });
@@ -322,27 +317,27 @@ export const SCENES: SceneDefinition[] = [
    {
     id: 'radial_burst',
     name: 'Radial Burst',
-    thumbnailUrl: 'https://placehold.co/120x80/FF441A/000000.png?text=Burst', // SBNF Orange-Red on Black
+    rendererType: '2d',
+    thumbnailUrl: 'https://placehold.co/120x80/FF441A/000000.png?text=Burst',
     dataAiHint: 'abstract explosion particles',
     draw: (ctx, audioData, settings) => {
       const { width, height } = ctx.canvas;
-      ctx.fillStyle = `hsla(var(--background-hsl), ${settings.sceneTransitionActive && settings.sceneTransitionDuration > 0 ? 0.18 : 0.15})`;
+      ctx.fillStyle = `hsla(var(--background-hsl-raw), ${settings.sceneTransitionActive && settings.sceneTransitionDuration > 0 ? 0.18 : 0.15})`; // use raw HSL
       ctx.fillRect(0,0,width,height);
 
       const centerX = width / 2;
       const centerY = height / 2;
       const spectrumSumForSilenceCheck = audioData.spectrum.reduce((s, v) => s + v, 0);
       const isAudioSilent = audioData.rms < 0.01 && spectrumSumForSilenceCheck < (audioData.spectrum.length * 0.5) && !audioData.beat;
-      // SBNF Hues for particles: Orange-Red (13), Orange-Yellow (36), Lavender (267), Deep Purple (258)
-      const sbnfHues = [13, 36, 267, 258];
+      const sbnfHues = [13, 36, 267, 258, 337]; // Added SBNF pink/magenta
 
       if (isAudioSilent) {
         ctx.fillStyle = 'hsl(var(--muted-foreground-hsl))';
         ctx.textAlign = 'center';
-        ctx.font = `16px var(--font-poppins)`; // Use Poppins
+        ctx.font = `16px ${SBNF_BODY_FONT_FAMILY}`;
         ctx.fillText('Low audio signal. Make some noise or check input gain.', width / 2, height / 2);
         const numPlaceholderCircles = 10;
-        ctx.strokeStyle = 'hsla(var(--muted-foreground-hsl), 0.15)';
+        ctx.strokeStyle = 'hsla(var(--muted-foreground-hsl-raw), 0.15)'; // use raw HSL
         ctx.lineWidth = 1.0;
         for (let i = 0; i < numPlaceholderCircles; i++) {
           const r = (Math.min(width, height) * 0.01) + (i * Math.min(width, height) * 0.04);
@@ -384,33 +379,31 @@ export const SCENES: SceneDefinition[] = [
   {
     id: 'geometric_tunnel',
     name: 'Geometric Tunnel',
-    thumbnailUrl: 'https://placehold.co/120x80/5A36BB/FF441A.png?text=Tunnel', // SBNF Deep Purple on Orange-Red
+    rendererType: '2d',
+    thumbnailUrl: 'https://placehold.co/120x80/5A36BB/FF441A.png?text=Tunnel',
     dataAiHint: 'geometric tunnel flight',
     draw: (ctx, audioData, settings) => {
       const { width, height } = ctx.canvas;
       const centerX = width / 2;
       const centerY = height / 2;
-      ctx.fillStyle = `hsla(var(--background-hsl), ${settings.sceneTransitionActive && settings.sceneTransitionDuration > 0 ? 0.35 : 0.28})`;
+      ctx.fillStyle = `hsla(var(--background-hsl-raw), ${settings.sceneTransitionActive && settings.sceneTransitionDuration > 0 ? 0.35 : 0.28})`; // use raw HSL
       ctx.fillRect(0, 0, width, height);
 
       const numLayers = 12 + Math.floor(audioData.rms * 15);
-      const sbnfHues = [13, 36, 267, 258]; // SBNF Palette: Orange-Red, Orange-Yellow, Lavender, Deep Purple
+      const sbnfHues = [13, 36, 267, 258, 337]; // SBNF Palette + Pink/Magenta
 
       for (let i = 0; i < numLayers; i++) {
         const timeFactor = performance.now() / (1600 - audioData.bpm * 7.0);
         const depthProgress = ((i / numLayers) + timeFactor * (0.08 + audioData.rms * 0.6 + audioData.bassEnergy * 0.35)) % 1;
-
         const scale = depthProgress;
         if (scale < 0.0005 || scale > 1) continue;
 
         const shapeWidth = width * scale * (0.25 + audioData.bassEnergy * 0.65);
         const shapeHeight = height * scale * (0.25 + audioData.midEnergy * 0.65);
-
         const alpha = (1 - depthProgress) * (0.35 + audioData.trebleEnergy * 0.65) * settings.brightCap * 2.0;
         if (alpha <= 0.005) continue;
 
         const hue = (sbnfHues[i % sbnfHues.length] + depthProgress * 150 + audioData.rms * 100 + performance.now()/250) % 360;
-
         ctx.strokeStyle = `hsla(${hue}, 95%, ${60 + depthProgress * 20}%, ${alpha})`;
         ctx.lineWidth = Math.max(1.0, (1 - depthProgress) * (10 + (audioData.beat ? 6.5 : 0)) * settings.brightCap);
 
@@ -436,18 +429,18 @@ export const SCENES: SceneDefinition[] = [
   {
     id: 'strobe_light',
     name: 'Strobe Light',
-    thumbnailUrl: 'https://placehold.co/120x80/FFECDA/000000.png?text=Strobe', // SBNF Cream on Black
+    rendererType: '2d',
+    thumbnailUrl: 'https://placehold.co/120x80/FFECDA/000000.png?text=Strobe',
     dataAiHint: 'strobe light flash',
     draw: (ctx, audioData, settings) => {
       const { width, height } = ctx.canvas;
       if (audioData.beat && settings.brightCap > 0.01) {
-        // SBNF Hues: Orange-Red (13), Orange-Yellow (36), Lavender (267)
-        const hueOptions = [13, 36, 267, 258]; // Added Deep Purple to SBNF options
+        const hueOptions = [13, 36, 267, 258, 337]; // SBNF Palette
         const hue = (hueOptions[Math.floor(Math.random() * hueOptions.length)] + performance.now()/50)%360;
         ctx.fillStyle = `hsla(${hue}, 100%, ${85 + Math.random() * 15}%, ${settings.brightCap})`;
         ctx.fillRect(0, 0, width, height);
       } else {
-        ctx.fillStyle = 'hsl(var(--background-hsl))'; // SBNF Deep Purple or Black if that's the base
+        ctx.fillStyle = 'hsl(var(--background-hsl))';
         ctx.fillRect(0, 0, width, height);
       }
     },
@@ -455,55 +448,149 @@ export const SCENES: SceneDefinition[] = [
   {
     id: 'particle_finale',
     name: 'Particle Finale',
-    thumbnailUrl: 'https://placehold.co/120x80/FDB143/5A36BB.png?text=Finale', // SBNF Orange-Yellow on Deep Purple
-    dataAiHint: 'grand particle explosion confetti fireworks',
+    rendererType: 'webgl',
+    thumbnailUrl: 'https://placehold.co/120x80/FDB143/5A36BB.png?text=Finale',
+    dataAiHint: 'grand particle explosion fireworks',
+    initWebGL: (canvas, settings) => {
+      const scene = new THREE.Scene();
+      const camera = new THREE.PerspectiveCamera(75, canvas.width / canvas.height, 0.1, 1000);
+      camera.position.z = 50; // Adjusted for better view
+      const renderer = new THREE.WebGLRenderer({ canvas, alpha: true }); // alpha: true for transparency
+      renderer.setSize(canvas.width, canvas.height);
+      renderer.setPixelRatio(window.devicePixelRatio);
+
+      const particleGeometry = new THREE.BufferGeometry();
+      const positions = new Float32Array(PARTICLE_FINALE_NUM_PARTICLES * 3);
+      const colors = new Float32Array(PARTICLE_FINALE_NUM_PARTICLES * 3);
+      const sbnfHues = [13, 36, 267, 258, 337]; // SBNF Palette
+      const baseColor = new THREE.Color();
+
+      for (let i = 0; i < PARTICLE_FINALE_NUM_PARTICLES; i++) {
+        positions[i * 3] = (Math.random() - 0.5) * 100; // x
+        positions[i * 3 + 1] = (Math.random() - 0.5) * 100; // y
+        positions[i * 3 + 2] = (Math.random() - 0.5) * 100; // z
+
+        baseColor.setHSL(sbnfHues[i % sbnfHues.length] / 360, 0.9, 0.6);
+        colors[i * 3] = baseColor.r;
+        colors[i * 3 + 1] = baseColor.g;
+        colors[i * 3 + 2] = baseColor.b;
+      }
+      particleGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+      particleGeometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+      const particleMaterial = new THREE.PointsMaterial({
+        size: 0.5,
+        vertexColors: true,
+        transparent: true,
+        opacity: 0.7,
+        sizeAttenuation: true,
+      });
+      const particles = new THREE.Points(particleGeometry, particleMaterial);
+      scene.add(particles);
+      
+      return { scene, camera, renderer, particles, particleMaterial, particleGeometry, sbnfHues };
+    },
+    drawWebGL: ({ scene, camera, renderer, audioData, settings, webGLAssets, canvasWidth, canvasHeight }) => {
+      if (!webGLAssets || !webGLAssets.particles) return;
+
+      const { particles, particleMaterial, particleGeometry, sbnfHues } = webGLAssets;
+      const positions = particleGeometry.attributes.position.array as Float32Array;
+      const colors = particleGeometry.attributes.color.array as Float32Array;
+      const time = performance.now() * 0.0005;
+
+      // Update particle material based on settings
+      particleMaterial.opacity = Math.max(0.1, settings.brightCap * 0.7 * (0.5 + audioData.rms * 0.5));
+      particleMaterial.size = 0.3 + settings.brightCap * (audioData.rms * 1.5 + audioData.bassEnergy * 1.0);
+      
+      const baseColor = new THREE.Color();
+
+      for (let i = 0; i < PARTICLE_FINALE_NUM_PARTICLES; i++) {
+        // Simple movement: expand/contract with RMS, spin with time
+        const i3 = i * 3;
+        const initialX = (Math.random() - 0.5) * 100; // Re-randomize for more dynamic feel or use stored initial positions
+        const initialY = (Math.random() - 0.5) * 100;
+        
+        // Make particles react more to beat
+        let scaleFactor = 1.0 + audioData.rms * 2.0;
+        if (audioData.beat) {
+          scaleFactor += audioData.bassEnergy * 5.0 * Math.random();
+           // Flash color on beat
+          baseColor.setHSL((sbnfHues[i % sbnfHues.length] + 30) / 360, 1.0, 0.7 + Math.random()*0.2);
+        } else {
+          baseColor.setHSL(sbnfHues[i % sbnfHues.length] / 360, 0.9, 0.5 + audioData.midEnergy * 0.3);
+        }
+        colors[i3] = baseColor.r;
+        colors[i3 + 1] = baseColor.g;
+        colors[i3 + 2] = baseColor.b;
+
+        positions[i3] = initialX * Math.cos(time * 0.2 + i*0.1) * scaleFactor;
+        positions[i3+1] = initialY * Math.sin(time * 0.2 + i*0.1) * scaleFactor;
+        // positions[i3+2] = initialZ * scaleFactor; // if you want z-depth movement
+      }
+
+      particleGeometry.attributes.position.needsUpdate = true;
+      particleGeometry.attributes.color.needsUpdate = true;
+      particles.rotation.y = time * 0.1;
+      particles.rotation.x = time * 0.05;
+    },
+    cleanupWebGL: (webGLAssets) => {
+      if (webGLAssets) {
+        if (webGLAssets.particleGeometry) webGLAssets.particleGeometry.dispose();
+        if (webGLAssets.particleMaterial) webGLAssets.particleMaterial.dispose();
+        if (webGLAssets.scene) { // Remove particles from scene
+            if (webGLAssets.particles) webGLAssets.scene.remove(webGLAssets.particles);
+        }
+        // Note: renderer, scene, camera are managed by VisualizerView
+      }
+    },
+    // Original 2D draw function (will not be called if rendererType is 'webgl')
     draw: (ctx, audioData, settings) => {
       const { width, height } = ctx.canvas;
-      ctx.fillStyle = `hsla(var(--background-hsl), ${settings.sceneTransitionActive && settings.sceneTransitionDuration > 0 ? 0.15 : 0.1})`;
+      ctx.fillStyle = `hsla(var(--background-hsl-raw), ${settings.sceneTransitionActive && settings.sceneTransitionDuration > 0 ? 0.15 : 0.1})`; // use raw HSL
       ctx.fillRect(0, 0, width, height);
 
       const centerX = width / 2;
       const centerY = height / 2;
-      const MAX_AMBIENT_PARTICLES = 1500; 
-      const MAX_BURST_PARTICLES = 3000; 
-      // SBNF Hues: Orange-Red (13), Orange-Yellow (36), Lavender (267), Deep Purple (258)
-      const sbnfHues = [13, 36, 267, 258];
+      const MAX_AMBIENT_PARTICLES = 15000; // Increased cap
+      const MAX_BURST_PARTICLES = 30000; // Increased cap
+      const sbnfHues = [13, 36, 267, 258, 337]; 
 
-      const ambientParticleCount = Math.min(MAX_AMBIENT_PARTICLES, 150 + Math.floor(audioData.rms * 400 + audioData.midEnergy * 250 + audioData.trebleEnergy * 150));
+      const ambientParticleCount = Math.min(MAX_AMBIENT_PARTICLES, 250 + Math.floor(audioData.rms * 600 + audioData.midEnergy * 400 + audioData.trebleEnergy * 250));
       for (let i = 0; i < ambientParticleCount; i++) {
-        if (Math.random() < audioData.rms * 0.8 + 0.15) {
+        if (Math.random() < audioData.rms * 0.9 + 0.25) { // Increased probability
           const x = Math.random() * width;
           const y = Math.random() * height;
-          const size = (1.2 + Math.random() * 4.5 * (audioData.midEnergy + audioData.trebleEnergy * 0.7)) * settings.brightCap;
-          const hue = (sbnfHues[i % sbnfHues.length] + Math.random() * 60 - 30 + performance.now()/120) % 360;
-          const lightness = 60 + Math.random() * 25;
-          const alpha = (0.25 + Math.random() * 0.65 * (audioData.rms + 0.1)) * settings.brightCap * 1.3;
+          const size = (1.5 + Math.random() * 5.5 * (audioData.midEnergy + audioData.trebleEnergy * 0.8)) * settings.brightCap;
+          const hue = (sbnfHues[i % sbnfHues.length] + Math.random() * 70 - 35 + performance.now()/100) % 360; // Faster cycle
+          const lightness = 65 + Math.random() * 25;
+          const alpha = (0.35 + Math.random() * 0.7 * (audioData.rms + 0.15)) * settings.brightCap * 1.4; // Brighter alpha
           ctx.fillStyle = `hsla(${hue}, 95%, ${lightness}%, ${Math.min(1, alpha)})`;
-          ctx.beginPath(); ctx.arc(x, y, Math.max(0.4, size), 0, Math.PI * 2); ctx.fill();
+          ctx.beginPath(); ctx.arc(x, y, Math.max(0.5, size), 0, Math.PI * 2); ctx.fill();
         }
       }
 
       if (audioData.beat) {
-        const burstParticleCount = Math.min(MAX_BURST_PARTICLES, 500 + Math.floor(audioData.bassEnergy * 1200 + audioData.rms * 800));
+        const burstParticleCount = Math.min(MAX_BURST_PARTICLES, 800 + Math.floor(audioData.bassEnergy * 1800 + audioData.rms * 1200)); // More particles on beat
         for (let i = 0; i < burstParticleCount; i++) {
           const angle = Math.random() * Math.PI * 2;
-          const radius = Math.random() * Math.min(width, height) * 0.75 * (0.25 + audioData.bassEnergy * 0.55 + audioData.rms * 0.45);
-          const x = centerX + Math.cos(angle) * radius * (Math.random() * 0.7 + 0.6);
-          const y = centerY + Math.sin(angle) * radius * (Math.random() * 0.7 + 0.6);
-          const size = (2.0 + Math.random() * 12.0 * (audioData.bassEnergy * 1.3 + audioData.rms * 1.1)) * settings.brightCap;
-
-          const hue = (sbnfHues[ (i + Math.floor(audioData.bassEnergy*10)) % sbnfHues.length ] + (Math.random() * 70) - 35 + performance.now()/70) % 360;
-          const lightness = 68 + Math.random() * 22;
-          const alpha = (0.75 + Math.random() * 0.28) * settings.brightCap * 1.1;
-
+          const radius = Math.random() * Math.min(width, height) * 0.85 * (0.3 + audioData.bassEnergy * 0.6 + audioData.rms * 0.5); // Wider burst
+          const x = centerX + Math.cos(angle) * radius * (Math.random() * 0.8 + 0.7);
+          const y = centerY + Math.sin(angle) * radius * (Math.random() * 0.8 + 0.7);
+          const size = (2.5 + Math.random() * 15.0 * (audioData.bassEnergy * 1.4 + audioData.rms * 1.2)) * settings.brightCap; // Larger particles
+          const hue = (sbnfHues[ (i + Math.floor(audioData.bassEnergy*15)) % sbnfHues.length ] + (Math.random() * 80) - 40 + performance.now()/60) % 360; // Wider hue variance, faster cycle
+          const lightness = 70 + Math.random() * 25; // Brighter
+          const alpha = (0.8 + Math.random() * 0.25) * settings.brightCap * 1.2; // More opaque
           ctx.fillStyle = `hsla(${hue}, 100%, ${lightness}%, ${Math.min(1, alpha)})`;
-          ctx.beginPath(); ctx.arc(x, y, Math.max(0.8, size), 0, Math.PI * 2); ctx.fill();
+          ctx.beginPath(); ctx.arc(x, y, Math.max(1.0, size), 0, Math.PI * 2); ctx.fill();
         }
       }
     },
   },
 ];
 
-export const CONTROL_PANEL_WIDTH_STRING = "280px";
+// SBNF Specific font family constants
+export const SBNF_TITLE_FONT_FAMILY = "var(--font-data70), monospace";
+export const SBNF_BODY_FONT_FAMILY = "var(--font-poppins), var(--font-geist-sans), sans-serif";
 
-    
+
+export const CONTROL_PANEL_WIDTH_STRING = "280px";
