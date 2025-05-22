@@ -13,11 +13,11 @@ export const DEFAULT_SETTINGS: Settings = {
   logoOpacity: 0.25,
   showWebcam: false,
   mirrorWebcam: true,
-  currentSceneId: 'radial_burst', // Default to a visually active scene
+  currentSceneId: 'radial_burst', // SBNF Default: Radial Burst for more initial activity
   panicMode: false,
   logoBlackout: false,
   logoAnimationSettings: {
-    type: 'pulse', // Default to a gentle pulse
+    type: 'pulse', // SBNF Default
     speed: 1,
     color: '#FF441A', // SBNF Orange-Red for solid/blink
   },
@@ -27,11 +27,14 @@ export const DEFAULT_SETTINGS: Settings = {
   monitorAudio: false,
   selectedAudioInputDeviceId: undefined,
 
+  // AI Visual Overlay Mixer Settings
   enableAiOverlay: false,
   aiGeneratedOverlayUri: null,
   aiOverlayOpacity: 0.5,
   aiOverlayBlendMode: 'overlay',
   aiOverlayPrompt: "Afrofuturistic cosmic vine with glowing purple grapes, starry nebula background, high contrast, transparent", // SBNF Themed Prompt
+  enablePeriodicAiOverlay: false,
+  aiOverlayRegenerationInterval: 45, // Default to 45 seconds
 };
 
 export const INITIAL_AUDIO_DATA: AudioData = {
@@ -59,38 +62,24 @@ export const SCENES: SceneDefinition[] = [
         const camWidth = webcamFeed.videoWidth;
         const camHeight = webcamFeed.videoHeight;
 
-        // Cover scaling logic
-        let drawWidth = width;
-        let drawHeight = height;
         let sx = 0;
         let sy = 0;
         let sWidth = camWidth;
         let sHeight = camHeight;
 
+        // Cover scaling logic:
+        // If canvas is wider than video proportionally, video height matches canvas height, crop video width
         if (width / height > camWidth / camHeight) {
-          // Canvas is wider than video (letterbox top/bottom) -> we crop video height
-          drawHeight = height;
-          drawWidth = camWidth * (height / camHeight);
-          sx = (camWidth - sWidth) / 2; // Should be 0 if sWidth = camWidth
-        } else {
-          // Canvas is taller than video (letterbox left/right) -> we crop video width
-          drawWidth = width;
-          drawHeight = camHeight * (width / camWidth);
-          sy = (camHeight - sHeight) / 2; // Should be 0 if sHeight = camHeight
+          sHeight = camHeight;
+          sWidth = camHeight * (width / height);
+          sx = (camWidth - sWidth) / 2;
+          sy = 0;
+        } else { // If canvas is taller or same aspect, video width matches canvas width, crop video height
+          sWidth = camWidth;
+          sHeight = camWidth * (height / width);
+          sx = 0;
+          sy = (camHeight - sHeight) / 2;
         }
-        // Corrected cover scaling:
-        if (width / camWidth > height / camHeight) {
-            sWidth = camWidth;
-            sHeight = camWidth * (height / width);
-            sx = 0;
-            sy = (camHeight - sHeight) / 2;
-        } else {
-            sHeight = camHeight;
-            sWidth = camHeight * (width / height);
-            sy = 0;
-            sx = (camWidth - sWidth) / 2;
-        }
-
 
         ctx.save();
         if (settings.mirrorWebcam) {
@@ -129,7 +118,7 @@ export const SCENES: SceneDefinition[] = [
       } else {
         ctx.fillStyle = 'hsl(var(--muted-foreground-hsl))';
         ctx.textAlign = 'center';
-        ctx.font = `16px ${getComputedStyle(ctx.canvas).fontFamily.split(',')[0].trim() || 'var(--font-poppins)'}`; // Use Poppins
+        ctx.font = `16px var(--font-poppins)`; // Use Poppins
         if (!settings.showWebcam) {
           ctx.fillText('Webcam not enabled for this scene', width / 2, height / 2);
         } else {
@@ -158,14 +147,14 @@ export const SCENES: SceneDefinition[] = [
           const x = Math.random() * width;
           const y = Math.random() * height;
           // SBNF Hues: Orange-Red (13), Orange-Yellow (36), Light Lavender (267)
-          const hueOptions = [13, 36, 267];
-          const hue = hueOptions[Math.floor(Math.random() * hueOptions.length)];
+          const hueOptions = [13, 36, 267, 258]; // SBNF palette, added Deep Purple
+          const hue = (hueOptions[Math.floor(Math.random() * hueOptions.length)] + (audioData.beat ? 15 : 0) + (performance.now()/100))%360 ;
           const alpha = (0.3 + audioData.trebleEnergy * 0.7 + audioData.rms * 0.5) * settings.brightCap;
 
-          ctx.fillStyle = `hsla(${hue}, ${80 + Math.random()*20}%, ${60 + Math.random()*20}%, ${Math.min(1, alpha * 1.2)})`;
+          ctx.fillStyle = `hsla(${hue}, ${80 + Math.random()*20}%, ${60 + Math.random()*20 + audioData.rms*15}%, ${Math.min(1, alpha * 1.2)})`;
           ctx.save();
           ctx.translate(x,y);
-          ctx.rotate( (performance.now() / 500 + i) * (audioData.trebleEnergy * 0.7 + 0.3) );
+          ctx.rotate( (performance.now() / (500 - audioData.bpm * 1.5) + i) * (audioData.trebleEnergy * 0.7 + 0.3) );
 
           const shapeType = Math.random();
           if (shapeType < 0.4) {
@@ -292,7 +281,7 @@ export const SCENES: SceneDefinition[] = [
       if (isAudioSilent) {
         ctx.fillStyle = 'hsl(var(--muted-foreground-hsl))';
         ctx.textAlign = 'center';
-        ctx.font = `16px ${getComputedStyle(ctx.canvas).fontFamily.split(',')[0].trim() || 'var(--font-poppins)'}`;
+        ctx.font = `16px var(--font-poppins)`; // Use Poppins
         ctx.fillText('Low audio signal. Make some noise or check input gain.', width / 2, height / 2);
 
         const barWidth = width / audioData.spectrum.length;
@@ -350,7 +339,7 @@ export const SCENES: SceneDefinition[] = [
       if (isAudioSilent) {
         ctx.fillStyle = 'hsl(var(--muted-foreground-hsl))';
         ctx.textAlign = 'center';
-        ctx.font = `16px ${getComputedStyle(ctx.canvas).fontFamily.split(',')[0].trim() || 'var(--font-poppins)'}`;
+        ctx.font = `16px var(--font-poppins)`; // Use Poppins
         ctx.fillText('Low audio signal. Make some noise or check input gain.', width / 2, height / 2);
         const numPlaceholderCircles = 10;
         ctx.strokeStyle = 'hsla(var(--muted-foreground-hsl), 0.15)';
@@ -453,8 +442,8 @@ export const SCENES: SceneDefinition[] = [
       const { width, height } = ctx.canvas;
       if (audioData.beat && settings.brightCap > 0.01) {
         // SBNF Hues: Orange-Red (13), Orange-Yellow (36), Lavender (267)
-        const hueOptions = [13, 36, 267];
-        const hue = hueOptions[Math.floor(Math.random() * hueOptions.length)];
+        const hueOptions = [13, 36, 267, 258]; // Added Deep Purple to SBNF options
+        const hue = (hueOptions[Math.floor(Math.random() * hueOptions.length)] + performance.now()/50)%360;
         ctx.fillStyle = `hsla(${hue}, 100%, ${85 + Math.random() * 15}%, ${settings.brightCap})`;
         ctx.fillRect(0, 0, width, height);
       } else {
@@ -475,8 +464,8 @@ export const SCENES: SceneDefinition[] = [
 
       const centerX = width / 2;
       const centerY = height / 2;
-      const MAX_AMBIENT_PARTICLES = 1500; // Increased for grander finale
-      const MAX_BURST_PARTICLES = 3000; // Increased for grander finale
+      const MAX_AMBIENT_PARTICLES = 1500; 
+      const MAX_BURST_PARTICLES = 3000; 
       // SBNF Hues: Orange-Red (13), Orange-Yellow (36), Lavender (267), Deep Purple (258)
       const sbnfHues = [13, 36, 267, 258];
 
