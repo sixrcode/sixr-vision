@@ -44,23 +44,7 @@ export function ControlPanelView() {
         localStorage.setItem('sixrVisionWelcomed', 'true');
       }
     }
-
-    // Auto-initialize Audio and Webcam
-    const autoInit = async () => {
-      console.log("ControlPanelView: Attempting auto-init. Audio initialized:", isInitialized, "Webcam show:", settings.showWebcam, "Audio error:", audioError);
-      if (!isInitialized && !audioError && !isTogglingAudio) {
-        console.log("ControlPanelView: Auto-initializing audio on load.");
-        setIsTogglingAudio(true);
-        await initializeAudio();
-        setIsTogglingAudio(false);
-      }
-      if (!settings.showWebcam && !isTogglingWebcam) {
-        setIsTogglingWebcam(true);
-        updateSetting('showWebcam', true);
-        setIsTogglingWebcam(false);
-      }
-    };
-    autoInit();
+    // REMOVED auto-initialization useEffect for audio and webcam
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -193,4 +177,3 @@ export function ControlPanelView() {
     </div>
   );
 }
-
