@@ -19,7 +19,7 @@ export function AppContainer({
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-background">
       <SidebarInset>
-        <main className="flex-1 h-full relative overflow-hidden">
+        <main id="main-content" className="flex-1 h-full relative overflow-hidden">
           {visualizer}
         </main>
       </SidebarInset>

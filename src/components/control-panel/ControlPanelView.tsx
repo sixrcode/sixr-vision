@@ -22,7 +22,7 @@ import { Accordion } from '@/components/ui/accordion';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { useSettings } from '@/providers/SettingsProvider';
 import { toast } from '@/hooks/use-toast';
-import { SIXR_S_COLOR, SIXR_I_COLOR, SIXR_X_COLOR, SIXR_R_COLOR, TORUS_FONT_FAMILY } from '@/lib/brandingConstants';
+import { SIXR_S_COLOR, SIXR_I_COLOR, SIXR_X_COLOR, SIXR_R_COLOR, TORUS_FONT_FAMILY, SBNF_TITLE_FONT_FAMILY } from '@/lib/brandingConstants';
 import { cn } from '@/lib/utils';
 
 /**
@@ -51,7 +51,6 @@ export function ControlPanelView() {
 
   const prevSelectedAudioDeviceIdRef = useRef(settings.selectedAudioInputDeviceId);
 
-  // Initial setup: Welcome toast, attempt to activate audio & webcam
   useEffect(() => {
     const hasSeenWelcome = localStorage.getItem('sixrVisionWelcomeSeen');
     if (!hasSeenWelcome) {
@@ -62,23 +61,9 @@ export function ControlPanelView() {
       });
       localStorage.setItem('sixrVisionWelcomeSeen', 'true');
     }
-
-    // Attempt to initialize audio if not already active and no error
-    if (!isAudioInitialized && !audioError) {
-      console.log("ControlPanelView: Auto-initializing audio on load.");
-      handleAudioToggle(); 
-    }
-
-    // Attempt to enable webcam if not already shown
-    if (!settings.showWebcam) {
-      console.log("ControlPanelView: Auto-enabling webcam on load.");
-      handleWebcamToggle(true); // Pass true to indicate it's an initial 'on' toggle
-    }
-    // AI Overlay and Preset Chooser will be triggered by their own useEffects
-    // once audio/scene context is potentially available.
-
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Run once on mount
+    // Auto-initialization of audio/webcam is now handled by explicit user clicks
+    // on the header toggle buttons.
+  }, []); 
 
 
   // Effect to handle re-initialization if selected audio device changes while audio is active
@@ -106,14 +91,9 @@ export function ControlPanelView() {
     initializeAudio,
   ]);
 
-  /**
-   * Toggles the audio input on or off.
-   * Manages loading states and calls the appropriate functions from `useAudioAnalysis`.
-   * @async
-   */
   const handleAudioToggle = async () => {
     if (isTogglingAudio) return;
-    console.log("ControlPanelView: Toggling audio. Current isAudioInitialized:", isAudioInitialized, "isTogglingAudio:", isTogglingAudio);
+    console.log("ControlPanelView: Toggling audio. Current isInitialized:", isAudioInitialized, "isTogglingAudio:", isTogglingAudio);
     setIsTogglingAudio(true);
     if (isAudioInitialized) {
       await stopAudioAnalysis();
@@ -121,28 +101,15 @@ export function ControlPanelView() {
       await initializeAudio();
     }
     setIsTogglingAudio(false);
-    console.log("ControlPanelView: Audio toggle finished. isAudioInitialized will update on next render.");
+    console.log("ControlPanelView: Audio toggle finished. isInitialized will update on next render.");
   };
 
-  /**
-   * Toggles the webcam visibility setting.
-   * @param {boolean} [forceState] - Optional. If true, forces webcam on. If false, forces off. If undefined, toggles.
-   */
-  const handleWebcamToggle = (forceState?: boolean) => {
+  const handleWebcamToggle = () => {
     if (isTogglingWebcam) return;
-    const currentWebcamState = settings.showWebcam;
-    const newWebcamState = typeof forceState === 'boolean' ? forceState : !currentWebcamState;
-
-    if (newWebcamState === currentWebcamState && typeof forceState === 'boolean') {
-      // If forcing to a state that's already set, do nothing.
-      // This prevents unnecessary toggling if initial auto-enable finds webcam already on.
-      return;
-    }
-
-    console.log("ControlPanelView: Toggling webcam. Current state:", currentWebcamState, "New state:", newWebcamState);
+    const newWebcamState = !settings.showWebcam;
+    console.log("ControlPanelView: Toggling webcam. Current state:", settings.showWebcam, "New state:", newWebcamState);
     setIsTogglingWebcam(true);
     updateSetting('showWebcam', newWebcamState);
-    // Consider a short delay for visual feedback, though often not necessary for boolean settings
     setTimeout(() => setIsTogglingWebcam(false), 100); 
     console.log("ControlPanelView: Webcam toggle finished. New showWebcam setting:", newWebcamState);
   };
@@ -152,7 +119,7 @@ export function ControlPanelView() {
       <header className="p-4 border-b border-control-panel-border flex justify-between items-center">
         <div className="flex items-center">
           <SixrLogo className="h-6 w-auto mr-2" />
-          <h2 className="text-lg font-semibold" style={{ fontFamily: TORUS_FONT_FAMILY }}>
+          <h2 className="text-lg font-semibold" style={{ fontFamily: SBNF_TITLE_FONT_FAMILY }}>
             Vision
           </h2>
         </div>
@@ -192,7 +159,7 @@ export function ControlPanelView() {
               <Button
                 size="icon"
                 variant="ghost"
-                onClick={() => handleWebcamToggle()} // No argument means toggle
+                onClick={handleWebcamToggle}
                 className={cn(
                   "relative h-8 w-8 text-sm after:content-[''] after:absolute after:-inset-2 after:rounded-full after:md:hidden",
                   settings.showWebcam && "bg-accent"
@@ -224,7 +191,7 @@ export function ControlPanelView() {
             type="multiple"
             // Initial open sections
             defaultValue={['presets', 'audio-engine', 'visual-output', 'ai-visual-overlay-mixer']} 
-            className="w-full py-4 space-y-1"
+            className="w-full py-4 space-y-2" // Increased space-y from 1 to 2
           >
             <PresetSelector value="presets" />
             <AudioControls 
@@ -259,5 +226,3 @@ export function ControlPanelView() {
     </div>
   );
 }
-
-    
