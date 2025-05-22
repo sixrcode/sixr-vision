@@ -16,6 +16,7 @@ import { generateVisualOverlay, type GenerateVisualOverlayInput, type GenerateVi
 import { ControlPanelSection } from '../ControlPanelSection';
 import { Layers, Wand2, Loader2, Repeat } from 'lucide-react';
 import { VALID_BLEND_MODES, type Settings } from '@/types';
+import { DEFAULT_SETTINGS } from '@/lib/constants'; // Added import
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { ControlHint } from '../ControlHint';
 import { LabelledSwitchControl } from '../common/LabelledSwitchControl';
@@ -66,6 +67,9 @@ export function AiVisualOverlayMixer({ value }: AiVisualOverlayMixerProps) {
         audioContext: serializableAudioData,
         currentSceneName: currentScene.name,
       };
+
+      console.log("[AI Flow Debug] Generating AI Visual Overlay with prompt:", input.prompt); // Log the prompt
+
       const result: GenerateVisualOverlayOutput = await generateVisualOverlay(input);
       updateSetting('aiGeneratedOverlayUri', result.overlayImageDataUri);
       updateSetting('aiOverlayPrompt', promptToUse); 
@@ -94,16 +98,19 @@ export function AiVisualOverlayMixer({ value }: AiVisualOverlayMixerProps) {
     }
   }, [currentScene, audioData, updateSetting, toast, localPrompt]);
 
-  // Initial overlay generation on load
+  // Initial overlay generation on load - removed auto-generation
   useEffect(() => {
-    if (!initialGenerationAttempted && currentScene && audioData.rms > 0.005 && !settings.aiGeneratedOverlayUri) {
-      console.log("AiVisualOverlayMixer: Attempting initial AI overlay generation.");
-      handleGenerateOverlay(settings.aiOverlayPrompt, true).then(() => {
-        setInitialGenerationAttempted(true);
-      });
+    if (!initialGenerationAttempted && currentScene && audioData.rms > 0.005 && !settings.aiGeneratedOverlayUri && settings.aiOverlayPrompt === DEFAULT_SETTINGS.aiOverlayPrompt) {
+      console.log("AiVisualOverlayMixer: Attempting initial AI overlay generation with default SBNF prompt.");
+      // No longer auto-generate on load to reduce API errors
+      // handleGenerateOverlay(settings.aiOverlayPrompt, true).then(() => {
+      //   setInitialGenerationAttempted(true);
+      // });
+      setInitialGenerationAttempted(true); // Mark as attempted so it doesn't retry
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentScene, audioData.rms, settings.aiGeneratedOverlayUri, settings.aiOverlayPrompt]); // Removed handleGenerateOverlay, initialGenerationAttempted
+  }, [currentScene, audioData.rms, settings.aiGeneratedOverlayUri, settings.aiOverlayPrompt]);
+
 
   // Periodic overlay regeneration
   useEffect(() => {
@@ -132,7 +139,7 @@ export function AiVisualOverlayMixer({ value }: AiVisualOverlayMixerProps) {
     settings.enablePeriodicAiOverlay, 
     settings.aiOverlayPrompt, 
     handleGenerateOverlay,
-    isLoading // Add isLoading to re-evaluate effect if it changes
+    isLoading
   ]);
 
 
@@ -268,3 +275,4 @@ export function AiVisualOverlayMixer({ value }: AiVisualOverlayMixerProps) {
     </ControlPanelSection>
   );
 }
+
