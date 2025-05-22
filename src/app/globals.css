@@ -14,7 +14,8 @@ and maintainable design.
 
 Theme System:
 - The application primarily uses a dark theme, defined by HSL (Hue, Saturation, Lightness)
-  CSS variables. The theme is "Cosmic Grapevines."
+  CSS variables.
+- The current theme is "SBNF Cosmic Grapevines".
 - Core colors (background, foreground, primary, accent, etc.) are defined in the `:root`
   scope using `--<property>-hsl` variables (e.g., `--background-hsl`).
 - These HSL variables are then used to generate direct HSL color values (e.g., `--background: hsl(var(--background-hsl));`).
@@ -22,43 +23,51 @@ Theme System:
   to Tailwind utility classes (e.g., `bg-background`, `text-primary`).
 - This token-based approach ensures that theme changes can be made centrally and consistently.
 
-Core Color Palette (Cosmic Grapevines Theme):
-  - --background-hsl: 270 50% 10%; (Deep Cosmic Purple) - Main page background.
-  - --foreground-hsl: 210 20% 95%; (Lighter Gray - brightened for readability) - Default text color.
-  - --card-hsl: 270 50% 16%; (Slightly Lighter Deep Purple) - Background for card-like elements.
-  - --card-foreground-hsl: 210 20% 98%;
-  - --popover-hsl: 270 50% 22%; (Even Lighter Purple) - Background for popovers, tooltips.
-  - --popover-foreground-hsl: 210 20% 98%;
-  - --primary-hsl: 180 70% 50%; (Interstellar Teal - Lightness increased from 45%) - Primary interactive elements, buttons, active states.
-  - --primary-foreground-hsl: 210 20% 98%; (Light Text) - Text on primary-colored elements.
-  - --secondary-hsl: 210 15% 85%; (Extremely Light Desaturated Blue for Slider Tracks)
-  - --secondary-foreground-hsl: 210 20% 98%;
-  - --muted-hsl: 270 30% 25%; (Muted Purple) - Muted backgrounds or less important elements.
-  - --muted-foreground-hsl: 210 15% 70%; (Darker Muted Text - Lightness increased from 65%) - Text on muted backgrounds or less important text.
-  - --accent-hsl: 180 70% 55%; (Lighter Interstellar Teal) - Hover states, secondary highlights.
-  - --accent-foreground-hsl: 210 20% 98%;
-  - --destructive-hsl: 0 72.2% 50.6%; (Red) - Error states, destructive actions.
-  - --destructive-foreground-hsl: 210 20% 98%;
+SBNF Cosmic Grapevines Theme Palette (Derived from Hex):
+  - Black: #000000 -> hsl(0, 0%, 0%)
+  - Orange-Red (Primary): #FF441A -> hsl(13, 100%, 55%)
+  - Orange-Yellow (Accent): #FDB143 -> hsl(36, 98%, 63%)
+  - Light Peach/Cream (Foreground): #FFECDA -> hsl(30, 100%, 93%)
+  - Light Lavender: #E1CCFF -> hsl(267, 100%, 90%)
+  - Deep Purple (Background): #5A36BB -> hsl(258, 56%, 47%)
+
+Core Color Palette (SBNF Cosmic Grapevines Theme):
+  - --background-hsl: 258 56% 47%; (SBNF Deep Purple) - Main page background.
+  - --foreground-hsl: 30 100% 93%; (SBNF Light Peach/Cream) - Default text color.
+  - --card-hsl: 258 56% 40%; (Slightly Darker SBNF Deep Purple) - Background for card-like elements.
+  - --card-foreground-hsl: 30 100% 93%;
+  - --popover-hsl: 258 56% 35%; (Even Darker SBNF Deep Purple for popovers) - Background for popovers, tooltips.
+  - --popover-foreground-hsl: 30 100% 93%;
+  - --primary-hsl: 13 100% 55%; (SBNF Orange-Red) - Primary interactive elements, buttons, active states.
+  - --primary-foreground-hsl: 30 100% 93%; (SBNF Light Peach/Cream) - Text on primary-colored elements.
+  - --secondary-hsl: 258 30% 80%; (Lighter variant of Deep Purple for Slider Tracks)
+  - --secondary-foreground-hsl: 30 100% 93%;
+  - --muted-hsl: 258 50% 30%; (Muted Deep Purple) - Muted backgrounds or less important elements.
+  - --muted-foreground-hsl: 267 100% 90%; (SBNF Light Lavender) - Text on muted backgrounds or less important text.
+  - --accent-hsl: 36 98% 63%; (SBNF Orange-Yellow) - Hover states, secondary highlights.
+  - --accent-foreground-hsl: 0 0% 0%; (Black text for yellow accent for contrast)
+  - --destructive-hsl: 0 72% 51%; (Red) - Error states, destructive actions.
+  - --destructive-foreground-hsl: 30 100% 93%;
   - --success-hsl: 130 60% 45%; (Vibrant Green) - Success states, active audio indicator.
-  - --success-foreground-hsl: 210 20% 98%;
-  - --info-hsl: 200 75% 55%; (Bright Blue) - Informational elements, active webcam indicator.
-  - --info-foreground-hsl: 210 20% 98%;
-  - --border-hsl: 270 40% 22%; (Purple-ish Border) - Default border color.
-  - --input-hsl: 270 20% 75%; (Very Light Lavender for Switch Tracks) - Background for input fields, unchecked switches.
-  - --ring-hsl: 180 70% 65%; (Bright Teal - increased from 55%) - Focus rings.
+  - --success-foreground-hsl: 30 100% 93%;
+  - --info-hsl: 197 90% 58%; (Bright Blue) - Informational elements, active webcam indicator.
+  - --info-foreground-hsl: 30 100% 93%;
+  - --border-hsl: 258 50% 55%; (Brighter Purple Border) - Default border color.
+  - --input-hsl: 258 40% 65%; (Lighter Purple for Switch Tracks) - Background for input fields, unchecked switches.
+  - --ring-hsl: 36 98% 70%; (Brighter SBNF Orange-Yellow) - Focus rings.
 
   - --radius: 0.5rem;
 
-SIXR Brand Colors (Used for Logo Elements - Defined as CSS Variables):
-  - --sixr-s-color-hsl: 45 98% 53%; (Gold/Yellow)
-  - --sixr-i-color-hsl: 197 90% 58%; (Bright Blue)
-  - --sixr-x-color-hsl: 337 81% 51%; (Pink/Magenta)
-  - --sixr-r-color-hsl: 107 47% 50%; (Green)
+SIXR Brand Colors (Used for SIXR Logo Elements - Defined as CSS Variables):
+  - --sixr-s-color-hsl: 45 98% 53%;
+  - --sixr-i-color-hsl: 197 90% 58%;
+  - --sixr-x-color-hsl: 337 81% 51%;
+  - --sixr-r-color-hsl: 107 47% 50%;
 
 Control Panel / Sidebar Specifics (Derived from Theme or Specific Variables):
-  - --control-panel-background-hsl: 270 50% 8%; (Darker Deep Purple) - Sidebar/Control Panel BG.
-  - --control-panel-foreground-hsl: 210 20% 90%; (Slightly Darker Light Text) - Text in Sidebar.
-  - --control-panel-border-hsl: 270 40% 22%; (Darker Purple Border - Lightness increased from 18% to 22%) - Borders within Sidebar.
+  - --control-panel-background-hsl: 0 0% 5%; (Near Black for contrast with purple page)
+  - --control-panel-foreground-hsl: 30 100% 93%;
+  - --control-panel-border-hsl: 258 50% 30%; (Darker Purple Border)
   - Sidebar accent/primary colors map to the global primary/accent.
 
 Spacing & Layout:
@@ -70,26 +79,25 @@ Spacing & Layout:
   needed frequently, consider adding it to the Tailwind theme configuration.
 
 Typography:
-- Primary Sans-Serif: Applied via `font-sans` utility, configured in `tailwind.config.ts` to use `var(--font-geist-sans)`.
-- Primary Mono: Applied via `font-mono` utility, configured in `tailwind.config.ts` to use `var(--font-geist-mono)`.
-- Branding/Logo Font: "Torus Variations" (conditionally loaded via `next/font/local` in `layout.tsx`, uses `var(--font-torus-variations)` when enabled - CURRENTLY DISABLED).
+- Primary Body Font: Applied via `font-sans` utility, configured in `tailwind.config.ts` to use `var(--font-poppins)`.
+- Primary Title Font: Available via `var(--font-data70)` for specific headings.
+- Default Mono: `var(--font-geist-mono)`.
 - Font sizes should follow Tailwind's scale (`text-sm`, `text-base`, `text-lg`, etc.) for consistency.
-  These are also design tokens. If specific, non-standard font sizes are required repeatedly,
-  they should be added to the Tailwind theme configuration rather than hardcoded.
+  These are also design tokens.
 
 Adding New Components or Styles:
 - Strive to use existing Tailwind utility classes and defined theme colors, spacing, and font size tokens.
 - If a new color is needed, consider if it can be derived from the existing HSL palette
   by adjusting lightness or saturation, or if it warrants a new semantic variable in this file.
-- For reusable UI patterns, create React components (as done with ShadCN UI).
+- For reusable UI patterns, create React components.
 - For complex animations or styles not achievable with Tailwind, use scoped CSS or
   CSS Modules to avoid global namespace conflicts. Consider defining animations within
   `tailwind.config.ts`'s `theme.extend.keyframes` and `theme.extend.animation` sections.
 
-Event Theming (e.g., "Cosmic Grapevines"):
-- The current theme *is* "Cosmic Grapevines," reflected in the core HSL palette.
+Event Theming (e.g., "SBNF Cosmic Grapevines"):
+- The current theme *is* "SBNF Cosmic Grapevines," reflected in the core HSL palette.
 - Future event themes can be implemented by:
-  1. Defining a new set of HSL variables (e.g., `--event-background-hsl`).
+  1. Defining a new set of HSL variables.
   2. Creating a theme-specific class (e.g., `.theme-new-event`).
   3. Under this class, override the base HSL variables.
      Example: .theme-new-event { --background-hsl: var(--custom-theme-bg-hsl); }
@@ -100,40 +108,40 @@ Event Theming (e.g., "Cosmic Grapevines"):
 
 @layer base {
   :root {
-    /* Cosmic Grapevines Theme */
-    --background-hsl: 270 50% 10%;
-    --foreground-hsl: 210 20% 95%;
+    /* SBNF Cosmic Grapevines Theme */
+    --background-hsl: 258 56% 47%; /* SBNF Deep Purple */
+    --foreground-hsl: 30 100% 93%; /* SBNF Light Peach/Cream */
 
-    --card-hsl: 270 50% 16%;
-    --card-foreground-hsl: 210 20% 98%;
+    --card-hsl: 258 56% 40%;
+    --card-foreground-hsl: 30 100% 93%;
 
-    --popover-hsl: 270 50% 22%;
-    --popover-foreground-hsl: 210 20% 98%;
+    --popover-hsl: 258 56% 35%;
+    --popover-foreground-hsl: 30 100% 93%;
 
-    --primary-hsl: 180 70% 50%; /* Lightness increased from 45% */
-    --primary-foreground-hsl: 210 20% 98%;
+    --primary-hsl: 13 100% 55%; /* SBNF Orange-Red */
+    --primary-foreground-hsl: 30 100% 93%;
 
-    --secondary-hsl: 210 15% 85%; /* Even Lighter Gray-Blue for Slider Tracks */
-    --secondary-foreground-hsl: 210 20% 98%;
+    --secondary-hsl: 258 30% 80%; /* Lighter Purple for Slider Tracks */
+    --secondary-foreground-hsl: 30 100% 93%;
 
-    --muted-hsl: 270 30% 25%;
-    --muted-foreground-hsl: 210 15% 70%; /* Lightness increased from 65% */
+    --muted-hsl: 258 50% 30%;
+    --muted-foreground-hsl: 267 100% 90%; /* SBNF Light Lavender */
 
-    --accent-hsl: 180 70% 55%;
-    --accent-foreground-hsl: 210 20% 98%;
+    --accent-hsl: 36 98% 63%; /* SBNF Orange-Yellow */
+    --accent-foreground-hsl: 0 0% 0%; /* Black text for yellow accent */
 
-    --destructive-hsl: 0 72.2% 50.6%;
-    --destructive-foreground-hsl: 210 20% 98%;
+    --destructive-hsl: 0 72% 51%;
+    --destructive-foreground-hsl: 30 100% 93%;
 
     --success-hsl: 130 60% 45%;
-    --success-foreground-hsl: 210 20% 98%;
+    --success-foreground-hsl: 30 100% 93%;
 
-    --info-hsl: 200 75% 55%;
-    --info-foreground-hsl: 210 20% 98%;
+    --info-hsl: 197 90% 58%;
+    --info-foreground-hsl: 30 100% 93%;
 
-    --border-hsl: 270 40% 22%;
-    --input-hsl: 270 20% 75%; /* Lighter Gray-Purple for Switch Tracks */
-    --ring-hsl: 180 70% 65%; /* Increased from 55% */
+    --border-hsl: 258 50% 55%; /* Brighter Purple Border */
+    --input-hsl: 258 40% 65%; /* Lighter Purple for Switch Tracks */
+    --ring-hsl: 36 98% 70%; /* Brighter SBNF Orange-Yellow */
 
     --radius: 0.5rem;
 
@@ -173,9 +181,9 @@ Event Theming (e.g., "Cosmic Grapevines"):
     --sixr-r-color: hsl(var(--sixr-r-color-hsl));
 
     /* Specific for control panel, can use card variables too if suitable */
-    --control-panel-background-hsl: 270 50% 8%;
-    --control-panel-foreground-hsl: 210 20% 90%; /* Text in Sidebar */
-    --control-panel-border-hsl: 270 40% 22%; /* Lightness increased from 18% */
+    --control-panel-background-hsl: 0 0% 5%; /* SBNF Near Black */
+    --control-panel-foreground-hsl: 30 100% 93%; /* SBNF Light Peach/Cream */
+    --control-panel-border-hsl: 258 50% 30%; /* Darker Purple Border */
 
     --control-panel-background: hsl(var(--control-panel-background-hsl));
     --control-panel-foreground: hsl(var(--control-panel-foreground-hsl));
@@ -191,12 +199,12 @@ Event Theming (e.g., "Cosmic Grapevines"):
     --sidebar-primary-foreground: var(--primary-foreground);
     --sidebar-ring: var(--ring);
 
-    /* Chart colors - updated to fit cosmic theme */
-    --chart-1-hsl: 270 70% 60%; /* Vibrant Purple */
-    --chart-2-hsl: 180 65% 55%; /* Teal */
-    --chart-3-hsl: 300 75% 65%; /* Magenta/Pink */
-    --chart-4-hsl: 210 70% 50%; /* Bright Blue */
-    --chart-5-hsl: 330 80% 70%; /* Bright Rose */
+    /* Chart colors - updated to fit SBNF theme */
+    --chart-1-hsl: 258 56% 55%; /* SBNF Purple */
+    --chart-2-hsl: 13 100% 60%; /* SBNF Orange-Red lighter */
+    --chart-3-hsl: 36 98% 68%;  /* SBNF Orange-Yellow lighter */
+    --chart-4-hsl: 267 100% 85%;/* SBNF Light Lavender lighter */
+    --chart-5-hsl: 13 100% 70%; /* SBNF Orange-Red even lighter */
 
     --chart-1: hsl(var(--chart-1-hsl));
     --chart-2: hsl(var(--chart-2-hsl));
@@ -205,9 +213,9 @@ Event Theming (e.g., "Cosmic Grapevines"):
     --chart-5: hsl(var(--chart-5-hsl));
 
     /* Logo Pulse Animation - CSS Custom Properties */
-    --logo-pulse-start-opacity: 1; /* Default starting opacity */
-    --logo-pulse-mid-opacity: 0.6; /* Default mid-animation opacity */
-    --logo-pulse-duration: 2s; /* Default animation duration */
+    --logo-pulse-start-opacity: 1;
+    --logo-pulse-mid-opacity: 0.6;
+    --logo-pulse-duration: 2s;
   }
 
   body {
@@ -236,3 +244,4 @@ div[data-radix-dialog-content][data-sidebar="sidebar"][data-mobile="true"] {
   background-color: hsl(var(--sidebar-background)) !important;
   color: hsl(var(--sidebar-foreground)) !important;
 }
+

@@ -22,8 +22,9 @@ export default {
   theme: {
   	extend: {
       fontFamily: {
-        sans: ['var(--font-geist-sans)', ...defaultTheme.fontFamily.sans],
+        sans: ['var(--font-poppins)', ...defaultTheme.fontFamily.sans], // Poppins as primary sans
         mono: ['var(--font-geist-mono)', ...defaultTheme.fontFamily.mono],
+        data70: ['var(--font-data70)', ...defaultTheme.fontFamily.mono], // DATA 70 font
       },
   		colors: {
   			background: 'hsl(var(--background))',
