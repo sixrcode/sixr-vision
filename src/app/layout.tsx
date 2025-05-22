@@ -29,12 +29,15 @@ const data70Font = localFont({
   src: [
     {
       path: './fonts/Data70.ttf', // Expects Data70.ttf in src/app/fonts/
+      // weight: '400', // Specify weight if not a variable font or if only one weight is used
+      // style: 'normal', // Specify style
     },
   ],
   variable: '--font-data70',
   display: 'swap',
   fallback: ['var(--font-geist-mono)', 'monospace'], // Fallback if Data70 fails to load
 });
+// const data70Font = { variable: ''}; // Fallback if Data70.ttf is not available
 
 
 // === TORUS FONT CONFIGURATION ===
@@ -55,9 +58,7 @@ const torusVariationsFont = localFont({
   display: 'swap',
   fallback: ['var(--font-geist-mono)', 'monospace'], // Fallback if Torus fails
 });
-
-const torusVariations = torusVariationsFont;
-// const torusVariations = { variable: '' }; // Placeholder if Torus font loading is disabled
+// const torusVariationsFont = { variable: '' }; // Placeholder if Torus font loading is disabled
 
 export const metadata: Metadata = {
   title: 'SIXR Vision - SBNF Cosmic Grapevines',
@@ -83,7 +84,7 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className={`${poppins.variable} ${GeistSans.variable} ${GeistMono.variable} ${data70Font.variable} ${torusVariations.variable} overflow-x-hidden`}>
+      <body className={`${poppins.variable} ${GeistSans.variable} ${GeistMono.variable} ${data70Font.variable} ${torusVariationsFont.variable} overflow-x-hidden`}>
         <SidebarProvider style={{ "--sidebar-width": CONTROL_PANEL_WIDTH_STRING } as React.CSSProperties}>
           <AppProviders>
             {children}
@@ -94,3 +95,5 @@ export default function RootLayout({
     </html>
   );
 }
+
+    

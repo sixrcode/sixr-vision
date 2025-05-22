@@ -40,11 +40,11 @@ Core Color Palette (SBNF Cosmic Grapevines Theme):
   - --popover-foreground-hsl: 30 100% 93%;
   - --primary-hsl: 13 100% 55%; (SBNF Orange-Red) - Primary interactive elements, buttons, active states.
   - --primary-foreground-hsl: 30 100% 93%; (SBNF Light Peach/Cream) - Text on primary-colored elements.
-  - --secondary-hsl: 258 30% 80%; (Lighter variant of Deep Purple for Slider Tracks)
-  - --secondary-foreground-hsl: 30 100% 93%;
+  - --secondary-hsl: 267 100% 90%; (SBNF Light Lavender #E1CCFF) - For slider tracks and less prominent elements.
+  - --secondary-foreground-hsl: 0 0% 10%; (Darker text for light lavender background)
   - --muted-hsl: 258 50% 30%; (Muted Deep Purple) - Muted backgrounds or less important elements.
-  - --muted-foreground-hsl: 267 100% 90%; (SBNF Light Lavender) - Text on muted backgrounds or less important text.
-  - --accent-hsl: 36 98% 63%; (SBNF Orange-Yellow) - Hover states, secondary highlights.
+  - --muted-foreground-hsl: 267 100% 85%; (Slightly less bright Lavender for muted text)
+  - --accent-hsl: 36 98% 63%; (SBNF Orange-Yellow #FDB143) - Hover states, secondary highlights.
   - --accent-foreground-hsl: 0 0% 0%; (Black text for yellow accent for contrast)
   - --destructive-hsl: 0 72% 51%; (Red) - Error states, destructive actions.
   - --destructive-foreground-hsl: 30 100% 93%;
@@ -52,22 +52,22 @@ Core Color Palette (SBNF Cosmic Grapevines Theme):
   - --success-foreground-hsl: 30 100% 93%;
   - --info-hsl: 197 90% 58%; (Bright Blue) - Informational elements, active webcam indicator.
   - --info-foreground-hsl: 30 100% 93%;
-  - --border-hsl: 258 50% 55%; (Brighter Purple Border) - Default border color.
-  - --input-hsl: 258 40% 65%; (Lighter Purple for Switch Tracks) - Background for input fields, unchecked switches.
-  - --ring-hsl: 36 98% 70%; (Brighter SBNF Orange-Yellow) - Focus rings.
+  - --border-hsl: 258 50% 55%; (Brighter Purple Border, related to main background)
+  - --input-hsl: 267 100% 80%; (Lighter SBNF Light Lavender for Switch Tracks etc.)
+  - --ring-hsl: 36 98% 70%; (Brighter SBNF Orange-Yellow for Focus Rings)
 
   - --radius: 0.5rem;
 
-SIXR Brand Colors (Used for SIXR Logo Elements - Defined as CSS Variables):
+SIXR Brand Colors (Used for SIXR Logo Elements - Defined as CSS Variables - may be overridden by event theme):
   - --sixr-s-color-hsl: 45 98% 53%;
   - --sixr-i-color-hsl: 197 90% 58%;
   - --sixr-x-color-hsl: 337 81% 51%;
   - --sixr-r-color-hsl: 107 47% 50%;
 
 Control Panel / Sidebar Specifics (Derived from Theme or Specific Variables):
-  - --control-panel-background-hsl: 0 0% 5%; (Near Black for contrast with purple page)
-  - --control-panel-foreground-hsl: 30 100% 93%;
-  - --control-panel-border-hsl: 258 50% 30%; (Darker Purple Border)
+  - --control-panel-background-hsl: 0 0% 0%; (SBNF Black #000000)
+  - --control-panel-foreground-hsl: 30 100% 93%; (SBNF Light Peach/Cream)
+  - --control-panel-border-hsl: 258 50% 30%; (Darker Purple Border related to main bg)
   - Sidebar accent/primary colors map to the global primary/accent.
 
 Spacing & Layout:
@@ -80,7 +80,7 @@ Spacing & Layout:
 
 Typography:
 - Primary Body Font: Applied via `font-sans` utility, configured in `tailwind.config.ts` to use `var(--font-poppins)`.
-- Primary Title Font: Available via `var(--font-data70)` for specific headings.
+- Primary Title Font: Available via `var(--font-data70)` for specific headings (SBNF theme).
 - Default Mono: `var(--font-geist-mono)`.
 - Font sizes should follow Tailwind's scale (`text-sm`, `text-base`, `text-lg`, etc.) for consistency.
   These are also design tokens.
@@ -109,39 +109,39 @@ Event Theming (e.g., "SBNF Cosmic Grapevines"):
 @layer base {
   :root {
     /* SBNF Cosmic Grapevines Theme */
-    --background-hsl: 258 56% 47%; /* SBNF Deep Purple */
-    --foreground-hsl: 30 100% 93%; /* SBNF Light Peach/Cream */
+    --background-hsl: 258 56% 47%; /* SBNF Deep Purple #5A36BB */
+    --foreground-hsl: 30 100% 93%; /* SBNF Light Peach/Cream #FFECDA */
 
-    --card-hsl: 258 56% 40%;
-    --card-foreground-hsl: 30 100% 93%;
+    --card-hsl: 258 56% 40%; /* Darker SBNF Deep Purple */
+    --card-foreground-hsl: 30 100% 93%; /* SBNF Light Peach/Cream */
 
-    --popover-hsl: 258 56% 35%;
-    --popover-foreground-hsl: 30 100% 93%;
+    --popover-hsl: 258 56% 35%; /* Even Darker SBNF Deep Purple for popovers */
+    --popover-foreground-hsl: 30 100% 93%; /* SBNF Light Peach/Cream */
 
-    --primary-hsl: 13 100% 55%; /* SBNF Orange-Red */
-    --primary-foreground-hsl: 30 100% 93%;
+    --primary-hsl: 13 100% 55%; /* SBNF Orange-Red #FF441A */
+    --primary-foreground-hsl: 30 100% 93%; /* SBNF Light Peach/Cream (on Orange-Red) */
 
-    --secondary-hsl: 258 30% 80%; /* Lighter Purple for Slider Tracks */
-    --secondary-foreground-hsl: 30 100% 93%;
+    --secondary-hsl: 267 100% 90%; /* SBNF Light Lavender #E1CCFF */
+    --secondary-foreground-hsl: 0 0% 10%; /* Darker text for better contrast on Light Lavender */
 
-    --muted-hsl: 258 50% 30%;
-    --muted-foreground-hsl: 267 100% 90%; /* SBNF Light Lavender */
+    --muted-hsl: 258 50% 30%; /* Muted version of Deep Purple */
+    --muted-foreground-hsl: 267 100% 85%; /* Slightly less bright Lavender for muted text */
 
-    --accent-hsl: 36 98% 63%; /* SBNF Orange-Yellow */
-    --accent-foreground-hsl: 0 0% 0%; /* Black text for yellow accent */
+    --accent-hsl: 36 98% 63%; /* SBNF Orange-Yellow #FDB143 */
+    --accent-foreground-hsl: 0 0% 0%; /* Black text for high contrast on Orange-Yellow */
 
-    --destructive-hsl: 0 72% 51%;
-    --destructive-foreground-hsl: 30 100% 93%;
+    --destructive-hsl: 0 72% 51%; /* Standard Red for errors */
+    --destructive-foreground-hsl: 30 100% 93%; /* Light Peach/Cream text on destructive */
 
-    --success-hsl: 130 60% 45%;
-    --success-foreground-hsl: 30 100% 93%;
+    --success-hsl: 130 60% 45%; /* Vibrant Green for success states */
+    --success-foreground-hsl: 30 100% 93%; /* Light Peach/Cream text on success */
 
-    --info-hsl: 197 90% 58%;
-    --info-foreground-hsl: 30 100% 93%;
+    --info-hsl: 197 90% 58%; /* Bright Blue for informational elements */
+    --info-foreground-hsl: 30 100% 93%; /* Light Peach/Cream text on info */
 
-    --border-hsl: 258 50% 55%; /* Brighter Purple Border */
-    --input-hsl: 258 40% 65%; /* Lighter Purple for Switch Tracks */
-    --ring-hsl: 36 98% 70%; /* Brighter SBNF Orange-Yellow */
+    --border-hsl: 258 50% 55%; /* Brighter Purple Border (related to background) */
+    --input-hsl: 267 100% 80%;  /* Lighter SBNF Light Lavender for Switch Tracks, input fields etc. */
+    --ring-hsl: 36 98% 70%; /* Brighter SBNF Orange-Yellow for Focus Rings */
 
     --radius: 0.5rem;
 
@@ -169,7 +169,7 @@ Event Theming (e.g., "SBNF Cosmic Grapevines"):
     --input: hsl(var(--input-hsl));
     --ring: hsl(var(--ring-hsl));
 
-    /* SIXR Brand Colors */
+    /* SIXR Brand Colors (can be overridden by theme if needed) */
     --sixr-s-color-hsl: 45 98% 53%;
     --sixr-i-color-hsl: 197 90% 58%;
     --sixr-x-color-hsl: 337 81% 51%;
@@ -180,10 +180,10 @@ Event Theming (e.g., "SBNF Cosmic Grapevines"):
     --sixr-x-color: hsl(var(--sixr-x-color-hsl));
     --sixr-r-color: hsl(var(--sixr-r-color-hsl));
 
-    /* Specific for control panel, can use card variables too if suitable */
-    --control-panel-background-hsl: 0 0% 5%; /* SBNF Near Black */
+    /* Control Panel: Uses SBNF Black as background for high contrast */
+    --control-panel-background-hsl: 0 0% 0%; /* SBNF Black #000000 */
     --control-panel-foreground-hsl: 30 100% 93%; /* SBNF Light Peach/Cream */
-    --control-panel-border-hsl: 258 50% 30%; /* Darker Purple Border */
+    --control-panel-border-hsl: 258 50% 30%; /* Darker Purple Border (related to main bg) */
 
     --control-panel-background: hsl(var(--control-panel-background-hsl));
     --control-panel-foreground: hsl(var(--control-panel-foreground-hsl));
@@ -193,11 +193,11 @@ Event Theming (e.g., "SBNF Cosmic Grapevines"):
     --sidebar-background: hsl(var(--control-panel-background-hsl));
     --sidebar-foreground: hsl(var(--control-panel-foreground-hsl));
     --sidebar-border: hsl(var(--control-panel-border-hsl));
-    --sidebar-accent: var(--accent);
-    --sidebar-accent-foreground: var(--accent-foreground);
-    --sidebar-primary: var(--primary);
-    --sidebar-primary-foreground: var(--primary-foreground);
-    --sidebar-ring: var(--ring);
+    --sidebar-accent: var(--accent); /* Uses global SBNF Orange-Yellow */
+    --sidebar-accent-foreground: var(--accent-foreground); /* Black text for SBNF Orange-Yellow */
+    --sidebar-primary: var(--primary); /* Uses global SBNF Orange-Red */
+    --sidebar-primary-foreground: var(--primary-foreground); /* SBNF Light Peach/Cream */
+    --sidebar-ring: var(--ring); /* Uses global brighter SBNF Orange-Yellow */
 
     /* Chart colors - updated to fit SBNF theme */
     --chart-1-hsl: 258 56% 55%; /* SBNF Purple */
@@ -245,3 +245,4 @@ div[data-radix-dialog-content][data-sidebar="sidebar"][data-mobile="true"] {
   color: hsl(var(--sidebar-foreground)) !important;
 }
 
+    

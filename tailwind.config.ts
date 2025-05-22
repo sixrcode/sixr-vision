@@ -1,3 +1,4 @@
+
 import type { Config } from "tailwindcss";
 const defaultTheme = require('tailwindcss/defaultTheme')
 
@@ -73,8 +74,8 @@ export default {
   				'5': 'hsl(var(--chart-5-hsl))'
   			},
   			sidebar: {
-  				DEFAULT: 'hsl(var(--sidebar-background))', // Should use --sidebar-background-hsl for consistency
-  				foreground: 'hsl(var(--sidebar-foreground))', // Should use --sidebar-foreground-hsl
+  				DEFAULT: 'hsl(var(--sidebar-background))',
+  				foreground: 'hsl(var(--sidebar-foreground))',
   				primary: 'hsl(var(--sidebar-primary))',
   				'primary-foreground': 'hsl(var(--sidebar-primary-foreground))',
   				accent: 'hsl(var(--sidebar-accent))',
@@ -82,7 +83,7 @@ export default {
   				border: 'hsl(var(--sidebar-border))',
   				ring: 'hsl(var(--sidebar-ring))'
   			},
-        'control-panel-background': 'hsl(var(--control-panel-background))', // Derived from --control-panel-background-hsl
+        'control-panel-background': 'hsl(var(--control-panel-background))',
   		},
   		borderRadius: {
   			lg: 'var(--radius)',
@@ -131,3 +132,5 @@ export default {
   },
   plugins: [require("tailwindcss-animate")],
 } satisfies Config;
+
+    
