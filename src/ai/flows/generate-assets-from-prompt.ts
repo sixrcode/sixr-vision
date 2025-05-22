@@ -42,6 +42,13 @@ export async function generateAssets(input: GenerateAssetsInput): Promise<Genera
   return generateAssetsFlow(input);
 }
 
+const defaultSafetySettings = [
+  { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
+  { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
+  { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
+  { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
+];
+
 const generateAssetsFlow = ai.defineFlow(
   {
     name: 'generateAssetsFlow',
@@ -53,7 +60,8 @@ const generateAssetsFlow = ai.defineFlow(
       model: 'googleai/gemini-2.0-flash-exp', 
       prompt: `Generate a seamless tileable texture based on the following artistic prompt: "${input.prompt}". Focus on abstract patterns and material qualities rather than literal depictions unless specified. Output as a square image suitable for texturing.`,
       config: {
-        responseModalities: ['TEXT', 'IMAGE'], 
+        responseModalities: ['TEXT', 'IMAGE'],
+        safetySettings: defaultSafetySettings,
       },
     });
 
@@ -61,7 +69,8 @@ const generateAssetsFlow = ai.defineFlow(
       model: 'googleai/gemini-2.0-flash-exp', 
       prompt: `Generate a visual preview of a simple 3D mesh or abstract geometric form inspired by the prompt: "${input.prompt}". This is for a preview image only, not a 3D model file. Output as a square image.`,
       config: {
-        responseModalities: ['TEXT', 'IMAGE'], 
+        responseModalities: ['TEXT', 'IMAGE'],
+        safetySettings: defaultSafetySettings,
       },
     });
 
@@ -78,3 +87,4 @@ const generateAssetsFlow = ai.defineFlow(
     };
   }
 );
+

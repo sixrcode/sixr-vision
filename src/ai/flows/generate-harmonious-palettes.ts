@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview A harmonious color palette generator AI agent.
@@ -42,6 +43,13 @@ export async function generateHarmoniousPalettes(
   return generateHarmoniousPalettesFlow(input);
 }
 
+const defaultSafetySettings = [
+  { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
+  { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
+  { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
+  { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
+];
+
 const prompt = ai.definePrompt({
   name: 'generateHarmoniousPalettesPrompt',
   input: {schema: GenerateHarmoniousPalettesInputSchema},
@@ -58,6 +66,9 @@ Number of Colors: {{{numColors}}}
 Ensure the generated colors are visually harmonious and work well together.
 Use established color theory principles to create the palette.
 `,
+  config: {
+    safetySettings: defaultSafetySettings,
+  }
 });
 
 const generateHarmoniousPalettesFlow = ai.defineFlow(
@@ -71,3 +82,4 @@ const generateHarmoniousPalettesFlow = ai.defineFlow(
     return output!;
   }
 );
+

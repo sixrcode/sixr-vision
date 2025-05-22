@@ -39,6 +39,13 @@ export async function generateSceneAmbiance(input: GenerateSceneAmbianceInput): 
   return generateSceneAmbianceFlow(input);
 }
 
+const defaultSafetySettings = [
+  { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
+  { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
+  { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
+  { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
+];
+
 const prompt = ai.definePrompt({
   name: 'generateSceneAmbiancePrompt',
   input: {schema: GenerateSceneAmbianceInputSchema},
@@ -61,6 +68,9 @@ Consider the scene's nature and combine it with the audio data to describe the a
 - If 'Spectrum Bars' is active with complex audio: "Digital monoliths rise and fall, charting the growth of an intricate soundscape."
 
 Generate the ambiance text, reflecting the "Cosmic Grapevines" theme.`,
+  config: {
+    safetySettings: defaultSafetySettings,
+  }
 });
 
 const generateSceneAmbianceFlow = ai.defineFlow(

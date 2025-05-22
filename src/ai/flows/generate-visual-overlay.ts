@@ -40,6 +40,13 @@ export async function generateVisualOverlay(input: GenerateVisualOverlayInput): 
   return generateVisualOverlayFlow(input);
 }
 
+const defaultSafetySettings = [
+  { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
+  { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
+  { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
+  { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
+];
+
 // This Genkit flow does not use a separate handlebars prompt object because
 // the prompt to the image generation model is constructed dynamically within the flow.
 const generateVisualOverlayFlow = ai.defineFlow(
@@ -77,6 +84,7 @@ const generateVisualOverlayFlow = ai.defineFlow(
       prompt: imageGenerationPrompt,
       config: {
         responseModalities: ['TEXT', 'IMAGE'], // Must include IMAGE for media output
+        safetySettings: defaultSafetySettings,
       },
     });
 

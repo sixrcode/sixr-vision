@@ -40,6 +40,13 @@ export async function suggestSceneFromAudio(
   return suggestSceneFromAudioFlow(input);
 }
 
+const defaultSafetySettings = [
+  { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
+  { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
+  { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
+  { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
+];
+
 const prompt = ai.definePrompt({
   name: 'suggestSceneFromAudioPrompt',
   input: {schema: SuggestSceneFromAudioInputSchema},
@@ -69,6 +76,9 @@ BPM: {{bpm}}
 Suggest a scene ID.
 Explain your reasoning using metaphors related to the "Cosmic Grapevines" theme (growth, connection, seeds, stars, journey).
 Also, provide a 'suggestedAssetPrompt'. This should be a short, creative text prompt (2-5 words) for generating procedural assets (like textures or simple meshes) that would visually complement your chosen scene and the audio's mood, fitting the "Cosmic Grapevines" theme. Examples: "stellar vine sprouts", "galactic seed burst", "cosmic roots", "nebula flowers", "interstellar tendrils".`,
+  config: {
+    safetySettings: defaultSafetySettings,
+  }
 });
 
 const suggestSceneFromAudioFlow = ai.defineFlow(
