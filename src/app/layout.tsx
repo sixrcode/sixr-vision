@@ -21,27 +21,22 @@ const poppins = Poppins({
   display: 'swap',
 });
 
-// === DATA 70 FONT CURRENTLY DISABLED DUE TO "FILE NOT FOUND" ERRORS ===
-// To re-enable:
-// 1. Ensure the font file 'Data70.woff2' is in 'src/app/fonts/'.
-// 2. Uncomment the 'data70Font' constant definition below.
-// 3. Update 'src/lib/brandingConstants.ts' to use 'var(--font-data70)'.
-
-/*
+// === DATA 70 FONT CONFIGURATION ===
+// IMPORTANT: Ensure the font file 'Data70.ttf' is in 'src/app/fonts/'.
 const data70Font = localFont({
   src: [
     {
-      path: './fonts/Data70.woff2', // Path relative to this file (src/app/layout.tsx)
-      weight: '400 700', // Assuming it has regular and bold, or is variable
-      style: 'normal',
+      path: './fonts/Data70.ttf', // Path relative to this file (src/app/layout.tsx)
+      // weight and style can be specified if you have multiple .ttf files for different styles
+      // For a single .ttf, you might omit weight/style or set a default.
+      // If Data70.ttf includes multiple weights, you might need to specify them here
+      // or load them as separate font instances if they are separate files.
     },
   ],
   variable: '--font-data70',
   display: 'swap',
   fallback: ['var(--font-geist-mono)', 'monospace'], // Fallback if Data70 fails to load
 });
-*/
-const data70Font = { variable: '' }; // Placeholder if Data70 font loading is disabled
 
 
 // === TORUS FONT CURRENTLY DISABLED DUE TO "FILE NOT FOUND" ERRORS ===
@@ -49,14 +44,15 @@ const data70Font = { variable: '' }; // Placeholder if Data70 font loading is di
 // 1. Uncomment the 'torusVariationsFont' constant definition below.
 // 2. Change 'torusVariations' to use the loaded font: const torusVariations = torusVariationsFont;
 // 3. Update 'src/lib/brandingConstants.ts' to use 'var(--font-torus-variations)'.
-// 4. Ensure the font file 'TorusVariations-VF.woff2' is in 'src/app/fonts/'.
+// 4. Ensure the font file 'TorusVariations-VF.woff2' (or .ttf if that's what you have) is in 'src/app/fonts/'.
+//    Adjust the 'path' in the src array below if using a different file type.
 
 /*
 const torusVariationsFont = localFont({
   src: [
     {
       path: './fonts/TorusVariations-VF.woff2',
-      weight: '100 900',
+      weight: '100 900', // Example for variable font
       style: 'normal',
     },
   ],
@@ -86,7 +82,7 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{
             __html: `
               html {
-                background-color: hsl(258, 56%, 47%); /* SBNF Deep Purple - matches --background-hsl from globals.css */
+                background-color: hsl(var(--background-hsl)); /* Matches --background-hsl from globals.css */
               }
             `,
           }}
