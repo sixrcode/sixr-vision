@@ -8,11 +8,11 @@ import { useSettings } from '@/providers/SettingsProvider';
 import { INITIAL_AUDIO_DATA } from '@/lib/constants';
 
 // Beat Detection Parameters
-const BEAT_DETECTION_BASS_THRESHOLD = 0.05; // Lowered for more sensitivity
+const BEAT_DETECTION_BASS_THRESHOLD = 0.05;
 const BEAT_DETECTION_RMS_INCREASE_FACTOR = 1.03;
 const BEAT_DETECTION_RMS_MIN_THRESHOLD = 0.015;
-const BEAT_REFRACTORY_BASS_MS = 30; // Slightly reduced
-const BEAT_REFRACTORY_RMS_MS = 20; // Slightly reduced
+const BEAT_REFRACTORY_BASS_MS = 30;
+const BEAT_REFRACTORY_RMS_MS = 20;
 
 const RMS_SMOOTHING_FACTOR = 0.1;
 
@@ -20,21 +20,25 @@ const RMS_SMOOTHING_FACTOR = 0.1;
 const AGC_TARGET_RMS = 0.25;
 const AGC_MIN_GAIN = 0.1;
 const AGC_MAX_GAIN = 4.0;
-const AGC_ATTACK_TIME_CONSTANT = 0.03; 
+const AGC_ATTACK_TIME_CONSTANT = 0.03;
 const AGC_RELEASE_TIME_CONSTANT = 0.4;
 
-const EFFECTIVE_SILENCE_THRESHOLD_SUM = 5;
+const EFFECTIVE_SILENCE_THRESHOLD_SUM = 15; // Slightly increased for robustness
 
 export function useAudioAnalysis() {
   const { settings } = useSettings();
-  const { audioData: currentGlobalAudioData, setAudioData } = useAudioData();
   const settingsRef = useRef(settings);
+  useEffect(() => {
+    settingsRef.current = settings;
+  }, [settings]);
+
+  const { audioData: currentGlobalAudioData, setAudioData } = useAudioData();
 
   const [isInitializedInternalActual, setIsInitializedInternalActual] = useState(false);
   const [errorInternalActual, setErrorInternalActual] = useState<string | null>(null);
   
   const isInitializedInternalRef = useRef(isInitializedInternalActual);
-  useEffect(() => {
+   useEffect(() => {
     isInitializedInternalRef.current = isInitializedInternalActual;
   }, [isInitializedInternalActual]);
 
@@ -43,9 +47,17 @@ export function useAudioAnalysis() {
     errorInternalRef.current = errorInternalActual;
   }, [errorInternalActual]);
 
-  useEffect(() => {
-    settingsRef.current = settings;
-  }, [settings]);
+
+  const setIsInitialized = useCallback((val: boolean) => {
+    console.log(`setIsInitialized called with: ${val}. Previous isInitialized: ${isInitializedInternalRef.current}`);
+    setIsInitializedInternalActual(val);
+  }, []); 
+
+  const setError = useCallback((val: string | null) => {
+    console.log(`setError called with: ${val}. Previous error: ${errorInternalRef.current}`);
+    setErrorInternalActual(val);
+  }, []);
+
 
   const audioContextRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
@@ -59,15 +71,6 @@ export function useAudioAnalysis() {
   const [beatTimestamps, setBeatTimestamps] = useState<number[]>([]);
   const [previousRms, setPreviousRms] = useState(0);
 
-  const setIsInitialized = useCallback((val: boolean) => {
-    console.log(`setIsInitialized called with: ${val}. Previous isInitialized: ${isInitializedInternalRef.current}`);
-    setIsInitializedInternalActual(val);
-  }, []); 
-
-  const setError = useCallback((val: string | null) => {
-    console.log(`setError called with: ${val}. Previous error: ${errorInternalRef.current}`);
-    setErrorInternalActual(val);
-  }, []);
 
   const stopAudioAnalysis = useCallback(async () => {
     console.log("stopAudioAnalysis called. Current state - isInitializedInternalActual:", isInitializedInternalRef.current);
@@ -85,16 +88,25 @@ export function useAudioAnalysis() {
     if (gainNodeRef.current && audioContextRef.current && audioContextRef.current.destination) {
         try { gainNodeRef.current.disconnect(audioContextRef.current.destination); } catch (e) { console.warn("Error disconnecting gainNode from destination", e); }
     }
-    if (sourceNodeRef.current && gainNodeRef.current) {
-      try { sourceNodeRef.current.disconnect(gainNodeRef.current); } catch (e) { console.warn("Error disconnecting sourceNodeRef from gainNodeRef", e); }
+    if (sourceNodeRef.current) {
+        if (gainNodeRef.current) {
+            try { sourceNodeRef.current.disconnect(gainNodeRef.current); } catch (e) { console.warn("Error disconnecting sourceNodeRef from gainNodeRef", e); }
+        }
+        sourceNodeRef.current.disconnect(); // Disconnect source from all outputs
+        sourceNodeRef.current = null;
     }
-    if (gainNodeRef.current && analyserRef.current) {
-        try { gainNodeRef.current.disconnect(analyserRef.current); } catch (e) { console.warn("Error disconnecting gainNodeRef from analyserRef", e); }
+    if (gainNodeRef.current) {
+        if(analyserRef.current) {
+            try { gainNodeRef.current.disconnect(analyserRef.current); } catch (e) { console.warn("Error disconnecting gainNodeRef from analyserRef", e); }
+        }
+        gainNodeRef.current.disconnect(); // Disconnect gain from all outputs
+        gainNodeRef.current = null;
+    }
+    if (analyserRef.current) {
+        analyserRef.current.disconnect(); // Disconnect analyser from all outputs
+        analyserRef.current = null;
     }
     
-    sourceNodeRef.current = null;
-    gainNodeRef.current = null;
-    analyserRef.current = null; // Important to nullify after disconnect
     dataArrayRef.current = null;
 
     if (mediaStreamRef.current) {
@@ -117,7 +129,7 @@ export function useAudioAnalysis() {
 
     setIsInitialized(false);
     setAudioData(INITIAL_AUDIO_DATA);
-    setError(null);
+    setError(null); 
     setPreviousRms(0);
     setLastBeatTime(0);
     setBeatTimestamps([]);
@@ -137,13 +149,35 @@ export function useAudioAnalysis() {
     await stopAudioAnalysis(); 
     console.log("Cleanup via stopAudioAnalysis finished.");
     
-    setError(null); // Clear previous errors before attempting to init
+    setError(null); 
 
     try {
+      console.log("Enumerating audio input devices...");
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      const audioInputDevices = devices.filter(device => device.kind === 'audioinput');
+      if (audioInputDevices.length > 0) {
+        console.log("Available audio input devices:");
+        audioInputDevices.forEach((device, i) => {
+          console.log(`  Device ${i}: Label: ${device.label || 'No label'}, ID: ${device.deviceId}`);
+        });
+      } else {
+        console.log("No audio input devices found.");
+      }
+
       console.log("Requesting microphone access...");
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
       mediaStreamRef.current = stream;
       console.log("Microphone access granted.");
+
+      const audioTracks = stream.getAudioTracks();
+      if (audioTracks.length > 0) {
+        const selectedTrack = audioTracks[0];
+        console.log(`Selected Audio Track Label: ${selectedTrack.label || 'No label'}`);
+        console.log("Selected Audio Track Settings:", selectedTrack.getSettings());
+      } else {
+        console.warn("No audio tracks found in the obtained stream.");
+      }
+
 
       const newAudioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
       audioContextRef.current = newAudioContext;
@@ -193,7 +227,6 @@ export function useAudioAnalysis() {
       const errorMessage = err instanceof Error ? err.message : String(err);
       setError(errorMessage);
       setIsInitialized(false);
-      // Ensure cleanup on failure
       if (mediaStreamRef.current) {
         mediaStreamRef.current.getTracks().forEach(track => track.stop());
         mediaStreamRef.current = null;
@@ -203,9 +236,10 @@ export function useAudioAnalysis() {
         audioContextRef.current = null;
       }
     }
-  }, [stopAudioAnalysis, setIsInitialized, setError]); // Dependencies: settingsRef is used via .current
+  }, [stopAudioAnalysis, setIsInitialized, setError]); 
 
-  const calculateEnergy = useCallback((spectrum: Uint8Array, currentRmsForCalc: number, currentLastBeatTime: number): Pick<AudioData, 'bassEnergy' | 'midEnergy' | 'trebleEnergy' | 'rms'> & { newBeat: boolean } => {
+
+  const calculateEnergy = useCallback((spectrum: Uint8Array, currentRmsForCalc: number, currentLastBeatTime: number, currentPreviousRms: number): Pick<AudioData, 'bassEnergy' | 'midEnergy' | 'trebleEnergy' | 'rms'> & { newBeat: boolean } => {
     if (!audioContextRef.current || !spectrum || spectrum.length === 0) {
         return { bassEnergy: 0, midEnergy: 0, trebleEnergy: 0, rms: 0, newBeat: false };
     }
@@ -238,25 +272,25 @@ export function useAudioAnalysis() {
     const currentTime = performance.now();
      if (
         (bassEnergy > BEAT_DETECTION_BASS_THRESHOLD && currentTime - currentLastBeatTime > BEAT_REFRACTORY_BASS_MS) ||
-        (rms > previousRms * BEAT_DETECTION_RMS_INCREASE_FACTOR && rms > BEAT_DETECTION_RMS_MIN_THRESHOLD && currentTime - currentLastBeatTime > BEAT_REFRACTORY_RMS_MS)
+        (rms > currentPreviousRms * BEAT_DETECTION_RMS_INCREASE_FACTOR && rms > BEAT_DETECTION_RMS_MIN_THRESHOLD && currentTime - currentLastBeatTime > BEAT_REFRACTORY_RMS_MS)
     ) {
       newBeat = true;
     }
     return { bassEnergy, midEnergy, trebleEnergy, rms, newBeat };
-  }, []); // Removed previousRms from dependencies
+  }, []); 
 
-  const estimateBPM = useCallback((currentBeatTimestamps: number[], currentGlobalBpm: number): number => {
-    if (currentBeatTimestamps.length < 5) return currentGlobalBpm || 120;
+  const estimateBPM = useCallback((currentBeatTs: number[], currentBpm: number): number => {
+    if (currentBeatTs.length < 5) return currentBpm || 120;
     const intervals = [];
-    for (let i = 1; i < currentBeatTimestamps.length; i++) {
-      intervals.push(currentBeatTimestamps[i] - currentBeatTimestamps[i-1]);
+    for (let i = 1; i < currentBeatTs.length; i++) {
+      intervals.push(currentBeatTs[i] - currentBeatTs[i-1]);
     }
-    if (intervals.length === 0) return currentGlobalBpm || 120;
+    if (intervals.length === 0) return currentBpm || 120;
     intervals.sort((a, b) => a - b);
     const medianInterval = intervals[Math.floor(intervals.length / 2)];
-    if (medianInterval === 0 || medianInterval < 50 ) return currentGlobalBpm || 120;
+    if (medianInterval === 0 || medianInterval < 50 ) return currentBpm || 120; 
     const bpm = 60000 / medianInterval;
-    const smoothedBpm = Math.round(currentGlobalBpm * 0.8 + bpm * 0.2);
+    const smoothedBpm = Math.round(currentBpm * 0.8 + bpm * 0.2);
     return smoothedBpm > 0 ? smoothedBpm : 120;
   }, []);
 
@@ -275,32 +309,30 @@ export function useAudioAnalysis() {
     
     console.log(
         '[RAW Audio Data] Sum:', spectrumSum,
-        'Bins (first 5):', Array.from(currentSpectrum.slice(0,5)), // Corrected logging
+        'Bins (first 5):', Array.from(currentSpectrum.slice(0,5)),
         'Manual Gain Setting:', settingsRef.current.gain,
         'Actual GainNode Value:', gainNodeRef.current?.gain.value.toFixed(3)
     );
 
     let energyAndRmsResult: Pick<AudioData, 'bassEnergy' | 'midEnergy' | 'trebleEnergy' | 'rms'> & { newBeat: boolean };
-    let calculatedBpm = currentGlobalAudioData.bpm; // Use global bpm as base for smoothing
+    let calculatedBpm = currentGlobalAudioData.bpm; 
     let finalSpectrumToSet: Uint8Array;
 
     if (spectrumSum < EFFECTIVE_SILENCE_THRESHOLD_SUM) {
       energyAndRmsResult = { bassEnergy: 0, midEnergy: 0, trebleEnergy: 0, rms: 0, newBeat: false };
       finalSpectrumToSet = new Uint8Array(currentSpectrum.length).fill(0);
-      setPreviousRms(0); // Reset smoothed RMS during silence
+      setPreviousRms(0); 
     } else {
-      // Pass current values of previousRms and lastBeatTime to calculateEnergy
-      energyAndRmsResult = calculateEnergy(currentSpectrum, previousRms, lastBeatTime);
-      setPreviousRms(energyAndRmsResult.rms); // Update smoothed RMS
+      energyAndRmsResult = calculateEnergy(currentSpectrum, previousRms, lastBeatTime, previousRms);
+      setPreviousRms(energyAndRmsResult.rms); 
 
       let newTimestamps = beatTimestamps;
       if (energyAndRmsResult.newBeat) {
           const currentTime = performance.now();
           setLastBeatTime(currentTime);
-          newTimestamps = [...beatTimestamps, currentTime].slice(-20); // Keep last 20 beats
+          newTimestamps = [...beatTimestamps, currentTime].slice(-20); 
           setBeatTimestamps(newTimestamps);
       }
-      // Pass current beatTimestamps and globalAudioData.bpm to estimateBPM
       calculatedBpm = estimateBPM(newTimestamps, currentGlobalAudioData.bpm);
       finalSpectrumToSet = currentSpectrum;
     }
@@ -315,22 +347,20 @@ export function useAudioAnalysis() {
       bpm: calculatedBpm,
     });
 
-    // AGC Logic
     if (settingsRef.current.enableAgc && gainNodeRef.current && audioContextRef.current && audioContextRef.current.state === 'running') {
-        const currentRmsForAgc = energyAndRmsResult.rms; // Use the just calculated RMS
+        const currentRmsForAgc = energyAndRmsResult.rms; 
         const currentGain = gainNodeRef.current.gain.value;
-        if (currentRmsForAgc > 0.005) { // Avoid division by zero or extreme values for silence
+        if (currentRmsForAgc > 0.005) { 
             let targetGain = currentGain * (AGC_TARGET_RMS / currentRmsForAgc);
-            targetGain = Math.max(AGC_MIN_GAIN, Math.min(AGC_MAX_GAIN, targetGain)); // Clamp gain
-            // Apply attack/release characteristics
+            targetGain = Math.max(AGC_MIN_GAIN, Math.min(AGC_MAX_GAIN, targetGain)); 
             const timeConstant = currentRmsForAgc > AGC_TARGET_RMS ? AGC_ATTACK_TIME_CONSTANT : AGC_RELEASE_TIME_CONSTANT;
             gainNodeRef.current.gain.setTargetAtTime(targetGain, audioContextRef.current.currentTime, timeConstant);
-        } else if (currentGain > 1.5) { // If silent and gain is high, gently bring it down
-            gainNodeRef.current.gain.setTargetAtTime(1.0, audioContextRef.current.currentTime, AGC_RELEASE_TIME_CONSTANT * 2 ); // Slower release for silence
+        } else if (currentGain > 1.5) { 
+            gainNodeRef.current.gain.setTargetAtTime(1.0, audioContextRef.current.currentTime, AGC_RELEASE_TIME_CONSTANT * 2 ); 
         }
     }
     localAnalysisLoopFrameIdRef.current = requestAnimationFrame(analyze);
-  }, [calculateEnergy, estimateBPM, setAudioData, currentGlobalAudioData.bpm, previousRms, lastBeatTime, beatTimestamps]); // Settings ref is stable
+  }, [calculateEnergy, estimateBPM, setAudioData, currentGlobalAudioData.bpm, previousRms, lastBeatTime, beatTimestamps]); 
 
   useEffect(() => {
     if (isInitializedInternalActual && audioContextRef.current && audioContextRef.current.state === 'running') {
@@ -343,28 +373,26 @@ export function useAudioAnalysis() {
       if (localAnalysisLoopFrameIdRef.current) {
         cancelAnimationFrame(localAnalysisLoopFrameIdRef.current);
         localAnalysisLoopFrameIdRef.current = null;
-         console.log("Cleared localAnimationFrameId during isInitialized/context state effect cleanup.");
+         console.log("Cleared localAnimationFrameId during isInitialized/context state effect cleanup (not starting loop).");
       }
     }
     return () => {
         if (localAnalysisLoopFrameIdRef.current) {
             cancelAnimationFrame(localAnalysisLoopFrameIdRef.current);
-            localAnalysisLoopFrameIdRef.current = null;
             console.log("Cleanup for isInitialized/context state effect (the one that runs analyze). Clearing localAnimationFrameId:", localAnalysisLoopFrameIdRef.current);
+            localAnalysisLoopFrameIdRef.current = null;
         }
     };
   }, [isInitializedInternalActual, analyze]);
 
-  // Effect for manual gain changes (when AGC is off)
   useEffect(() => {
     if (isInitializedInternalActual && gainNodeRef.current && audioContextRef.current && audioContextRef.current.state === 'running') {
       if (!settingsRef.current.enableAgc) {
         gainNodeRef.current.gain.setTargetAtTime(settingsRef.current.gain, audioContextRef.current.currentTime, 0.05);
       }
     }
-  }, [isInitializedInternalActual, settingsRef.current.gain, settingsRef.current.enableAgc]); // settingsRef is stable
+  }, [isInitializedInternalActual, settings.gain, settings.enableAgc]); 
 
-  // Effect for FFT size changes
   useEffect(() => {
     if (analyserRef.current && isInitializedInternalActual) {
       if (settingsRef.current.fftSize !== analyserRef.current.fftSize) {
@@ -375,10 +403,9 @@ export function useAudioAnalysis() {
         console.log("Analyser fftSize updated to:", settingsRef.current.fftSize, "New frequencyBinCount:", newFrequencyBinCount);
       }
     }
-  }, [isInitializedInternalActual, settingsRef.current.fftSize, setAudioData]); // settingsRef is stable
+  }, [isInitializedInternalActual, settings.fftSize, setAudioData]); 
 
 
-  // Effect for toggling audio monitoring
   useEffect(() => {
     if (isInitializedInternalActual && gainNodeRef.current && audioContextRef.current && audioContextRef.current.destination) {
       if (settingsRef.current.monitorAudio) {
@@ -389,12 +416,10 @@ export function useAudioAnalysis() {
           gainNodeRef.current.disconnect(audioContextRef.current.destination);
           console.log("Audio monitoring disabled: GainNode disconnected from destination.");
         } catch (e) {
-          // Ignore if already disconnected or node is gone
            console.warn("Error disconnecting gainNode from destination (might be already disconnected):", e);
         }
       }
     }
-     // Cleanup on unmount or if settings.monitorAudio changes before next init
     return () => {
       if (gainNodeRef.current && audioContextRef.current && audioContextRef.current.destination && audioContextRef.current.state === 'running') {
         try {
@@ -403,15 +428,15 @@ export function useAudioAnalysis() {
         } catch (e) { /* ignore */ }
       }
     };
-  }, [isInitializedInternalActual, settingsRef.current.monitorAudio]); // settingsRef is stable
+  }, [isInitializedInternalActual, settings.monitorAudio]); 
 
-  // Final cleanup effect
   useEffect(() => {
     return () => {
       console.log("useAudioAnalysis hook is UNMOUNTING, calling stopAudioAnalysis for final cleanup.");
       stopAudioAnalysis();
     };
-  }, [stopAudioAnalysis]); // stopAudioAnalysis is stable
+  }, [stopAudioAnalysis]); 
 
   return { initializeAudio, stopAudioAnalysis, isInitialized: isInitializedInternalActual, error: errorInternalActual };
 }
+
