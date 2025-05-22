@@ -41,7 +41,7 @@ export function ControlPanelView() {
   const { 
     initializeAudio, 
     stopAudioAnalysis, 
-    isInitialized, // This is isInitializedInternalActual from the hook
+    isInitialized: isAudioInitialized,
     error: audioError,
     audioInputDevices 
   } = useAudioAnalysis();
@@ -49,26 +49,43 @@ export function ControlPanelView() {
   const [isTogglingAudio, setIsTogglingAudio] = useState(false);
   const [isTogglingWebcam, setIsTogglingWebcam] = useState(false);
 
-  const prevSelectedDeviceIdRef = useRef(settings.selectedAudioInputDeviceId);
+  const prevSelectedAudioDeviceIdRef = useRef(settings.selectedAudioInputDeviceId);
 
-  // Welcome toast for first-time users
+  // Initial setup: Welcome toast, attempt to activate audio & webcam
   useEffect(() => {
     const hasSeenWelcome = localStorage.getItem('sixrVisionWelcomeSeen');
     if (!hasSeenWelcome) {
       toast({
         title: "Welcome to SIXR Vision!",
-        description: "Grant microphone and camera permissions when prompted to begin. Explore presets and controls on the right.",
+        description: "Grant microphone and camera permissions if prompted. Explore presets and controls on the right.",
         duration: 7000,
       });
       localStorage.setItem('sixrVisionWelcomeSeen', 'true');
     }
-  }, []);
+
+    // Attempt to initialize audio if not already active and no error
+    if (!isAudioInitialized && !audioError) {
+      console.log("ControlPanelView: Auto-initializing audio on load.");
+      handleAudioToggle(); 
+    }
+
+    // Attempt to enable webcam if not already shown
+    if (!settings.showWebcam) {
+      console.log("ControlPanelView: Auto-enabling webcam on load.");
+      handleWebcamToggle(true); // Pass true to indicate it's an initial 'on' toggle
+    }
+    // AI Overlay and Preset Chooser will be triggered by their own useEffects
+    // once audio/scene context is potentially available.
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Run once on mount
+
 
   // Effect to handle re-initialization if selected audio device changes while audio is active
   useEffect(() => {
     if (
-      isInitialized && // Check against the actual initialized state from the hook
-      settings.selectedAudioInputDeviceId !== prevSelectedDeviceIdRef.current
+      isAudioInitialized &&
+      settings.selectedAudioInputDeviceId !== prevSelectedAudioDeviceIdRef.current
     ) {
       console.log(
         'Selected audio device changed while audio is active. Re-initializing audio.'
@@ -81,14 +98,13 @@ export function ControlPanelView() {
       };
       reinitialize();
     }
-    prevSelectedDeviceIdRef.current = settings.selectedAudioInputDeviceId;
+    prevSelectedAudioDeviceIdRef.current = settings.selectedAudioInputDeviceId;
   }, [
     settings.selectedAudioInputDeviceId,
-    isInitialized,
+    isAudioInitialized,
     stopAudioAnalysis,
     initializeAudio,
   ]);
-
 
   /**
    * Toggles the audio input on or off.
@@ -97,28 +113,38 @@ export function ControlPanelView() {
    */
   const handleAudioToggle = async () => {
     if (isTogglingAudio) return;
-    console.log("ControlPanelView: Toggling audio. Current isInitialized:", isInitialized, "isTogglingAudio:", isTogglingAudio);
+    console.log("ControlPanelView: Toggling audio. Current isAudioInitialized:", isAudioInitialized, "isTogglingAudio:", isTogglingAudio);
     setIsTogglingAudio(true);
-    if (isInitialized) {
+    if (isAudioInitialized) {
       await stopAudioAnalysis();
     } else {
       await initializeAudio();
     }
     setIsTogglingAudio(false);
-    console.log("ControlPanelView: Audio toggle finished. isInitialized will update on next render.");
+    console.log("ControlPanelView: Audio toggle finished. isAudioInitialized will update on next render.");
   };
 
   /**
    * Toggles the webcam visibility setting.
-   * Manages loading states.
+   * @param {boolean} [forceState] - Optional. If true, forces webcam on. If false, forces off. If undefined, toggles.
    */
-  const handleWebcamToggle = () => {
+  const handleWebcamToggle = (forceState?: boolean) => {
     if (isTogglingWebcam) return;
-    console.log("ControlPanelView: Toggling webcam. Current state:", settings.showWebcam);
+    const currentWebcamState = settings.showWebcam;
+    const newWebcamState = typeof forceState === 'boolean' ? forceState : !currentWebcamState;
+
+    if (newWebcamState === currentWebcamState && typeof forceState === 'boolean') {
+      // If forcing to a state that's already set, do nothing.
+      // This prevents unnecessary toggling if initial auto-enable finds webcam already on.
+      return;
+    }
+
+    console.log("ControlPanelView: Toggling webcam. Current state:", currentWebcamState, "New state:", newWebcamState);
     setIsTogglingWebcam(true);
-    updateSetting('showWebcam', !settings.showWebcam);
-    setIsTogglingWebcam(false);
-    console.log("ControlPanelView: Webcam toggle finished. New showWebcam setting:", !settings.showWebcam);
+    updateSetting('showWebcam', newWebcamState);
+    // Consider a short delay for visual feedback, though often not necessary for boolean settings
+    setTimeout(() => setIsTogglingWebcam(false), 100); 
+    console.log("ControlPanelView: Webcam toggle finished. New showWebcam setting:", newWebcamState);
   };
 
   return (
@@ -140,15 +166,15 @@ export function ControlPanelView() {
                 onClick={handleAudioToggle}
                 className={cn(
                   "relative h-8 w-8 text-sm after:content-[''] after:absolute after:-inset-2 after:rounded-full after:md:hidden",
-                  isInitialized && !audioError && "bg-accent"
+                  isAudioInitialized && !audioError && "bg-accent"
                 )}
                 disabled={isTogglingAudio}
-                aria-pressed={isInitialized && !audioError}
-                aria-label={isTogglingAudio ? "Processing audio..." : (isInitialized && !audioError ? "Stop Audio Input" : (audioError ? "Retry Audio Initialization" : "Start Audio Input"))}
+                aria-pressed={isAudioInitialized && !audioError}
+                aria-label={isTogglingAudio ? "Processing audio..." : (isAudioInitialized && !audioError ? "Stop Audio Input" : (audioError ? "Retry Audio Initialization" : "Start Audio Input"))}
               >
                 {isTogglingAudio ? (
                   <Loader2 className="h-5 w-5 animate-spin" />
-                ) : isInitialized && !audioError ? (
+                ) : isAudioInitialized && !audioError ? (
                   <Mic className="h-5 w-5 text-success" />
                 ) : (
                   <MicOff className="h-5 w-5 text-destructive" />
@@ -156,8 +182,8 @@ export function ControlPanelView() {
               </Button>
             </TooltipTrigger>
             <TooltipContent>
-              <p>{isTogglingAudio ? "Processing audio..." : isInitialized && !audioError ? 'Stop Audio Input' : (audioError ? 'Retry Audio Initialization' : 'Start Audio Input')}</p>
-              {audioError && !isInitialized && <p className="text-destructive mt-1">Error: {audioError}</p>}
+              <p>{isTogglingAudio ? "Processing audio..." : isAudioInitialized && !audioError ? 'Stop Audio Input' : (audioError ? 'Retry Audio Initialization' : 'Start Audio Input')}</p>
+              {audioError && !isAudioInitialized && <p className="text-destructive mt-1">Error: {audioError}</p>}
             </TooltipContent>
           </Tooltip>
 
@@ -166,7 +192,7 @@ export function ControlPanelView() {
               <Button
                 size="icon"
                 variant="ghost"
-                onClick={handleWebcamToggle}
+                onClick={() => handleWebcamToggle()} // No argument means toggle
                 className={cn(
                   "relative h-8 w-8 text-sm after:content-[''] after:absolute after:-inset-2 after:rounded-full after:md:hidden",
                   settings.showWebcam && "bg-accent"
@@ -184,7 +210,8 @@ export function ControlPanelView() {
           </Tooltip>
         </div>
       </header>
-      {audioError && !isInitialized && <p className="p-2 text-xs text-destructive bg-destructive/20 text-center">Audio Error: {audioError}. Check mic permissions & selection.</p>}
+      {audioError && !isAudioInitialized && <p className="p-2 text-xs text-destructive bg-destructive/20 text-center">Audio Error: {audioError}. Check mic permissions & selection.</p>}
+      
       <ScrollArea className="flex-1 min-h-0">
         <div
           className="overflow-x-hidden control-panel-content-wrapper"
@@ -195,7 +222,8 @@ export function ControlPanelView() {
         >
           <Accordion
             type="multiple"
-            defaultValue={['presets', 'audio-engine', 'visual-output']}
+            // Initial open sections
+            defaultValue={['presets', 'audio-engine', 'visual-output', 'ai-visual-overlay-mixer']} 
             className="w-full py-4 space-y-1"
           >
             <PresetSelector value="presets" />
@@ -231,3 +259,5 @@ export function ControlPanelView() {
     </div>
   );
 }
+
+    
