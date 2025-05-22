@@ -78,7 +78,8 @@ const generateVisualOverlayFlow = ai.defineFlow(
     `;
 
     console.log("[AI Flow Debug] Generating AI Visual Overlay with prompt:", imageGenerationPrompt);
-
+    
+    const startTime = performance.now();
     const {media} = await ai.generate({
       model: 'googleai/gemini-2.0-flash-exp',
       prompt: imageGenerationPrompt,
@@ -87,6 +88,8 @@ const generateVisualOverlayFlow = ai.defineFlow(
         safetySettings: defaultSafetySettings,
       },
     });
+    const endTime = performance.now();
+    console.log(`[AI Benchmark] generateVisualOverlay ai.generate call took ${(endTime - startTime).toFixed(2)} ms`);
 
     if (!media?.url) {
       throw new Error('Overlay image generation failed to return a media URL.');
