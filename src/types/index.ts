@@ -11,9 +11,9 @@ export type LogoAnimationSettings = {
 
 export type WebGLSceneAssets = {
   scene: THREE.Scene;
-  camera: THREE.PerspectiveCamera;
+  camera: THREE.PerspectiveCamera | THREE.OrthographicCamera; // Allow Orthographic for 2D-like planes
   renderer: THREE.WebGLRenderer;
-  [key: string]: any; // For scene-specific assets like particle systems, materials
+  [key: string]: any; // For scene-specific assets like particle systems, materials, video textures
 };
 
 export type SceneDefinition = {
@@ -29,16 +29,21 @@ export type SceneDefinition = {
     webcamFeed?: HTMLVideoElement
   ) => void;
   // For WebGL scenes
-  initWebGL?: (canvas: HTMLCanvasElement, settings: Settings) => WebGLSceneAssets;
+  initWebGL?: (
+    canvas: HTMLCanvasElement,
+    settings: Settings,
+    webcamElement?: HTMLVideoElement // Optional webcam element for scenes that need it
+  ) => WebGLSceneAssets;
   drawWebGL?: (params: {
     renderer: THREE.WebGLRenderer; // Main renderer instance
     scene: THREE.Scene; // Scene-specific THREE.Scene
-    camera: THREE.PerspectiveCamera; // Scene-specific THREE.Camera
+    camera: THREE.PerspectiveCamera | THREE.OrthographicCamera; // Scene-specific THREE.Camera
     audioData: AudioData;
     settings: Settings;
     webGLAssets: any; // Assets returned by initWebGL
     canvasWidth: number;
     canvasHeight: number;
+    webcamElement?: HTMLVideoElement; // Pass webcam element to draw loop if needed
   }) => void;
   cleanupWebGL?: (webGLAssets: WebGLSceneAssets) => void; // To dispose of scene-specific WebGL resources
   thumbnailUrl?: string;
@@ -77,7 +82,7 @@ export type Settings = {
   enableAiOverlay: boolean;
   aiGeneratedOverlayUri: string | null;
   aiOverlayOpacity: number;
-  aiOverlayBlendMode: CanvasRenderingContext2D['globalCompositeOperation'];
+  aiOverlayBlendMode: GlobalCompositeOperation;
   aiOverlayPrompt: string;
   enablePeriodicAiOverlay: boolean;
   aiOverlayRegenerationInterval: number; // in seconds
@@ -110,7 +115,7 @@ export type RehearsalLogEntry = {
   details: Record<string, any>;
 };
 
-export const VALID_BLEND_MODES: CanvasRenderingContext2D['globalCompositeOperation'][] = [
+export const VALID_BLEND_MODES: GlobalCompositeOperation[] = [
   'source-over', 'source-in', 'source-out', 'source-atop',
   'destination-over', 'destination-in', 'destination-out', 'destination-atop',
   'lighter', 'copy', 'xor', 'multiply', 'screen', 'overlay', 'darken',
