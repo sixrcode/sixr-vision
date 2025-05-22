@@ -9,11 +9,8 @@ export default {
     //
     // VERIFY these paths cover ALL directories containing JSX/TSX/MDX files
     // where Tailwind classes might be used. Add new directories if your project structure changes.
-    //
-    // Current paths scan:
-    // - src/pages/
-    // - src/components/
-    // - src/app/
+    // If your project structure changes (e.g., you add a new top-level directory for components),
+    // ensure those paths are added here for Tailwind to scan.
     content: [
     "./src/pages/**/*.{js,ts,jsx,tsx,mdx}",
     "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
@@ -22,62 +19,62 @@ export default {
   theme: {
   	extend: {
       fontFamily: {
-        sans: ['var(--font-poppins)', ...defaultTheme.fontFamily.sans], // Poppins as primary sans
+        sans: ['var(--font-poppins)', 'var(--font-geist-sans)', ...defaultTheme.fontFamily.sans], // Poppins as primary, Geist Sans as fallback
         mono: ['var(--font-geist-mono)', ...defaultTheme.fontFamily.mono],
-        data70: ['var(--font-data70)', ...defaultTheme.fontFamily.mono], // DATA 70 font
+        data70: ['var(--font-data70)', 'var(--font-geist-mono)', 'monospace'], // DATA 70 font
       },
   		colors: {
-  			background: 'hsl(var(--background))',
-  			foreground: 'hsl(var(--foreground))',
+  			background: 'hsl(var(--background-hsl))',
+  			foreground: 'hsl(var(--foreground-hsl))',
   			card: {
-  				DEFAULT: 'hsl(var(--card))',
-  				foreground: 'hsl(var(--card-foreground))'
+  				DEFAULT: 'hsl(var(--card-hsl))',
+  				foreground: 'hsl(var(--card-foreground-hsl))'
   			},
   			popover: {
-  				DEFAULT: 'hsl(var(--popover))',
-  				foreground: 'hsl(var(--popover-foreground))'
+  				DEFAULT: 'hsl(var(--popover-hsl))',
+  				foreground: 'hsl(var(--popover-foreground-hsl))'
   			},
   			primary: {
-  				DEFAULT: 'hsl(var(--primary))',
-  				foreground: 'hsl(var(--primary-foreground))'
+  				DEFAULT: 'hsl(var(--primary-hsl))',
+  				foreground: 'hsl(var(--primary-foreground-hsl))'
   			},
   			secondary: {
-  				DEFAULT: 'hsl(var(--secondary))',
-  				foreground: 'hsl(var(--secondary-foreground))'
+  				DEFAULT: 'hsl(var(--secondary-hsl))',
+  				foreground: 'hsl(var(--secondary-foreground-hsl))'
   			},
   			muted: {
-  				DEFAULT: 'hsl(var(--muted))',
-  				foreground: 'hsl(var(--muted-foreground))'
+  				DEFAULT: 'hsl(var(--muted-hsl))',
+  				foreground: 'hsl(var(--muted-foreground-hsl))'
   			},
   			accent: {
-  				DEFAULT: 'hsl(var(--accent))',
-  				foreground: 'hsl(var(--accent-foreground))'
+  				DEFAULT: 'hsl(var(--accent-hsl))',
+  				foreground: 'hsl(var(--accent-foreground-hsl))'
   			},
   			destructive: {
-  				DEFAULT: 'hsl(var(--destructive))',
-  				foreground: 'hsl(var(--destructive-foreground))'
+  				DEFAULT: 'hsl(var(--destructive-hsl))',
+  				foreground: 'hsl(var(--destructive-foreground-hsl))'
   			},
         success: {
-          DEFAULT: 'hsl(var(--success))',
-          foreground: 'hsl(var(--success-foreground))'
+          DEFAULT: 'hsl(var(--success-hsl))',
+          foreground: 'hsl(var(--success-foreground-hsl))'
         },
         info: {
-          DEFAULT: 'hsl(var(--info))',
-          foreground: 'hsl(var(--info-foreground))'
+          DEFAULT: 'hsl(var(--info-hsl))',
+          foreground: 'hsl(var(--info-foreground-hsl))'
         },
-  			border: 'hsl(var(--border))',
-  			input: 'hsl(var(--input))',
-  			ring: 'hsl(var(--ring))',
+  			border: 'hsl(var(--border-hsl))',
+  			input: 'hsl(var(--input-hsl))',
+  			ring: 'hsl(var(--ring-hsl))',
   			chart: {
-  				'1': 'hsl(var(--chart-1))',
-  				'2': 'hsl(var(--chart-2))',
-  				'3': 'hsl(var(--chart-3))',
-  				'4': 'hsl(var(--chart-4))',
-  				'5': 'hsl(var(--chart-5))'
+  				'1': 'hsl(var(--chart-1-hsl))',
+  				'2': 'hsl(var(--chart-2-hsl))',
+  				'3': 'hsl(var(--chart-3-hsl))',
+  				'4': 'hsl(var(--chart-4-hsl))',
+  				'5': 'hsl(var(--chart-5-hsl))'
   			},
   			sidebar: {
-  				DEFAULT: 'hsl(var(--sidebar-background))',
-  				foreground: 'hsl(var(--sidebar-foreground))',
+  				DEFAULT: 'hsl(var(--sidebar-background))', // Should use --sidebar-background-hsl for consistency
+  				foreground: 'hsl(var(--sidebar-foreground))', // Should use --sidebar-foreground-hsl
   				primary: 'hsl(var(--sidebar-primary))',
   				'primary-foreground': 'hsl(var(--sidebar-primary-foreground))',
   				accent: 'hsl(var(--sidebar-accent))',
@@ -85,7 +82,7 @@ export default {
   				border: 'hsl(var(--sidebar-border))',
   				ring: 'hsl(var(--sidebar-ring))'
   			},
-        'control-panel-background': 'hsl(var(--control-panel-background))',
+        'control-panel-background': 'hsl(var(--control-panel-background))', // Derived from --control-panel-background-hsl
   		},
   		borderRadius: {
   			lg: 'var(--radius)',
