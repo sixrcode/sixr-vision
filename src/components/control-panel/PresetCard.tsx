@@ -18,12 +18,12 @@ const PresetCard = React.forwardRef<HTMLDivElement, PresetCardProps>(
   ({ scene, isActive, onClick, onKeyDown, className, ...props }, ref) => {
     return (
       <Card
-        ref={ref} // Pass the ref to the Card component
+        ref={ref}
         className={cn(
-          "w-full h-auto shrink-0 cursor-pointer transition-all hover:shadow-lg hover:border-primary",
+          "w-full h-auto shrink-0 cursor-pointer transition-all hover:shadow-lg",
           isActive
-            ? "border-primary ring-2 ring-primary bg-accent opacity-100" // Active state styles
-            : "opacity-75 hover:opacity-100", // Inactive state styles, full opacity on hover
+            ? "border-primary ring-2 ring-primary bg-accent opacity-100"
+            : "opacity-75 hover:opacity-100 border-border", // Ensure inactive cards have a default border
           className
         )}
         onClick={onClick}
@@ -31,7 +31,7 @@ const PresetCard = React.forwardRef<HTMLDivElement, PresetCardProps>(
         onKeyDown={onKeyDown}
         aria-label={`Activate ${scene.name} preset`}
         aria-pressed={isActive}
-        {...props} // Spread other props
+        {...props}
       >
         <CardContent className="p-0 flex flex-col items-center">
           {scene.thumbnailUrl ? (
