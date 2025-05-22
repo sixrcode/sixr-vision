@@ -3,6 +3,7 @@ import type { Settings, SceneDefinition, AudioData } from '@/types';
 
 export const FFT_SIZES = [128, 256, 512] as const;
 
+// SBNF "Cosmic Grapevines" Themed Defaults
 export const DEFAULT_SETTINGS: Settings = {
   fftSize: 256,
   gain: 1.0,
@@ -10,16 +11,16 @@ export const DEFAULT_SETTINGS: Settings = {
   gamma: 1.0,
   dither: 0.0,
   brightCap: 1.0,
-  logoOpacity: 0.25,
-  showWebcam: false,
-  mirrorWebcam: true,
-  currentSceneId: 'radial_burst', // Default to a visually active scene
+  logoOpacity: 0.25, // Slightly more prominent for event branding
+  showWebcam: false, // Start with webcam off by default, user enables
+  mirrorWebcam: true, // Default for natural performer interaction
+  currentSceneId: 'radial_burst', // An SBNF-themed default scene ID if we make one, or a vibrant default
   panicMode: false,
   logoBlackout: false,
   logoAnimationSettings: {
-    type: 'pulse', // Default to a gentle pulse
+    type: 'pulse',
     speed: 1,
-    color: '#FF441A', // SBNF Orange-Red for solid/blink
+    color: '#FF441A', // SBNF Orange-Red for solid/blink if used
   },
   lastAISuggestedAssetPrompt: undefined,
   sceneTransitionDuration: 500,
@@ -27,12 +28,15 @@ export const DEFAULT_SETTINGS: Settings = {
   monitorAudio: false,
   selectedAudioInputDeviceId: undefined,
 
-  enableAiOverlay: false,
+  // AI Visual Overlay Mixer Settings - SBNF Themed
+  enableAiOverlay: false, // Start with overlay off, user enables
   aiGeneratedOverlayUri: null,
   aiOverlayOpacity: 0.5,
   aiOverlayBlendMode: 'overlay',
-  aiOverlayPrompt: "Afrofuturistic cosmic vine with glowing purple grapes, starry nebula background, high contrast, transparent", // SBNF Themed Prompt
+  aiOverlayPrompt: "Afrofuturistic cosmic vine with glowing purple grapes, starry nebula background, high contrast, transparent",
+  enablePeriodicAiOverlay: false, // Default to off
 };
+
 
 export const INITIAL_AUDIO_DATA: AudioData = {
   spectrum: new Uint8Array(DEFAULT_SETTINGS.fftSize / 2).fill(0),
@@ -44,54 +48,41 @@ export const INITIAL_AUDIO_DATA: AudioData = {
   beat: false,
 };
 
+// SBNF Colors for Placeholders:
+// BG: #5A36BB (Deep Purple), FG: #FFECDA (Light Peach/Cream)
+// Accent1: #FF441A (Orange-Red), Accent2: #FDB143 (Orange-Yellow), Accent3: #E1CCFF (Light Lavender)
+// Black: #000000
+
 export const SCENES: SceneDefinition[] = [
   {
     id: 'mirror_silhouette',
     name: 'Mirror Silhouette',
-    thumbnailUrl: 'https://placehold.co/120x80/5A36BB/FFECDA.png?text=Mirror', // SBNF Colors
+    thumbnailUrl: 'https://placehold.co/120x80/5A36BB/FFECDA.png?text=Mirror',
     dataAiHint: 'silhouette reflection webcam',
     draw: (ctx, audioData, settings, webcamFeed) => {
       const { width, height } = ctx.canvas;
-      ctx.fillStyle = 'hsl(var(--background-hsl))'; // SBNF Deep Purple
+      ctx.fillStyle = 'hsl(var(--background-hsl))';
       ctx.fillRect(0,0,width,height);
 
       if (webcamFeed && settings.showWebcam && webcamFeed.readyState >= webcamFeed.HAVE_METADATA && webcamFeed.videoWidth > 0 && webcamFeed.videoHeight > 0) {
         const camWidth = webcamFeed.videoWidth;
         const camHeight = webcamFeed.videoHeight;
+        let sx = 0, sy = 0, sWidth = camWidth, sHeight = camHeight;
+        const canvasAspect = width / height;
+        const videoAspect = camWidth / camHeight;
 
-        // Cover scaling logic
-        let drawWidth = width;
-        let drawHeight = height;
-        let sx = 0;
-        let sy = 0;
-        let sWidth = camWidth;
-        let sHeight = camHeight;
-
-        if (width / height > camWidth / camHeight) {
-          // Canvas is wider than video (letterbox top/bottom) -> we crop video height
-          drawHeight = height;
-          drawWidth = camWidth * (height / camHeight);
-          sx = (camWidth - sWidth) / 2; // Should be 0 if sWidth = camWidth
-        } else {
-          // Canvas is taller than video (letterbox left/right) -> we crop video width
-          drawWidth = width;
-          drawHeight = camHeight * (width / camWidth);
-          sy = (camHeight - sHeight) / 2; // Should be 0 if sHeight = camHeight
-        }
-        // Corrected cover scaling:
-        if (width / camWidth > height / camHeight) {
+        if (canvasAspect > videoAspect) { // Canvas is wider than video, fit to height, crop video width
+            sHeight = camHeight;
+            sWidth = camHeight * canvasAspect;
+            sx = (camWidth - sWidth) / 2;
+            sy = 0;
+        } else { // Canvas is taller or same aspect as video, fit to width, crop video height
             sWidth = camWidth;
-            sHeight = camWidth * (height / width);
+            sHeight = camWidth / canvasAspect;
             sx = 0;
             sy = (camHeight - sHeight) / 2;
-        } else {
-            sHeight = camHeight;
-            sWidth = camHeight * (width / height);
-            sy = 0;
-            sx = (camWidth - sWidth) / 2;
         }
-
-
+        
         ctx.save();
         if (settings.mirrorWebcam) {
           ctx.translate(width, 0);
@@ -103,9 +94,11 @@ export const SCENES: SceneDefinition[] = [
         ctx.restore();
 
         ctx.globalCompositeOperation = 'difference';
-        const baseAccentHue = 36; // SBNF Orange-Yellow base
-        const energyColor = (baseAccentHue + audioData.bassEnergy * 40 + audioData.midEnergy * 20 + performance.now()/80) % 360;
+        // SBNF Base Hue: Orange-Yellow (36), Primary Orange-Red (13), Lavender (267)
+        const sbnfHueOptions = [36, 13, 267];
+        const baseAccentHue = sbnfHueOptions[Math.floor(Math.random() * sbnfHueOptions.length)];
 
+        const energyColor = (baseAccentHue + audioData.bassEnergy * 40 + audioData.midEnergy * 20 + performance.now()/80) % 360;
         const differenceAlpha = Math.min(1, (0.95 + audioData.rms * 0.1 + (audioData.beat ? 0.05 : 0)) * settings.brightCap);
         ctx.fillStyle = `hsla(${energyColor}, 90%, 70%, ${differenceAlpha})`;
         ctx.fillRect(0, 0, width, height);
@@ -129,7 +122,7 @@ export const SCENES: SceneDefinition[] = [
       } else {
         ctx.fillStyle = 'hsl(var(--muted-foreground-hsl))';
         ctx.textAlign = 'center';
-        ctx.font = `16px ${getComputedStyle(ctx.canvas).fontFamily.split(',')[0].trim() || 'var(--font-poppins)'}`; // Use Poppins
+        ctx.font = `16px ${getComputedStyle(ctx.canvas).fontFamily.split(',')[0].trim() || 'var(--font-poppins)'}`;
         if (!settings.showWebcam) {
           ctx.fillText('Webcam not enabled for this scene', width / 2, height / 2);
         } else {
@@ -141,11 +134,11 @@ export const SCENES: SceneDefinition[] = [
   {
     id: 'echoing_shapes',
     name: 'Echoing Shapes',
-    thumbnailUrl: 'https://placehold.co/120x80/FF441A/FFECDA.png?text=Echoes', // SBNF Orange-Red on Cream
+    thumbnailUrl: 'https://placehold.co/120x80/FF441A/FFECDA.png?text=Echoes',
     dataAiHint: 'glowing orbs abstract shapes',
     draw: (ctx, audioData, settings) => {
       const { width, height } = ctx.canvas;
-      ctx.fillStyle = `hsla(var(--background-hsl), ${settings.sceneTransitionActive && settings.sceneTransitionDuration > 0 ? 0.08 : 0.05})`;
+      ctx.fillStyle = `hsla(var(--background-hsl-raw), ${settings.sceneTransitionActive && settings.sceneTransitionDuration > 0 ? 0.08 : 0.05})`;
       ctx.fillRect(0, 0, width, height);
 
       if (audioData.beat || audioData.rms > 0.02) {
@@ -183,7 +176,7 @@ export const SCENES: SceneDefinition[] = [
    {
     id: 'frequency_rings',
     name: 'Frequency Rings',
-    thumbnailUrl: 'https://placehold.co/120x80/FDB143/000000.png?text=Rings', // SBNF Orange-Yellow on Black
+    thumbnailUrl: 'https://placehold.co/120x80/FDB143/000000.png?text=Rings',
     dataAiHint: 'frequency audio rings',
     draw: (ctx, audioData, settings) => {
       const { width, height } = ctx.canvas;
@@ -191,11 +184,12 @@ export const SCENES: SceneDefinition[] = [
       const centerY = height / 2;
       const maxRingRadius = Math.min(width, height) * 0.45;
 
-      ctx.fillStyle = `hsla(var(--background-hsl), ${settings.sceneTransitionActive && settings.sceneTransitionDuration > 0 ? 0.15 : 0.1})`;
+      ctx.fillStyle = `hsla(var(--background-hsl-raw), ${settings.sceneTransitionActive && settings.sceneTransitionDuration > 0 ? 0.15 : 0.1})`;
       ctx.fillRect(0, 0, width, height);
 
       const energies = [audioData.bassEnergy, audioData.midEnergy, audioData.trebleEnergy];
-      // SBNF Hues: Orange-Red (13), Orange-Yellow (36), Lavender (267)
+      // SBNF Hues: Orange-Red (13), Orange-Yellow (36), Lavender (267) ->
+      // Bass -> Orange/Red, Mid -> Yellow/Orange, Treble -> Lavender/Purple
       const baseHues = [13, 36, 267];
       const numSteps = 6 + Math.floor(audioData.rms * 12);
 
@@ -229,11 +223,11 @@ export const SCENES: SceneDefinition[] = [
   {
     id: 'neon_pulse_grid',
     name: 'Neon Pulse Grid',
-    thumbnailUrl: 'https://placehold.co/120x80/E1CCFF/5A36BB.png?text=Grid', // SBNF Light Lavender on Deep Purple
+    thumbnailUrl: 'https://placehold.co/120x80/E1CCFF/5A36BB.png?text=Grid',
     dataAiHint: 'neon grid pulse',
     draw: (ctx, audioData, settings) => {
       const { width, height } = ctx.canvas;
-      ctx.fillStyle = `hsla(var(--background-hsl), ${settings.sceneTransitionActive && settings.sceneTransitionDuration > 0 ? 0.28 : 0.22})`;
+      ctx.fillStyle = `hsla(var(--background-hsl-raw), ${settings.sceneTransitionActive && settings.sceneTransitionDuration > 0 ? 0.28 : 0.22})`;
       ctx.fillRect(0, 0, width, height);
 
       const gridSize = 8 + Math.floor(audioData.rms * 12);
@@ -256,7 +250,7 @@ export const SCENES: SceneDefinition[] = [
           if (radius < 1.5) continue;
 
           // SBNF Hues: Orange-Red (13), Orange-Yellow (36), Lavender (267), Deep Purple (258)
-          const hueOptions = [13, 36, 267, 258];
+          const hueOptions = [13, 36, 267, 258]; // SBNF Palette
           const baseHue = hueOptions[ (i*gridSize + j) % hueOptions.length ];
           const hue = (baseHue + energy * 60 + (performance.now()/70)*10 + (audioData.beat ? 20:0) ) % 360;
           const lightness = 45 + energy * 30;
@@ -278,11 +272,11 @@ export const SCENES: SceneDefinition[] = [
   {
     id: 'spectrum_bars',
     name: 'Spectrum Bars',
-    thumbnailUrl: 'https://placehold.co/120x80/5A36BB/FDB143.png?text=Bars', // SBNF Deep Purple on Orange-Yellow
+    thumbnailUrl: 'https://placehold.co/120x80/5A36BB/FDB143.png?text=Bars',
     dataAiHint: 'audio spectrum analysis',
     draw: (ctx, audioData, settings) => {
       const { width, height } = ctx.canvas;
-      ctx.fillStyle = 'hsl(var(--background-hsl))'; // SBNF Deep Purple
+      ctx.fillStyle = 'hsl(var(--background-hsl))';
       ctx.fillRect(0,0,width,height);
 
       const spectrumSumForSilenceCheck = audioData.spectrum.reduce((s, v) => s + v, 0);
@@ -296,7 +290,7 @@ export const SCENES: SceneDefinition[] = [
         ctx.fillText('Low audio signal. Make some noise or check input gain.', width / 2, height / 2);
 
         const barWidth = width / audioData.spectrum.length;
-        ctx.strokeStyle = 'hsla(var(--muted-foreground-hsl), 0.2)';
+        ctx.strokeStyle = 'hsla(var(--muted-foreground-hsl-raw), 0.2)';
         ctx.lineWidth = 1;
         for(let i=0; i < audioData.spectrum.length; i++) {
             ctx.strokeRect(i * barWidth, height - (height * 0.05), barWidth -2, (height * 0.05));
@@ -333,11 +327,11 @@ export const SCENES: SceneDefinition[] = [
    {
     id: 'radial_burst',
     name: 'Radial Burst',
-    thumbnailUrl: 'https://placehold.co/120x80/FF441A/000000.png?text=Burst', // SBNF Orange-Red on Black
+    thumbnailUrl: 'https://placehold.co/120x80/FF441A/000000.png?text=Burst',
     dataAiHint: 'abstract explosion particles',
     draw: (ctx, audioData, settings) => {
       const { width, height } = ctx.canvas;
-      ctx.fillStyle = `hsla(var(--background-hsl), ${settings.sceneTransitionActive && settings.sceneTransitionDuration > 0 ? 0.18 : 0.15})`;
+      ctx.fillStyle = `hsla(var(--background-hsl-raw), ${settings.sceneTransitionActive && settings.sceneTransitionDuration > 0 ? 0.18 : 0.15})`;
       ctx.fillRect(0,0,width,height);
 
       const centerX = width / 2;
@@ -353,7 +347,7 @@ export const SCENES: SceneDefinition[] = [
         ctx.font = `16px ${getComputedStyle(ctx.canvas).fontFamily.split(',')[0].trim() || 'var(--font-poppins)'}`;
         ctx.fillText('Low audio signal. Make some noise or check input gain.', width / 2, height / 2);
         const numPlaceholderCircles = 10;
-        ctx.strokeStyle = 'hsla(var(--muted-foreground-hsl), 0.15)';
+        ctx.strokeStyle = 'hsla(var(--muted-foreground-hsl-raw), 0.15)';
         ctx.lineWidth = 1.0;
         for (let i = 0; i < numPlaceholderCircles; i++) {
           const r = (Math.min(width, height) * 0.01) + (i * Math.min(width, height) * 0.04);
@@ -395,17 +389,18 @@ export const SCENES: SceneDefinition[] = [
   {
     id: 'geometric_tunnel',
     name: 'Geometric Tunnel',
-    thumbnailUrl: 'https://placehold.co/120x80/5A36BB/FF441A.png?text=Tunnel', // SBNF Deep Purple on Orange-Red
+    thumbnailUrl: 'https://placehold.co/120x80/5A36BB/FF441A.png?text=Tunnel',
     dataAiHint: 'geometric tunnel flight',
     draw: (ctx, audioData, settings) => {
       const { width, height } = ctx.canvas;
       const centerX = width / 2;
       const centerY = height / 2;
-      ctx.fillStyle = `hsla(var(--background-hsl), ${settings.sceneTransitionActive && settings.sceneTransitionDuration > 0 ? 0.35 : 0.28})`;
+      ctx.fillStyle = `hsla(var(--background-hsl-raw), ${settings.sceneTransitionActive && settings.sceneTransitionDuration > 0 ? 0.35 : 0.28})`;
       ctx.fillRect(0, 0, width, height);
 
       const numLayers = 12 + Math.floor(audioData.rms * 15);
-      const sbnfHues = [13, 36, 267, 258]; // SBNF Palette: Orange-Red, Orange-Yellow, Lavender, Deep Purple
+      // SBNF Hues: Orange-Red (13), Orange-Yellow (36), Lavender (267), Deep Purple (258)
+      const sbnfHues = [13, 36, 267, 258];
 
       for (let i = 0; i < numLayers; i++) {
         const timeFactor = performance.now() / (1600 - audioData.bpm * 7.0);
@@ -447,18 +442,18 @@ export const SCENES: SceneDefinition[] = [
   {
     id: 'strobe_light',
     name: 'Strobe Light',
-    thumbnailUrl: 'https://placehold.co/120x80/FFECDA/000000.png?text=Strobe', // SBNF Cream on Black
+    thumbnailUrl: 'https://placehold.co/120x80/FFECDA/000000.png?text=Strobe',
     dataAiHint: 'strobe light flash',
     draw: (ctx, audioData, settings) => {
       const { width, height } = ctx.canvas;
       if (audioData.beat && settings.brightCap > 0.01) {
         // SBNF Hues: Orange-Red (13), Orange-Yellow (36), Lavender (267)
-        const hueOptions = [13, 36, 267];
+        const hueOptions = [13, 36, 267]; // SBNF Accents
         const hue = hueOptions[Math.floor(Math.random() * hueOptions.length)];
         ctx.fillStyle = `hsla(${hue}, 100%, ${85 + Math.random() * 15}%, ${settings.brightCap})`;
         ctx.fillRect(0, 0, width, height);
       } else {
-        ctx.fillStyle = 'hsl(var(--background-hsl))'; // SBNF Deep Purple or Black if that's the base
+        ctx.fillStyle = 'hsl(var(--background-hsl))';
         ctx.fillRect(0, 0, width, height);
       }
     },
@@ -466,17 +461,17 @@ export const SCENES: SceneDefinition[] = [
   {
     id: 'particle_finale',
     name: 'Particle Finale',
-    thumbnailUrl: 'https://placehold.co/120x80/FDB143/5A36BB.png?text=Finale', // SBNF Orange-Yellow on Deep Purple
-    dataAiHint: 'grand particle explosion confetti fireworks',
+    thumbnailUrl: 'https://placehold.co/120x80/FDB143/5A36BB.png?text=Finale',
+    dataAiHint: 'grand particle explosion fireworks',
     draw: (ctx, audioData, settings) => {
       const { width, height } = ctx.canvas;
-      ctx.fillStyle = `hsla(var(--background-hsl), ${settings.sceneTransitionActive && settings.sceneTransitionDuration > 0 ? 0.15 : 0.1})`;
+      ctx.fillStyle = `hsla(var(--background-hsl-raw), ${settings.sceneTransitionActive && settings.sceneTransitionDuration > 0 ? 0.15 : 0.1})`;
       ctx.fillRect(0, 0, width, height);
 
       const centerX = width / 2;
       const centerY = height / 2;
-      const MAX_AMBIENT_PARTICLES = 1500; // Increased for grander finale
-      const MAX_BURST_PARTICLES = 3000; // Increased for grander finale
+      const MAX_AMBIENT_PARTICLES = 1500;
+      const MAX_BURST_PARTICLES = 3000;
       // SBNF Hues: Orange-Red (13), Orange-Yellow (36), Lavender (267), Deep Purple (258)
       const sbnfHues = [13, 36, 267, 258];
 
@@ -516,5 +511,3 @@ export const SCENES: SceneDefinition[] = [
 ];
 
 export const CONTROL_PANEL_WIDTH_STRING = "280px";
-
-    

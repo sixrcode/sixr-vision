@@ -58,6 +58,7 @@ export type Settings = {
   aiOverlayOpacity: number; // 0-1
   aiOverlayBlendMode: CanvasRenderingContext2D['globalCompositeOperation'];
   aiOverlayPrompt: string;
+  enablePeriodicAiOverlay: boolean; // New setting for periodic regeneration
 };
 
 export type PaletteGenieColor = {
@@ -95,4 +96,3 @@ export const VALID_BLEND_MODES: CanvasRenderingContext2D['globalCompositeOperati
   'lighten', 'color-dodge', 'color-burn', 'hard-light', 'soft-light',
   'difference', 'exclusion', 'hue', 'saturation', 'color', 'luminosity'
 ];
-
