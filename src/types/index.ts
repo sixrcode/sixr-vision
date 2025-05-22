@@ -49,6 +49,7 @@ export type Settings = {
   lastAISuggestedAssetPrompt?: string;
   sceneTransitionDuration: number; // milliseconds for crossfade
   sceneTransitionActive: boolean; // whether crossfade is enabled
+  monitorAudio: boolean; // Play microphone input to speakers
 
   // AI Visual Overlay Mixer Settings
   enableAiOverlay: boolean;

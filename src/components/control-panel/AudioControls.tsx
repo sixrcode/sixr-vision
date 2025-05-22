@@ -11,6 +11,8 @@ import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip
 import { cn } from '@/lib/utils';
 import { ControlHint } from './ControlHint';
 import { LabelledSwitchControl } from './common/LabelledSwitchControl';
+import { AlertTriangle } from 'lucide-react';
+
 
 type AudioControlsProps = {
   value: string; // For AccordionItem
@@ -85,6 +87,27 @@ export function AudioControls({ value }: AudioControlsProps) {
        <ControlHint>
         {settings.enableAgc ? "AGC is active. Manual gain is disabled." : "Adjust gain manually or enable AGC."}
       </ControlHint>
+
+      <div className="mt-4">
+        <LabelledSwitchControl
+          labelContent="Monitor Audio (Playback to Speakers)"
+          labelHtmlFor="monitor-audio-switch"
+          switchId="monitor-audio-switch"
+          checked={settings.monitorAudio}
+          onCheckedChange={(checked) => updateSetting('monitorAudio', checked)}
+          tooltipContent={
+            <div className="space-y-1">
+              <p className="flex items-center text-destructive">
+                <AlertTriangle className="mr-1.5 h-4 w-4 shrink-0" /> WARNING: Feedback Loop!
+              </p>
+              <p>Enabling this plays microphone input through your speakers. Lower speaker volume before enabling to avoid loud feedback/howling.</p>
+            </div>
+          }
+          containerClassName="pt-2"
+          switchAriaLabel="Toggle audio monitoring to speakers"
+        />
+        <ControlHint>Hear what the microphone is picking up. Use with caution!</ControlHint>
+      </div>
     </ControlPanelSection>
   );
 }
