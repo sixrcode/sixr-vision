@@ -10,6 +10,7 @@ import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip
 import { ControlHint } from './ControlHint';
 import { LabelledSwitchControl } from './common/LabelledSwitchControl';
 import { cn } from '@/lib/utils';
+import type { RehearsalLogEntry } from '@/types'; // Import the type
 
 type OtherControlsProps = {
   value: string; // For AccordionItem
@@ -19,8 +20,50 @@ export function OtherControls({ value }: OtherControlsProps) {
   const { settings, updateSetting } = useSettings();
 
   const handleExportLog = () => {
-    console.log("Export rehearsal log (placeholder)");
-    toast({ title: "Export Log", description: "CSV export from IndexedDB is a placeholder." });
+    // Simulate log entries
+    const sampleLogEntries: RehearsalLogEntry[] = [
+      {
+        timestamp: Date.now() - 50000,
+        event: 'scene_change',
+        details: { sceneId: 'radial_burst', reason: 'manual' },
+      },
+      {
+        timestamp: Date.now() - 45000,
+        event: 'setting_update',
+        details: { settingKey: 'gamma', oldValue: 1.0, newValue: 1.2 },
+      },
+      {
+        timestamp: Date.now() - 30000,
+        event: 'ai_overlay_generated',
+        details: { prompt: settings.aiOverlayPrompt || "default prompt" },
+      },
+      {
+        timestamp: Date.now() - 10000,
+        event: 'scene_change',
+        details: { sceneId: settings.currentSceneId, reason: 'ai_suggestion' },
+      },
+       {
+        timestamp: Date.now(),
+        event: 'panic_mode_toggled',
+        details: { panicModeActive: settings.panicMode },
+      },
+    ];
+
+    // Convert to CSV string
+    const header = 'timestamp,event_type,details_json\n';
+    const rows = sampleLogEntries.map(entry => 
+      `${new Date(entry.timestamp).toISOString()},${entry.event},"${JSON.stringify(entry.details).replace(/"/g, '""')}"`
+    ).join('\n');
+    const csvString = header + rows;
+
+    console.log("--- Sample Rehearsal Log (CSV Format) ---");
+    console.log(csvString);
+    console.log("----------------------------------------");
+
+    toast({ 
+      title: "Export Log (Simulated)", 
+      description: "A sample CSV-formatted log has been printed to the browser console. Full IndexedDB logging & CSV export is a future feature." 
+    });
   };
   
   const handleLoadCueList = () => {
@@ -43,7 +86,7 @@ export function OtherControls({ value }: OtherControlsProps) {
         tooltipContent={<p>Immediately blacks out the main visualizer output. Useful for emergencies.</p>}
         switchProps={{ 
           className: cn(
-            "data-[state=checked]:bg-destructive",
+            "data-[state=checked]:bg-destructive", // Ensure this class is applied for red background
             settings.panicMode && "animate-destructive-pulse"
           ) 
         }}
@@ -84,10 +127,10 @@ export function OtherControls({ value }: OtherControlsProps) {
             </Button>
           </TooltipTrigger>
           <TooltipContent>
-            <p>Exports a log of events and settings changes during the session. (Placeholder)</p>
+            <p>Exports a log of events and settings changes during the session. (Simulated: logs sample to console)</p>
           </TooltipContent>
         </Tooltip>
-        <ControlHint>IndexedDB logging & export are placeholders.</ControlHint>
+        <ControlHint>IndexedDB logging & export are future features. Sample log printed to console.</ControlHint>
       </div>
 
       <div className="mt-4">
