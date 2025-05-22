@@ -91,7 +91,11 @@ const generateSceneAmbianceFlow = ai.defineFlow(
     }
     console.log(`[Cache Miss] generateSceneAmbianceFlow: Generating ambiance for key: ${cacheKey}`);
     
+    const startTime = performance.now();
     const {output} = await prompt(input);
+    const endTime = performance.now();
+    console.log(`[AI Benchmark] generateSceneAmbianceFlow prompt call took ${(endTime - startTime).toFixed(2)} ms`);
+
     if (!output) {
       throw new Error('AI failed to generate ambiance text.');
     }

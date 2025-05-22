@@ -98,7 +98,11 @@ const suggestSceneFromAudioFlow = ai.defineFlow(
     }
     console.log(`[Cache Miss] suggestSceneFromAudioFlow: Generating scene suggestion for input: ${cacheKey}`);
 
+    const startTime = performance.now();
     const {output} = await prompt(input);
+    const endTime = performance.now();
+    console.log(`[AI Benchmark] suggestSceneFromAudioFlow prompt call took ${(endTime - startTime).toFixed(2)} ms`);
+
     if (!output) {
         throw new Error('AI failed to suggest a scene (no output returned from model).');
     }

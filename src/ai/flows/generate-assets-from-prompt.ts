@@ -67,6 +67,7 @@ const generateAssetsFlow = ai.defineFlow(
 
     console.log(`[Cache Miss] generateAssetsFlow: Generating assets for prompt: ${cacheKey}`);
 
+    let startTime = performance.now();
     const {media: textureMedia} = await ai.generate({
       model: 'googleai/gemini-2.0-flash-exp', 
       prompt: `Generate a seamless tileable texture based on the following artistic prompt: "${input.prompt}". Focus on abstract patterns and material qualities rather than literal depictions unless specified. Output as a square image suitable for texturing.`,
@@ -75,7 +76,10 @@ const generateAssetsFlow = ai.defineFlow(
         safetySettings: defaultSafetySettings,
       },
     });
+    let endTime = performance.now();
+    console.log(`[AI Benchmark] generateAssetsFlow (texture) ai.generate call took ${(endTime - startTime).toFixed(2)} ms`);
 
+    startTime = performance.now();
     const {media: meshMedia} = await ai.generate({
       model: 'googleai/gemini-2.0-flash-exp', 
       prompt: `Generate a visual preview of a simple 3D mesh or abstract geometric form inspired by the prompt: "${input.prompt}". This is for a preview image only, not a 3D model file. Output as a square image.`,
@@ -84,6 +88,9 @@ const generateAssetsFlow = ai.defineFlow(
         safetySettings: defaultSafetySettings,
       },
     });
+    endTime = performance.now();
+    console.log(`[AI Benchmark] generateAssetsFlow (mesh) ai.generate call took ${(endTime - startTime).toFixed(2)} ms`);
+
 
     if (!textureMedia?.url) {
         throw new Error('Texture generation failed to return a media URL.');

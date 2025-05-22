@@ -88,7 +88,10 @@ const generateHarmoniousPalettesFlow = ai.defineFlow(
     }
 
     console.log(`[Cache Miss] generateHarmoniousPalettesFlow: Generating palette for input: ${cacheKey}`);
+    const startTime = performance.now();
     const {output} = await prompt(input);
+    const endTime = performance.now();
+    console.log(`[AI Benchmark] generateHarmoniousPalettesFlow prompt call took ${(endTime - startTime).toFixed(2)} ms`);
     
     if (!output) {
         throw new Error('AI failed to generate a palette.');
