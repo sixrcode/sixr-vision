@@ -37,7 +37,7 @@ export const DEFAULT_SETTINGS: Settings = {
   brightCap: 1.0,
   logoOpacity: 0.25,
   showWebcam: false, // Default webcam to off
-  mirrorWebcam: true, // Default mirror to on
+  mirrorWebcam: true, // Default mirror to on for SBNF
   currentSceneId: 'radial_burst', // SBNF default, now WebGL
   panicMode: false,
   logoBlackout: false,
@@ -76,16 +76,17 @@ export const SCENES: SceneDefinition[] = [
     id: 'mirror_silhouette',
     name: 'Mirror Silhouette',
     rendererType: 'webgl',
-    thumbnailUrl: 'https://placehold.co/120x80/5A36BB/FFECDA.png?text=Mirror&font=poppins',
+    thumbnailUrl: `https://placehold.co/120x80/${SBNF_HUES_SCENE.deepPurple.toString(16).padStart(6, '0')}/${SBNF_HUES_SCENE.lightPeach.toString(16).padStart(6, '0')}.png?text=Mirror&font=poppins`,
     dataAiHint: 'silhouette reflection webcam',
     initWebGL: (canvas, settings, webcamElement?) => {
       const scene = new THREE.Scene();
+      // Use OrthographicCamera for a 2D plane that fills the screen
       const camera = new THREE.OrthographicCamera(
         canvas.width / -2, canvas.width / 2,
         canvas.height / 2, canvas.height / -2,
         1, 1000
       );
-      camera.position.z = 10;
+      camera.position.z = 10; // Position camera
 
       const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
       renderer.setSize(canvas.width, canvas.height);
@@ -103,7 +104,7 @@ export const SCENES: SceneDefinition[] = [
         videoTexture.magFilter = THREE.LinearFilter;
         videoTexture.colorSpace = THREE.SRGBColorSpace;
 
-        const planeGeometry = new THREE.PlaneGeometry(1, 1); 
+        const planeGeometry = new THREE.PlaneGeometry(1, 1); // Will be scaled to screen size
         
         shaderMaterial = new THREE.ShaderMaterial({
           uniforms: {
@@ -136,25 +137,32 @@ export const SCENES: SceneDefinition[] = [
             varying vec2 vUv;
 
             void main() {
+              // Clamp UVs to prevent potential issues with texture wrapping/mirroring at edges
               vec2 clampedUv = clamp(vUv, 0.0, 1.0);
               vec4 texColor = texture2D(webcamTexture, clampedUv);
+              
+              // Create a silhouette mask based on luminance
               float luma = dot(texColor.rgb, vec3(0.299, 0.587, 0.114));
-              float mask = smoothstep(0.3, 0.6, luma); 
+              float mask = smoothstep(0.3, 0.6, luma); // Adjust these thresholds for silhouette sensitivity
+              
+              // Apply dynamic color to the masked silhouette
               vec3 silhouetteColor = dynamicColorVec3 * mask; 
               
+              // Output final color with opacity
               gl_FragColor = vec4(silhouetteColor, texColor.a * mask * opacityFactor);
             }
           `,
           transparent: true,
-          depthWrite: false, 
+          depthWrite: false, // Important for correct alpha blending if other transparent objects are in scene
         });
 
         planeMesh = new THREE.Mesh(planeGeometry, shaderMaterial);
-        planeMesh.scale.set(canvas.width, canvas.height, 1);
+        planeMesh.scale.set(canvas.width, canvas.height, 1); // Scale plane to fill camera view
         scene.add(planeMesh);
-        renderer.setClearColor(0x000000, 0); 
+        renderer.setClearColor(0x000000, 0); // Transparent background
       } else {
-        const [bgR, bgG, bgB] = hslToRgb(SBNF_HUES_SCENE.deepPurple, 56, 15); 
+        // Fallback if webcam not ready: clear to a dark SBNF color
+        const [bgR, bgG, bgB] = hslToRgb(SBNF_HUES_SCENE.deepPurple, 56, 10); // Darker purple
         renderer.setClearColor(new THREE.Color(bgR, bgG, bgB), 1);
       }
       
@@ -162,10 +170,11 @@ export const SCENES: SceneDefinition[] = [
     },
     drawWebGL: ({ renderer, scene, camera, audioData, settings, webGLAssets, webcamElement, canvasWidth, canvasHeight }) => {
       if (!webGLAssets || !webGLAssets.renderer) {
+        // Ensure canvas is cleared if assets are not ready (e.g., webcam permission pending)
         if(renderer) {
           const [bgR, bgG, bgB] = hslToRgb(SBNF_HUES_SCENE.deepPurple, 56, 10); 
           renderer.setClearColor(new THREE.Color(bgR, bgG, bgB), 1);
-          renderer.clear(); 
+          renderer.clear(); // Explicitly clear
         }
         return;
       }
@@ -173,39 +182,46 @@ export const SCENES: SceneDefinition[] = [
       const { videoTexture, planeMesh, shaderMaterial } = webGLAssets;
   
       if (settings.showWebcam && videoTexture && planeMesh && shaderMaterial && webcamElement && webcamElement.readyState >= webcamElement.HAVE_METADATA && webcamElement.videoWidth > 0) {
-          videoTexture.needsUpdate = true; 
+          if (videoTexture.image !== webcamElement) { // Re-assign if webcam element changed
+            videoTexture.image = webcamElement;
+          }
+          videoTexture.needsUpdate = true; // Request video texture update
           planeMesh.visible = true;
-          renderer.setClearColor(0x000000, 0); 
+          renderer.setClearColor(0x000000, 0); // Ensure transparent background for the effect
 
+          // Update mirror uniform
           if (shaderMaterial.uniforms.mirrorX_bool) {
               shaderMaterial.uniforms.mirrorX_bool.value = settings.mirrorWebcam;
           }
 
+          // Update dynamic color based on audio
           const baseHue = SBNF_HUES_SCENE.lightLavender;
           const hueShift = (audioData.rms * 60 + audioData.trebleEnergy * 120 + performance.now() / 2000) % 360;
           const finalHue = (baseHue + hueShift) % 360;
           const saturation = 70 + audioData.midEnergy * 30;
-          const lightness = 45 + audioData.rms * 30;
-          const [r, g, b] = hslToRgb(finalHue, saturation, Math.min(80, lightness)); 
+          const lightness = 45 + audioData.rms * 30; // Make silhouette color more reactive to RMS
+          const [r, g, b] = hslToRgb(finalHue, saturation, Math.min(80, lightness)); // Cap lightness
 
           if (shaderMaterial.uniforms.dynamicColorVec3) {
               shaderMaterial.uniforms.dynamicColorVec3.value.setRGB(r, g, b);
           }
           
-          const baseOpacity = 0.75 + audioData.rms * 0.25; 
+          // Update opacity factor
+          const baseOpacity = 0.75 + audioData.rms * 0.25; // More responsive opacity
           if (shaderMaterial.uniforms.opacityFactor) {
               shaderMaterial.uniforms.opacityFactor.value = Math.min(1.0, baseOpacity * settings.brightCap);
           }
 
+          // Handle video aspect ratio ("cover" effect)
           const canvasAspect = canvasWidth / canvasHeight;
           const videoAspect = webcamElement.videoWidth / webcamElement.videoHeight;
           let scaleX = 1, scaleY = 1, offsetX = 0, offsetY = 0;
 
-          if (canvasAspect > videoAspect) {
+          if (canvasAspect > videoAspect) { // Canvas is wider than video
               scaleY = 1;
               scaleX = videoAspect / canvasAspect;
               offsetX = (1 - scaleX) / 2;
-          } else { 
+          } else { // Canvas is taller than video or same aspect
               scaleX = 1;
               scaleY = canvasAspect / videoAspect;
               offsetY = (1 - scaleY) / 2;
@@ -213,13 +229,14 @@ export const SCENES: SceneDefinition[] = [
           if (shaderMaterial.uniforms.textureScale) shaderMaterial.uniforms.textureScale.value.set(scaleX, scaleY);
           if (shaderMaterial.uniforms.textureOffset) shaderMaterial.uniforms.textureOffset.value.set(offsetX, offsetY);
           
-          if (shaderMaterial) shaderMaterial.needsUpdate = true;
+          if (shaderMaterial) shaderMaterial.needsUpdate = true; // Request shader update if uniforms changed
 
       } else { 
+          // If webcam is off or not ready, hide the plane and clear to background
           if (planeMesh) planeMesh.visible = false;
           const [bgR, bgG, bgB] = hslToRgb(SBNF_HUES_SCENE.deepPurple, 56, 10); 
           renderer.setClearColor(new THREE.Color(bgR, bgG, bgB), 1);
-          renderer.clear(); 
+          renderer.clear(); // Explicitly clear
       }
     },
     cleanupWebGL: (webGLAssets) => {
@@ -227,6 +244,7 @@ export const SCENES: SceneDefinition[] = [
         if (webGLAssets.videoTexture) webGLAssets.videoTexture.dispose();
         if (webGLAssets.planeMesh && webGLAssets.planeMesh.geometry) webGLAssets.planeMesh.geometry.dispose();
         if (webGLAssets.shaderMaterial) webGLAssets.shaderMaterial.dispose();
+        // Renderer itself is managed by VisualizerView
       }
     },
   },
@@ -234,7 +252,7 @@ export const SCENES: SceneDefinition[] = [
     id: 'echoing_shapes',
     name: 'Echoing Shapes',
     rendererType: 'webgl',
-    thumbnailUrl: 'https://placehold.co/120x80/FF441A/FFECDA.png?text=Echoes&font=poppins',
+    thumbnailUrl: `https://placehold.co/120x80/${SBNF_HUES_SCENE.orangeRed.toString(16).padStart(6, '0')}/${SBNF_HUES_SCENE.lightPeach.toString(16).padStart(6, '0')}.png?text=Echoes&font=poppins`,
     dataAiHint: 'glowing orbs abstract shapes',
     initWebGL: (canvas, settings) => {
       const scene = new THREE.Scene();
@@ -244,12 +262,12 @@ export const SCENES: SceneDefinition[] = [
       const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
       renderer.setSize(canvas.width, canvas.height);
       renderer.setPixelRatio(window.devicePixelRatio);
-      renderer.setClearColor(0x000000, 0); 
+      renderer.setClearColor(0x000000, 0); // Transparent background initially
 
-      const circleGeometry = new THREE.CircleGeometry(1, 32); 
+      // Pre-create geometries
+      const circleGeometry = new THREE.CircleGeometry(1, 32); // Radius 1, 32 segments
       const planeGeometry = new THREE.PlaneGeometry(1, 1);
-
-      const triSize = 0.7; 
+      const triSize = 0.7; // Base size for triangle
       const triangleShape = new THREE.Shape()
         .moveTo(0, triSize)
         .lineTo(triSize * Math.cos(Math.PI / 6), -triSize * Math.sin(Math.PI / 6))
@@ -269,9 +287,9 @@ export const SCENES: SceneDefinition[] = [
             initialScale: number;
             rotationSpeed: number;
             initialOpacity: number;
-        }>, 
+        }>, // Array to hold active shapes
         lastSpawnTime: 0,
-        spawnInterval: 80, 
+        spawnInterval: 80, // ms, adjust for desired density
       };
     },
     drawWebGL: ({ renderer, scene, camera, audioData, settings, webGLAssets, canvasWidth, canvasHeight }) => {
@@ -279,39 +297,45 @@ export const SCENES: SceneDefinition[] = [
       const { activeShapes, geometries, sbnfHues, spawnInterval } = webGLAssets;
       const currentTime = performance.now();
 
-      const [bgR, bgG, bgB] = hslToRgb(SBNF_HUES_SCENE.black, 0, 0);
-      renderer.setClearColor(new THREE.Color(bgR, bgG, bgB), 0.15);
+      // Background clear with trail effect
+      const [bgR, bgG, bgB] = hslToRgb(SBNF_HUES_SCENE.black, 0, 5); // Slightly lighter black for less harsh contrast
+      renderer.setClearColor(new THREE.Color(bgR, bgG, bgB), 0.15); // Low alpha for trails
 
-      const spawnThreshold = 0.10 + settings.gain * 0.03; 
+      // Spawn new shapes
+      const spawnThreshold = 0.10 + settings.gain * 0.03; // Adjusted for gain
       if ((audioData.beat || audioData.rms > spawnThreshold) && (currentTime - webGLAssets.lastSpawnTime > spawnInterval)) {
-        if (activeShapes.length < 120) { 
+        if (activeShapes.length < 120) { // Max shapes on screen
           const shapeTypeIndex = Math.floor(Math.random() * geometries.length);
           const geometry = geometries[shapeTypeIndex];
           
           const material = new THREE.MeshBasicMaterial({
-            transparent: true, depthWrite: false, opacity: 0, 
+            // color will be set per instance
+            transparent: true,
+            depthWrite: false, // Important for blending
+            opacity: 0, // Start invisible, fade in
           });
 
           const mesh = new THREE.Mesh(geometry, material);
           mesh.position.x = (Math.random() - 0.5) * canvasWidth * 0.9;
           mesh.position.y = (Math.random() - 0.5) * canvasHeight * 0.9;
-          mesh.position.z = Math.random() * -3 + 1; 
+          mesh.position.z = Math.random() * -3 + 1; // Slight depth variation
 
           const baseScale = 20 + audioData.bassEnergy * 280 + Math.random() * 90;
           const initialScale = baseScale * settings.brightCap * (0.25 + audioData.midEnergy * 0.75);
-          mesh.scale.set(0,0,0); 
+          mesh.scale.set(0,0,0); // Start scaled down
           
           const rotationSpeed = (Math.random() - 0.5) * 0.035 * (1 + audioData.bpm/150);
 
+          // Color logic
           const baseHue = sbnfHues[Math.floor(Math.random() * sbnfHues.length)];
-          const hueShift = audioData.trebleEnergy * 100 + (audioData.beat ? 50 : 0) + currentTime / 1800;
+          const hueShift = audioData.trebleEnergy * 100 + (audioData.beat ? 50 : 0) + currentTime / 1800; // Slow hue cycle
           const hue = (baseHue + hueShift) % 360;
           const saturation = 80 + Math.random() * 20 + audioData.midEnergy * 15;
           const lightness = 50 + audioData.rms * 35 + (audioData.beat ? 10 : 0);
-          material.color.setHSL(hue / 360, Math.min(1, saturation / 100), Math.min(0.9, lightness / 100));
+          material.color.setHSL(hue / 360, Math.min(1, saturation / 100), Math.min(0.9, lightness / 100)); // Cap lightness
           
           const initialOpacity = (0.4 + audioData.rms * 0.6 + audioData.trebleEnergy * 0.4) * settings.brightCap;
-          const life = 1200 + Math.random() * 1800; 
+          const life = 1200 + Math.random() * 1800; // Random lifetime 1.2s - 3s
 
           activeShapes.push({ mesh, creationTime: currentTime, life, initialScale, rotationSpeed, initialOpacity });
           scene.add(mesh);
@@ -319,6 +343,7 @@ export const SCENES: SceneDefinition[] = [
         }
       }
 
+      // Animate existing shapes
       for (let i = activeShapes.length - 1; i >= 0; i--) {
         const shape = activeShapes[i];
         const age = currentTime - shape.creationTime;
@@ -326,21 +351,32 @@ export const SCENES: SceneDefinition[] = [
 
         if (lifeProgress >= 1) {
           scene.remove(shape.mesh);
-          shape.mesh.material.dispose(); 
+          shape.mesh.material.dispose(); // Dispose material
+          // Geometry is shared, dispose in cleanupWebGL
           activeShapes.splice(i, 1);
         } else {
+          // Fade in / out logic
           const fadeInDuration = shape.life * 0.2;
           const fadeOutStart = shape.life * 0.6;
           let currentOpacity;
-          if (age < fadeInDuration) currentOpacity = shape.initialOpacity * (age / fadeInDuration);
-          else if (age > fadeOutStart) currentOpacity = shape.initialOpacity * (1 - (age - fadeOutStart) / (shape.life - fadeOutStart));
-          else currentOpacity = shape.initialOpacity;
+          if (age < fadeInDuration) {
+            currentOpacity = shape.initialOpacity * (age / fadeInDuration);
+          } else if (age > fadeOutStart) {
+            currentOpacity = shape.initialOpacity * (1 - (age - fadeOutStart) / (shape.life - fadeOutStart));
+          } else {
+            currentOpacity = shape.initialOpacity;
+          }
           shape.mesh.material.opacity = Math.max(0, currentOpacity);
 
+          // Scale animation
           const growInDuration = shape.life * 0.3;
           let currentScaleFactor;
-          if (age < growInDuration) currentScaleFactor = (age / growInDuration);
-          else currentScaleFactor = 1 + Math.sin( (age - growInDuration) * 0.005 * (1 + audioData.midEnergy) ) * 0.15;
+          if (age < growInDuration) {
+            currentScaleFactor = (age / growInDuration); // Grow from 0 to 1
+          } else {
+            // Gentle pulsing after initial growth
+            currentScaleFactor = 1 + Math.sin( (age - growInDuration) * 0.005 * (1 + audioData.midEnergy) ) * 0.15;
+          }
           const finalScale = shape.initialScale * currentScaleFactor;
           shape.mesh.scale.set(finalScale, finalScale, finalScale);
           shape.mesh.rotation.z += shape.rotationSpeed;
@@ -349,6 +385,7 @@ export const SCENES: SceneDefinition[] = [
     },
     cleanupWebGL: (webGLAssets) => {
       if (webGLAssets) {
+        // Dispose of active shapes' materials
         if (webGLAssets.activeShapes) {
           webGLAssets.activeShapes.forEach((shape: any) => {
             if (shape.mesh) {
@@ -358,6 +395,7 @@ export const SCENES: SceneDefinition[] = [
           });
           webGLAssets.activeShapes = [];
         }
+        // Dispose of shared geometries
         if (webGLAssets.geometries) {
           webGLAssets.geometries.forEach((geom: THREE.BufferGeometry) => geom.dispose());
         }
@@ -368,7 +406,7 @@ export const SCENES: SceneDefinition[] = [
     id: 'frequency_rings',
     name: 'Frequency Rings',
     rendererType: 'webgl',
-    thumbnailUrl: 'https://placehold.co/120x80/FDB143/5A36BB.png?text=Rings&font=poppins',
+    thumbnailUrl: `https://placehold.co/120x80/${SBNF_HUES_SCENE.orangeYellow.toString(16).padStart(6, '0')}/${SBNF_HUES_SCENE.deepPurple.toString(16).padStart(6, '0')}.png?text=Rings&font=poppins`,
     dataAiHint: 'frequency audio rings',
     initWebGL: (canvas, settings) => {
       const scene = new THREE.Scene();
@@ -379,8 +417,8 @@ export const SCENES: SceneDefinition[] = [
       renderer.setSize(canvas.width, canvas.height);
       renderer.setPixelRatio(window.devicePixelRatio);
       
-      const MAX_RINGS_PER_TYPE = 25; 
-      const RING_LIFETIME_MS = 2800; 
+      const MAX_RINGS_PER_TYPE = 25; // Max rings for each frequency type
+      const RING_LIFETIME_MS = 2800; // How long each ring lasts
 
       const ringGroups = [
         { type: 'bass', hue: SBNF_HUES_SCENE.orangeRed, meshes: [] as THREE.Mesh[], lastSpawnTime: 0, spawnInterval: 120 },
@@ -388,12 +426,13 @@ export const SCENES: SceneDefinition[] = [
         { type: 'treble', hue: SBNF_HUES_SCENE.lightLavender, meshes: [] as THREE.Mesh[], lastSpawnTime: 0, spawnInterval: 70 }
       ];
       
-      const ringGeometry = new THREE.RingGeometry(0.97, 1, 64, 1, 0, Math.PI * 2); 
+      // Shared geometry for all rings
+      const ringGeometry = new THREE.RingGeometry(0.97, 1, 64, 1, 0, Math.PI * 2); // Inner radius, outer radius, segments
 
       return {
         renderer, scene, camera, ringGroups, ringGeometry,
         MAX_RINGS_PER_TYPE, RING_LIFETIME_MS,
-        maxVisualRadius: Math.min(canvas.width, canvas.height) * 0.50,
+        maxVisualRadius: Math.min(canvas.width, canvas.height) * 0.50, // Rings expand to half the smaller canvas dimension
       };
     },
     drawWebGL: ({ renderer, scene, camera, audioData, settings, webGLAssets, canvasWidth, canvasHeight }) => {
@@ -401,8 +440,9 @@ export const SCENES: SceneDefinition[] = [
       const { ringGroups, ringGeometry, MAX_RINGS_PER_TYPE, RING_LIFETIME_MS, maxVisualRadius } = webGLAssets;
       const currentTime = performance.now();
       
-      const [bgR, bgG, bgB] = hslToRgb(SBNF_HUES_SCENE.black, 0, 0);
-      renderer.setClearColor(new THREE.Color(bgR, bgG, bgB), 0.18); 
+      // Set background with trail effect
+      const [bgR, bgG, bgB] = hslToRgb(SBNF_HUES_SCENE.black, 0, 3); // Very dark
+      renderer.setClearColor(new THREE.Color(bgR, bgG, bgB), 0.18); // Low alpha for trails
 
       ringGroups.forEach(group => {
         let energy = 0;
@@ -410,15 +450,20 @@ export const SCENES: SceneDefinition[] = [
         else if (group.type === 'mid') energy = audioData.midEnergy;
         else if (group.type === 'treble') energy = audioData.trebleEnergy;
 
+        // Spawn new ring if energy threshold met, cooldown passed, and not too many rings
         const energyThreshold = group.type === 'bass' ? 0.1 : 0.08;
         if (energy > energyThreshold && currentTime - group.lastSpawnTime > group.spawnInterval / (1 + energy * 3) && group.meshes.length < MAX_RINGS_PER_TYPE) {
           const material = new THREE.MeshBasicMaterial({
-            transparent: true, depthWrite: false, opacity: 0, side: THREE.DoubleSide
+            transparent: true,
+            depthWrite: false, // for correct alpha blending
+            opacity: 0, // Start invisible
+            side: THREE.DoubleSide
           });
           const ringMesh = new THREE.Mesh(ringGeometry, material);
           
+          // Store creation time and initial energy on the mesh itself for animation
           (ringMesh.userData as any).creationTime = currentTime;
-          (ringMesh.userData as any).initialEnergy = energy; 
+          (ringMesh.userData as any).initialEnergy = energy; // Store the energy at spawn time
           (ringMesh.userData as any).baseHue = group.hue;
 
           scene.add(ringMesh);
@@ -426,6 +471,7 @@ export const SCENES: SceneDefinition[] = [
           group.lastSpawnTime = currentTime;
         }
 
+        // Animate existing rings in this group
         for (let i = group.meshes.length - 1; i >= 0; i--) {
           const mesh = group.meshes[i];
           const meshUserData = mesh.userData as any;
@@ -433,23 +479,27 @@ export const SCENES: SceneDefinition[] = [
           const lifeProgress = age / RING_LIFETIME_MS;
 
           if (lifeProgress >= 1) {
+            // Ring has lived its life
             scene.remove(mesh);
-            (mesh.material as THREE.Material).dispose(); 
+            (mesh.material as THREE.Material).dispose(); // Dispose material
             group.meshes.splice(i, 1);
             continue;
           }
 
-          const currentRadius = lifeProgress * maxVisualRadius * (0.2 + meshUserData.initialEnergy * 0.8);
+          // Animate scale (radius)
+          const currentRadius = lifeProgress * maxVisualRadius * (0.2 + meshUserData.initialEnergy * 0.8); // Scale based on initial energy
           mesh.scale.set(currentRadius, currentRadius, 1);
 
-          const opacityFalloff = (1 - lifeProgress) * (1 - lifeProgress); 
+          // Animate opacity (fade in then out)
+          const opacityFalloff = (1 - lifeProgress) * (1 - lifeProgress); // Stronger fade out
           const opacity = opacityFalloff * meshUserData.initialEnergy * settings.brightCap * 2.8 * (0.5 + audioData.rms * 0.5);
           (mesh.material as THREE.MeshBasicMaterial).opacity = Math.min(1, Math.max(0, opacity));
           
-          const hueShift = lifeProgress * 70 + (audioData.beat ? 35 : 0) + performance.now()/1800;
+          // Animate color
+          const hueShift = lifeProgress * 70 + (audioData.beat ? 35 : 0) + performance.now()/1800; // slow global hue cycle
           const hue = (meshUserData.baseHue + hueShift) % 360;
           const saturation = 90 + meshUserData.initialEnergy * 10;
-          const lightness = 55 + meshUserData.initialEnergy * 30 + (audioData.beat ? 10 : 0);
+          const lightness = 55 + meshUserData.initialEnergy * 30 + (audioData.beat ? 10 : 0); // Brighter on beat
           (mesh.material as THREE.MeshBasicMaterial).color.setHSL(hue / 360, Math.min(1, saturation / 100), Math.min(0.9, lightness / 100));
         }
       });
@@ -473,7 +523,7 @@ export const SCENES: SceneDefinition[] = [
     id: 'neon_pulse_grid',
     name: 'Neon Pulse Grid',
     rendererType: 'webgl',
-    thumbnailUrl: 'https://placehold.co/120x80/E1CCFF/5A36BB.png?text=Grid&font=poppins',
+    thumbnailUrl: `https://placehold.co/120x80/${SBNF_HUES_SCENE.lightLavender.toString(16).padStart(6, '0')}/${SBNF_HUES_SCENE.deepPurple.toString(16).padStart(6, '0')}.png?text=Grid&font=poppins`,
     dataAiHint: 'neon grid pulse',
     initWebGL: (canvas, settings) => {
       const scene = new THREE.Scene();
@@ -484,21 +534,23 @@ export const SCENES: SceneDefinition[] = [
       renderer.setSize(canvas.width, canvas.height);
       renderer.setPixelRatio(window.devicePixelRatio);
       
-      const GRID_SIZE_X = 20; 
-      const GRID_SIZE_Y = Math.floor(GRID_SIZE_X * (canvas.height / canvas.width));
+      // Grid setup
+      const GRID_SIZE_X = 20; // Number of cells horizontally
+      const GRID_SIZE_Y = Math.floor(GRID_SIZE_X * (canvas.height / canvas.width)); // Maintain aspect ratio
       const CELL_COUNT = GRID_SIZE_X * GRID_SIZE_Y;
       const cellWidth = canvas.width / GRID_SIZE_X;
       const cellHeight = canvas.height / GRID_SIZE_Y;
       
-      const cellGeometry = new THREE.PlaneGeometry(cellWidth * 0.85, cellHeight * 0.85); 
+      const cellGeometry = new THREE.PlaneGeometry(cellWidth * 0.85, cellHeight * 0.85); // Smaller cells with gaps
       const cellMaterial = new THREE.MeshBasicMaterial({ vertexColors: true, transparent: true, opacity: 0.8 });
 
       const instancedMesh = new THREE.InstancedMesh(cellGeometry, cellMaterial, CELL_COUNT);
       scene.add(instancedMesh);
 
+      // Store target colors for smooth transitions
       const dummy = new THREE.Object3D();
       const cellStates = new Array(CELL_COUNT).fill(null).map(() => ({
-        color: new THREE.Color(SBNF_HUES_SCENE.black), 
+        color: new THREE.Color(SBNF_HUES_SCENE.black), // Start black or very dim
         targetColor: new THREE.Color(SBNF_HUES_SCENE.black),
       }));
 
@@ -529,25 +581,29 @@ export const SCENES: SceneDefinition[] = [
       if (!webGLAssets || !webGLAssets.instancedMesh || !webGLAssets.cellStates) return;
       const { instancedMesh, cellStates, CELL_COUNT, sbnfHuesForGrid } = webGLAssets;
       
-      const [bgR, bgG, bgB] = hslToRgb(SBNF_HUES_SCENE.black, 0, 0);
-      renderer.setClearColor(new THREE.Color(bgR, bgG, bgB), 0.25);
+      // Background clear with trail effect
+      const [bgR, bgG, bgB] = hslToRgb(SBNF_HUES_SCENE.black, 0, 2); // Very dark
+      renderer.setClearColor(new THREE.Color(bgR, bgG, bgB), 0.25); // Low alpha for trails
 
       const spectrum = audioData.spectrum;
       const spectrumLength = spectrum.length;
-      const beatFactor = audioData.beat ? 1.5 : 1.0;
-      const time = performance.now() * 0.001;
+      const beatFactor = audioData.beat ? 1.5 : 1.0; // Amplify effect on beat
+      const time = performance.now() * 0.001; // For time-based variations
 
       for (let i = 0; i < CELL_COUNT; i++) {
+        // Map cell to a spectrum bin, with a time-based offset for flowing patterns
         const spectrumIndex = Math.floor((i / CELL_COUNT) * spectrumLength + time * 5) % spectrumLength;
         const energy = spectrum[spectrumIndex] / 255;
         
+        // Determine cell color
         const baseHue = sbnfHuesForGrid[(i + Math.floor(time * 2)) % sbnfHuesForGrid.length];
-        const hue = (baseHue + energy * 60 + (audioData.beat ? 40 : 0)) % 360;
+        const hue = (baseHue + energy * 60 + (audioData.beat ? 40 : 0)) % 360; // Shift hue with energy and beat
         const saturation = 80 + energy * 20;
         const lightness = Math.min(0.8, (0.1 + energy * 0.7 + audioData.rms * 0.2) * settings.brightCap * beatFactor);
         
         cellStates[i].targetColor.setHSL(hue / 360, saturation / 100, lightness);
-        cellStates[i].color.lerp(cellStates[i].targetColor, 0.15); 
+        // Smoothly interpolate to target color
+        cellStates[i].color.lerp(cellStates[i].targetColor, 0.15); // Adjust lerp factor for responsiveness
         instancedMesh.setColorAt(i, cellStates[i].color);
       }
       
@@ -558,6 +614,7 @@ export const SCENES: SceneDefinition[] = [
         if (webGLAssets.instancedMesh) {
             if (webGLAssets.instancedMesh.geometry) webGLAssets.instancedMesh.geometry.dispose();
             if (webGLAssets.instancedMesh.material) (webGLAssets.instancedMesh.material as THREE.Material).dispose();
+            // No need to remove from scene if scene itself is disposed by VisualizerView
         }
       }
     },
@@ -566,7 +623,7 @@ export const SCENES: SceneDefinition[] = [
     id: 'spectrum_bars',
     name: 'Spectrum Bars',
     rendererType: '2d',
-    thumbnailUrl: 'https://placehold.co/120x80/5A36BB/FDB143.png?text=Bars&font=poppins',
+    thumbnailUrl: `https://placehold.co/120x80/${SBNF_HUES_SCENE.deepPurple.toString(16).padStart(6, '0')}/${SBNF_HUES_SCENE.orangeYellow.toString(16).padStart(6, '0')}.png?text=Bars&font=poppins`,
     dataAiHint: 'audio spectrum analysis',
     draw: (ctx, audioData, settings) => {
       const { width, height } = ctx.canvas;
@@ -602,7 +659,7 @@ export const SCENES: SceneDefinition[] = [
 
         const hueIndex = Math.floor((i / audioData.spectrum.length) * sbnfHuesForBars.length);
         const baseHue = sbnfHuesForBars[hueIndex % sbnfHuesForBars.length];
-        const hue = (baseHue + normalizedValue * 50 + (audioData.beat ? 40 : 0) + performance.now() / 900) % 360; 
+        const hue = (baseHue + normalizedValue * 50 + (audioData.beat ? 40 : 0) + performance.now() / 1200) % 360; // Faster hue cycle for SBNF
         const saturation = 90 + normalizedValue * 15;
         const lightness = 45 + normalizedValue * 45 + (settings.gamma - 1) * 20 + (audioData.beat ? 15 : 0);
 
@@ -620,49 +677,39 @@ export const SCENES: SceneDefinition[] = [
     id: 'radial_burst',
     name: 'Radial Burst',
     rendererType: 'webgl',
-    thumbnailUrl: 'https://placehold.co/120x80/FF441A/000000.png?text=Burst&font=poppins',
+    thumbnailUrl: `https://placehold.co/120x80/${SBNF_HUES_SCENE.orangeRed.toString(16).padStart(6, '0')}/000000.png?text=Burst&font=poppins`,
     dataAiHint: 'abstract explosion particles',
     initWebGL: (canvas, settings) => {
       const scene = new THREE.Scene();
       const camera = new THREE.PerspectiveCamera(75, canvas.width / canvas.height, 0.1, 1000);
-      camera.position.z = 100; // Start camera further back
+      camera.position.z = 100;
 
       const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
       renderer.setSize(canvas.width, canvas.height);
       renderer.setPixelRatio(window.devicePixelRatio);
 
-      const MAX_PARTICLES = 8000; // Increased particle count
+      const MAX_PARTICLES = 8000;
       const positions = new Float32Array(MAX_PARTICLES * 3);
       const colors = new Float32Array(MAX_PARTICLES * 3);
-      const velocities = new Float32Array(MAX_PARTICLES * 3); // x, y, z components
-      const lifetimes = new Float32Array(MAX_PARTICLES); // remaining life
+      const velocities = new Float32Array(MAX_PARTICLES * 3); 
+      const lifetimes = new Float32Array(MAX_PARTICLES); 
 
       const sbnfHuesForBurst = [SBNF_HUES_SCENE.orangeRed, SBNF_HUES_SCENE.orangeYellow, SBNF_HUES_SCENE.lightLavender, SBNF_HUES_SCENE.lightPeach];
       const tempColor = new THREE.Color();
 
       for (let i = 0; i < MAX_PARTICLES; i++) {
-        const i3 = i * 3;
-        positions[i3] = positions[i3 + 1] = positions[i3 + 2] = 0; // Start at origin
-        velocities[i3] = velocities[i3 + 1] = velocities[i3 + 2] = 0; // Start static
         lifetimes[i] = 0; // Dead initially
-
-        // Assign a base color, will be overwritten on spawn
-        tempColor.setHSL(sbnfHuesForBurst[i % sbnfHuesForBurst.length] / 360, 1.0, 0.7);
-        colors[i3] = tempColor.r;
-        colors[i3 + 1] = tempColor.g;
-        colors[i3 + 2] = tempColor.b;
       }
 
       const geometry = new THREE.BufferGeometry();
       geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
       geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
-      // We'll manage alpha via vertex colors later if needed, or material opacity
 
       const material = new THREE.PointsMaterial({
-        size: 2.5, // Slightly larger base size
+        size: 2.5,
         vertexColors: true,
         transparent: true,
-        opacity: 0.8, // Base opacity
+        opacity: 0.8,
         blending: THREE.AdditiveBlending,
         depthWrite: false,
         sizeAttenuation: true,
@@ -695,18 +742,18 @@ export const SCENES: SceneDefinition[] = [
       webGLAssets.lastFrameTime = currentTime;
 
       const [bgR, bgG, bgB] = hslToRgb(SBNF_HUES_SCENE.black, 0, 0);
-      renderer.setClearColor(new THREE.Color(bgR, bgG, bgB), 0.15); // SBNF Black with trails
+      renderer.setClearColor(new THREE.Color(bgR, bgG, bgB), 0.10); // SBNF Black with shorter trails
 
       material.size = (1.5 + audioData.rms * 5 + settings.brightCap * 2);
-      material.opacity = Math.min(1, 0.5 + audioData.rms * 0.5 + settings.brightCap * 0.3);
+      material.opacity = Math.min(1, 0.4 + audioData.rms * 0.6 + settings.brightCap * 0.2); // Slightly less base opacity
 
       const beatBurstCooldown = 100; // ms
-      const ambientSpawnRate = 100 + audioData.rms * 300; // particles per second
+      const ambientSpawnRate = 50 + audioData.rms * 200; // particles per second
       const ambientSpawnInterval = 1000 / ambientSpawnRate;
 
       let particlesToSpawnOnBeat = 0;
       if (audioData.beat && (currentTime - (webGLAssets.lastBeatTime || 0) > beatBurstCooldown)) {
-        particlesToSpawnOnBeat = Math.floor(MAX_PARTICLES * (0.2 + audioData.bassEnergy * 0.6)); // Spawn 20-80% of particles
+        particlesToSpawnOnBeat = Math.floor(MAX_PARTICLES * (0.15 + audioData.bassEnergy * 0.5)); // Spawn 15-65% of particles
         webGLAssets.lastBeatTime = currentTime;
       }
 
@@ -722,30 +769,30 @@ export const SCENES: SceneDefinition[] = [
         lifetimes[i] -= deltaTime;
         const i3 = i * 3;
 
-        if (lifetimes[i] <= 0) { // Particle is dead, try to respawn
+        if (lifetimes[i] <= 0) { 
           let spawn = false;
-          let life = 1.0 + Math.random() * 1.5; // 1 to 2.5 seconds
+          let life = 0.8 + Math.random() * 1.2; 
           let speed = 0;
           let baseHue;
 
           if (particlesToSpawnOnBeat > 0) {
             spawn = true;
             particlesToSpawnOnBeat--;
-            speed = 50 + Math.random() * 100 * (audioData.bassEnergy + 0.5) * (audioData.rms + 0.2);
+            speed = 60 + Math.random() * 120 * (audioData.bassEnergy + 0.3) * (audioData.rms + 0.1); // Increased speed factor
             baseHue = sbnfHues[i % 2 === 0 ? 0 : 1]; // OrangeRed or OrangeYellow for bursts
-            life *= 0.7; // Shorter life for burst particles
-          } else if (particlesToSpawnAmbient > 0 && audioData.rms > 0.02) {
+            life *= 0.6; 
+          } else if (particlesToSpawnAmbient > 0 && audioData.rms > 0.015) {
             spawn = true;
             particlesToSpawnAmbient--;
-            speed = 10 + Math.random() * 30 * (audioData.midEnergy + audioData.trebleEnergy + 0.2);
+            speed = 15 + Math.random() * 35 * (audioData.midEnergy + audioData.trebleEnergy + 0.1);
             baseHue = sbnfHues[i % 2 === 0 ? 2 : 3]; // Lavender or LightPeach for ambient
           }
 
           if (spawn) {
             lifetimes[i] = life;
-            positions[i3] = (Math.random() - 0.5) * 0.1; // Start near center
-            positions[i3 + 1] = (Math.random() - 0.5) * 0.1;
-            positions[i3 + 2] = (Math.random() - 0.5) * 0.1;
+            positions[i3] = (Math.random() - 0.5) * 0.05; // Start very close to center
+            positions[i3 + 1] = (Math.random() - 0.5) * 0.05;
+            positions[i3 + 2] = (Math.random() - 0.5) * 0.05;
 
             const theta = Math.random() * Math.PI * 2;
             const phi = Math.acos(2 * Math.random() - 1);
@@ -753,10 +800,11 @@ export const SCENES: SceneDefinition[] = [
             velocities[i3 + 1] = speed * Math.sin(phi) * Math.sin(theta);
             velocities[i3 + 2] = speed * Math.cos(phi);
 
-            const colorHue = (baseHue + (Math.random() * 60 - 30) + audioData.trebleEnergy * 40) % 360;
-            const colorSaturation = 0.8 + Math.random() * 0.2;
-            const colorLightness = 0.6 + Math.random() * 0.2 + audioData.rms * 0.2;
-            tempColor.setHSL(colorHue / 360, colorSaturation, Math.min(0.9, colorLightness));
+            const hueShift = audioData.bassEnergy * 30; // More hue shift from bass for SBNF
+            const colorHue = (baseHue + hueShift + (Math.random() * 40 - 20)) % 360;
+            const colorSaturation = 0.85 + Math.random() * 0.15;
+            const colorLightness = 0.65 + Math.random() * 0.2 + audioData.rms * 0.15;
+            tempColor.setHSL(colorHue / 360, colorSaturation, Math.min(0.85, colorLightness)); // Cap lightness
             colors[i3] = tempColor.r;
             colors[i3 + 1] = tempColor.g;
             colors[i3 + 2] = tempColor.b;
@@ -767,24 +815,21 @@ export const SCENES: SceneDefinition[] = [
           positions[i3] += velocities[i3] * deltaTime;
           positions[i3 + 1] += velocities[i3 + 1] * deltaTime;
           positions[i3 + 2] += velocities[i3 + 2] * deltaTime;
-
-          // Apply some drag
-          velocities[i3] *= 0.98;
-          velocities[i3 + 1] *= 0.98;
-          velocities[i3 + 2] *= 0.98;
           
-          // Fade out color (alpha)
-          const alpha = Math.min(1.0, (lifetimes[i] / (1.0 + Math.random()*1.5)) * 2.0); // Fade faster at the end
-          // For PointsMaterial, alpha is part of material.opacity, or we can tint colors to black
-          const originalColor = new THREE.Color(colors[i3], colors[i3+1], colors[i3+2]);
-          originalColor.multiplyScalar(alpha); // Fade by darkening
-          colors[i3] = originalColor.r;
-          colors[i3+1] = originalColor.g;
-          colors[i3+2] = originalColor.b;
+          velocities[i3] *= 0.975; // Slightly more drag
+          velocities[i3 + 1] *= 0.975;
+          velocities[i3 + 2] *= 0.975;
+          
+          const fadeProgress = Math.max(0, lifetimes[i] / (0.8 + Math.random()*1.2)); // Base lifetime
+          const originalLuminance = (new THREE.Color(colors[i3], colors[i3+1], colors[i3+2])).getHSL({h:0,s:0,l:0}).l;
+          tempColor.setRGB(colors[i3], colors[i3+1], colors[i3+2]).multiplyScalar(fadeProgress * fadeProgress); // Faster fade out
+          colors[i3] = tempColor.r;
+          colors[i3+1] = tempColor.g;
+          colors[i3+2] = tempColor.b;
 
-        } else { // Keep dead particles invisible and at origin
-            positions[i3] = positions[i3 + 1] = positions[i3 + 2] = 0;
-            colors[i3] = colors[i3 + 1] = colors[i3 + 2] = 0; // Black/transparent
+        } else { 
+            positions[i3] = positions[i3 + 1] = positions[i3 + 2] = 10000; // Move off-screen
+            colors[i3] = colors[i3 + 1] = colors[i3 + 2] = 0;
         }
       }
 
@@ -802,7 +847,7 @@ export const SCENES: SceneDefinition[] = [
     id: 'geometric_tunnel',
     name: 'Geometric Tunnel',
     rendererType: 'webgl',
-    thumbnailUrl: 'https://placehold.co/120x80/5A36BB/FF441A.png?text=Tunnel&font=poppins',
+    thumbnailUrl: `https://placehold.co/120x80/${SBNF_HUES_SCENE.deepPurple.toString(16).padStart(6, '0')}/${SBNF_HUES_SCENE.orangeRed.toString(16).padStart(6, '0')}.png?text=Tunnel&font=poppins`,
     dataAiHint: 'geometric tunnel flight tron',
     initWebGL: (canvas, settings) => {
       const scene = new THREE.Scene();
@@ -812,31 +857,30 @@ export const SCENES: SceneDefinition[] = [
       const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
       renderer.setSize(canvas.width, canvas.height);
       renderer.setPixelRatio(window.devicePixelRatio);
+      renderer.setClearColor(SBNF_HUES_SCENE.black, 1); // Use SBNF black
       
       const numSegments = 25;
       const segmentSpacing = 12; 
       const tunnelLength = numSegments * segmentSpacing;
       const segments: THREE.Mesh[] = [];
       
-      const geometry = new THREE.TorusGeometry(18, 0.2, 8, 50); 
+      const geometry = new THREE.TorusGeometry(18, 0.2, 8, 50); // Thinner torus for Tron lines
       const sbnfHuesForTunnel = [SBNF_HUES_SCENE.tronBlue, SBNF_HUES_SCENE.orangeRed, SBNF_HUES_SCENE.lightLavender, SBNF_HUES_SCENE.deepPurple, SBNF_HUES_SCENE.orangeYellow];
 
       for (let i = 0; i < numSegments; i++) {
-        const [r,g,bVal] = hslToRgb(sbnfHuesForTunnel[i % sbnfHuesForTunnel.length], 100, 60); 
+        // const [r,g,bVal] = hslToRgb(sbnfHuesForTunnel[i % sbnfHuesForTunnel.length], 100, 60); 
         const material = new THREE.MeshBasicMaterial({ 
-          wireframe: true,
-          color: new THREE.Color(r,g,bVal), 
+          wireframe: true, // Key for Tron look
+          // color will be set dynamically
           transparent: true,
           opacity: 0.75 
         }); 
         const segment = new THREE.Mesh(geometry, material);
         segment.position.z = -i * segmentSpacing;
-        segment.rotation.x = Math.PI / 2; 
+        segment.rotation.x = Math.PI / 2; // Orient rings correctly
         scene.add(segment);
         segments.push(segment);
       }
-      const [bgR, bgG, bgB] = hslToRgb(SBNF_HUES_SCENE.black, 0, 0); 
-      renderer.setClearColor(new THREE.Color(bgR, bgG, bgB), 1);
       
       return { 
         renderer, scene, camera, segments, tunnelLength, segmentSpacing, 
@@ -852,43 +896,48 @@ export const SCENES: SceneDefinition[] = [
       const deltaTime = Math.min(0.05, (currentTime - (webGLAssets.lastFrameTime || currentTime)) / 1000.0); 
       webGLAssets.lastFrameTime = currentTime;
 
-      const travelSpeedBase = 25 + audioData.bpm * 0.12; 
-      const travelSpeed = (travelSpeedBase + audioData.rms * 60) * deltaTime; 
+      const travelSpeedBase = 25 + audioData.bpm * 0.12; // Base speed related to BPM
+      const travelSpeed = (travelSpeedBase + audioData.rms * 60) * deltaTime; // Add RMS boost
       camera.position.z -= travelSpeed;
 
-      const color = new THREE.Color();
+      const tempColor = new THREE.Color();
 
       segments.forEach((segment, i) => {
-        if (segment.position.z > camera.position.z + segmentSpacing) { 
-          segment.position.z -= tunnelLength; 
+        // Recycle segments that move behind the camera
+        if (segment.position.z > camera.position.z + segmentSpacing) { // A bit of margin
+          segment.position.z -= tunnelLength; // Move to the front of the tunnel
         }
 
-        const scaleFactorBase = 0.8 + Math.sin(currentTime * 0.0015 + i * 0.4) * 0.15; 
-        const scaleFactorAudio = audioData.bassEnergy * 0.6 + (audioData.beat ? 0.35 : 0);
+        // Scale segments based on audio and a sine wave for pulsing effect
+        const scaleFactorBase = 0.8 + Math.sin(currentTime * 0.0015 + i * 0.4) * 0.15; // Base gentle pulse
+        const scaleFactorAudio = audioData.bassEnergy * 0.6 + (audioData.beat ? 0.35 : 0); // Audio reactive scale
         segment.scale.setScalar(Math.max(0.35, scaleFactorBase + scaleFactorAudio * settings.brightCap));
 
+        // Color segments - Tron blue with orange/red highlights on beat
         let targetHue;
-        if (audioData.beat && (i % 3 === 0)) { 
+        if (audioData.beat && (i % 3 === 0)) { // Every 3rd segment flashes orange/red on beat
             targetHue = SBNF_HUES_SCENE.orangeRed;
         } else {
-            targetHue = (SBNF_HUES_SCENE.tronBlue + audioData.trebleEnergy * 60 + currentTime / 2000) % 360;
+            targetHue = (SBNF_HUES_SCENE.tronBlue + audioData.trebleEnergy * 60 + currentTime / 2000) % 360; // Base Tron blue, shifts with treble/time
         }
         
-        const lightness = 0.55 + audioData.rms * 0.4 + (audioData.beat ? 0.30 : 0) + settings.brightCap * 0.1;
-        const [r,g,bVal] = hslToRgb(targetHue, 98, Math.min(0.85, lightness)); 
-        color.setRGB(r,g,bVal);
+        const lightness = 0.55 + audioData.rms * 0.4 + (audioData.beat ? 0.30 : 0) + settings.brightCap * 0.1; // Reactive lightness
+        const [r,g,bVal] = hslToRgb(targetHue, 98, Math.min(0.85, lightness)); // High saturation for Tron glow
+        tempColor.setRGB(r,g,bVal);
         
         if (segment.material instanceof THREE.MeshBasicMaterial) {
-            segment.material.color = color;
+            segment.material.color = tempColor;
             segment.material.opacity = Math.min(0.95, 0.65 + audioData.rms * 0.35 + settings.brightCap * 0.2);
         }
         
-        segment.rotation.z += (audioData.trebleEnergy * 0.025 + 0.001 + audioData.bpm * 0.00002) * (i % 2 === 0 ? 1.2 : -1.4) * deltaTime * 60;
-        segment.rotation.x = Math.PI / 2 + Math.sin(currentTime * 0.0006 + i * 0.35) * audioData.midEnergy * 0.6; 
+        // Rotate segments for more dynamism
+        segment.rotation.z += (audioData.trebleEnergy * 0.025 + 0.001 + audioData.bpm * 0.00002) * (i % 2 === 0 ? 1.2 : -1.4) * deltaTime * 60; // Different rotation per segment
+        segment.rotation.x = Math.PI / 2 + Math.sin(currentTime * 0.0006 + i * 0.35) * audioData.midEnergy * 0.6; // Wobble
       });
 
-      camera.fov = cameraBaseFov - audioData.rms * 35 * settings.gamma + (audioData.beat ? 8 : 0) ; 
-      camera.fov = Math.max(35, Math.min(105, camera.fov)); 
+      // Camera FOV effect for speed/warping
+      camera.fov = cameraBaseFov - audioData.rms * 35 * settings.gamma + (audioData.beat ? 8 : 0) ; // Zoom in/out with RMS/beat
+      camera.fov = Math.max(35, Math.min(105, camera.fov)); // Clamp FOV
       if (camera instanceof THREE.PerspectiveCamera) camera.updateProjectionMatrix();
     },
     cleanupWebGL: (webGLAssets) => {
@@ -906,7 +955,7 @@ export const SCENES: SceneDefinition[] = [
     id: 'strobe_light',
     name: 'Strobe Light',
     rendererType: '2d',
-    thumbnailUrl: 'https://placehold.co/120x80/FFECDA/000000.png?text=Strobe&font=poppins',
+    thumbnailUrl: `https://placehold.co/120x80/${SBNF_HUES_SCENE.lightPeach.toString(16).padStart(6, '0')}/000000.png?text=Strobe&font=poppins`,
     dataAiHint: 'strobe light flash',
     draw: (ctx, audioData, settings) => {
       const { width, height } = ctx.canvas;
@@ -926,7 +975,7 @@ export const SCENES: SceneDefinition[] = [
     id: 'particle_finale',
     name: 'Particle Finale',
     rendererType: 'webgl',
-    thumbnailUrl: 'https://placehold.co/120x80/FF441A/000000.png?text=Finale&font=poppins',
+    thumbnailUrl: `https://placehold.co/120x80/${SBNF_HUES_SCENE.orangeRed.toString(16).padStart(6, '0')}/000000.png?text=Finale&font=poppins`,
     dataAiHint: 'grand particle explosion fireworks',
     initWebGL: (canvas, settings) => {
         const scene = new THREE.Scene();
@@ -937,28 +986,17 @@ export const SCENES: SceneDefinition[] = [
         renderer.setSize(canvas.width, canvas.height);
         renderer.setPixelRatio(window.devicePixelRatio);
         
-        const PARTICLE_COUNT = 6000; // Reduced count
+        const PARTICLE_COUNT = 3000; // Adjusted count
         const positions = new Float32Array(PARTICLE_COUNT * 3);
         const colors = new Float32Array(PARTICLE_COUNT * 3);
         const velocities = new Float32Array(PARTICLE_COUNT * 3);
+        const lifetimes = new Float32Array(PARTICLE_COUNT); // current lifetime
+
         const sbnfHuesForFinale = [SBNF_HUES_SCENE.orangeRed, SBNF_HUES_SCENE.orangeYellow, SBNF_HUES_SCENE.lightLavender, SBNF_HUES_SCENE.lightPeach, SBNF_HUES_SCENE.deepPurple];
-        const color = new THREE.Color();
+        const tempColor = new THREE.Color();
 
         for (let i = 0; i < PARTICLE_COUNT; i++) {
-            const i3 = i * 3;
-            positions[i3] = (Math.random() - 0.5) * 0.1;
-            positions[i3 + 1] = (Math.random() - 0.5) * 0.1;
-            positions[i3 + 2] = (Math.random() - 0.5) * 0.1;
-
-            velocities[i3] = (Math.random() - 0.5) * 0.15;
-            velocities[i3 + 1] = (Math.random() - 0.5) * 0.15;
-            velocities[i3 + 2] = (Math.random() - 0.5) * 0.15;
-            
-            const hue = sbnfHuesForFinale[i % sbnfHuesForFinale.length];
-            color.setHSL(hue / 360, 0.9 + Math.random() * 0.1, 0.6 + Math.random() * 0.1); // Slightly less bright base
-            colors[i3] = color.r;
-            colors[i3 + 1] = color.g;
-            colors[i3 + 2] = color.b;
+            lifetimes[i] = 0; // Initialize all particles as "dead"
         }
 
         const particleGeometry = new THREE.BufferGeometry();
@@ -966,10 +1004,10 @@ export const SCENES: SceneDefinition[] = [
         particleGeometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
 
         const particleMaterial = new THREE.PointsMaterial({
-            size: 0.8, // Reduced base size
+            size: 0.3, // Adjusted base size
             vertexColors: true,
             transparent: true,
-            opacity: 0.70, 
+            opacity: 0.65, 
             sizeAttenuation: true,
             blending: THREE.AdditiveBlending,
             depthWrite: false,
@@ -979,115 +1017,106 @@ export const SCENES: SceneDefinition[] = [
         
         return {
             renderer, scene, camera, particles, particleMaterial, particleGeometry,
-            sbnfHues: sbnfHuesForFinale, velocities,
+            sbnfHues: sbnfHuesForFinale, velocities, lifetimes, PARTICLE_COUNT,
             lastBeatTime: 0, lastFrameTime: performance.now(),
             cameraBaseZ: camera.position.z,
+            initialParticleLifetime: 2.5, // seconds
         };
     },
     drawWebGL: ({ renderer, scene, camera, audioData, settings, webGLAssets }) => {
         if (!webGLAssets || !webGLAssets.particles || !webGLAssets.velocities || !webGLAssets.particleGeometry || !webGLAssets.sbnfHues || typeof webGLAssets.cameraBaseZ === 'undefined') return;
 
-        const { particles, particleMaterial, particleGeometry, sbnfHues, velocities, cameraBaseZ } = webGLAssets;
-        const positions = particleGeometry.attributes.position.array as Float32Array;
-        const colorsAttribute = particleGeometry.attributes.color.array as Float32Array;
-        const PARTICLE_COUNT = positions.length / 3;
+        const { particles, particleMaterial, particleGeometry, sbnfHues, velocities, lifetimes, PARTICLE_COUNT, cameraBaseZ, initialParticleLifetime } = webGLAssets;
+        const positionsAttribute = particleGeometry.attributes.position as THREE.BufferAttribute;
+        const colorsAttribute = particleGeometry.attributes.color as THREE.BufferAttribute;
 
         const currentTime = performance.now();
         const deltaTime = Math.min(0.05, (currentTime - (webGLAssets.lastFrameTime || currentTime)) / 1000.0);
         webGLAssets.lastFrameTime = currentTime;
 
-        const [bgR, bgG, bgB] = hslToRgb(SBNF_HUES_SCENE.black, 0, 0);
-        renderer.setClearColor(new THREE.Color(bgR, bgG, bgB), 0.25); // Adjusted trail fade
+        const [bgR, bgG, bgB] = hslToRgb(SBNF_HUES_SCENE.black, 0, 2); // Darker SBNF Black
+        renderer.setClearColor(new THREE.Color(bgR, bgG, bgB), 0.20); // Slightly faster fade for trails
 
         const effectiveBrightCap = Math.max(0.1, settings.brightCap);
-        particleMaterial.opacity = Math.min(0.65, effectiveBrightCap * 0.6 * (0.3 + audioData.rms * 0.4)); // Adjusted opacity
-        particleMaterial.size = Math.max(0.1, (0.2 + effectiveBrightCap * (audioData.rms * 2.0 + audioData.bassEnergy * 1.5 + audioData.trebleEnergy * 1.0))); // Adjusted size
+        particleMaterial.opacity = Math.min(0.75, effectiveBrightCap * 0.7 * (0.4 + audioData.rms * 0.5)); // Adjusted opacity
+        particleMaterial.size = Math.max(0.15, (0.2 + effectiveBrightCap * (audioData.rms * 1.5 + audioData.bassEnergy * 1.0 + audioData.trebleEnergy * 0.8)));
 
-        const color = new THREE.Color();
-        const dragFactor = 0.975; 
-        const positionResetThreshold = 100; 
-        const movementMultiplier = 40 + audioData.rms * 25; 
-        const gravityToCenter = 0.06 + audioData.midEnergy * 0.18; 
-        const beatRefractoryPeriod = 70; 
+        const tempColor = new THREE.Color();
+        const dragFactor = 0.98; 
+        const beatRefractoryPeriod = 80; // ms between beat bursts
 
         if (audioData.beat && (currentTime - (webGLAssets.lastBeatTime || 0) > beatRefractoryPeriod)) {
             webGLAssets.lastBeatTime = currentTime;
-            const burstStrength = 20.0 + audioData.bassEnergy * 40.0 + audioData.rms * 30.0; 
+            const burstStrength = 25.0 + audioData.bassEnergy * 50.0 + audioData.rms * 35.0; 
+            let particlesSpawnedThisBeat = 0;
+            const maxParticlesPerBeat = PARTICLE_COUNT * 0.6; // Spawn up to 60% of particles on a strong beat
 
-            for (let i = 0; i < PARTICLE_COUNT; i++) {
-                const i3 = i * 3;
-                positions[i3] = (Math.random() - 0.5) * 0.1; 
-                positions[i3 + 1] = (Math.random() - 0.5) * 0.1;
-                positions[i3 + 2] = (Math.random() - 0.5) * 0.1;
+            for (let i = 0; i < PARTICLE_COUNT && particlesSpawnedThisBeat < maxParticlesPerBeat; i++) {
+                if (lifetimes[i] <= 0) { // Find a "dead" particle to re-spawn
+                    const i3 = i * 3;
+                    lifetimes[i] = initialParticleLifetime * (0.7 + Math.random() * 0.6); // Vary lifetime
+                    
+                    positionsAttribute.array[i3] = (Math.random() - 0.5) * 0.1; 
+                    positionsAttribute.array[i3 + 1] = (Math.random() - 0.5) * 0.1;
+                    positionsAttribute.array[i3 + 2] = (Math.random() - 0.5) * 0.1;
 
-                const theta = Math.random() * Math.PI * 2;
-                const phi = Math.acos(2 * Math.random() - 1);
-                const speed = Math.random() * burstStrength * 0.60; 
+                    const theta = Math.random() * Math.PI * 2;
+                    const phi = Math.acos(2 * Math.random() - 1);
+                    const speed = (0.5 + Math.random() * 0.5) * burstStrength; 
 
-                velocities[i3] = speed * Math.sin(phi) * Math.cos(theta);
-                velocities[i3 + 1] = speed * Math.sin(phi) * Math.sin(theta);
-                velocities[i3 + 2] = speed * Math.cos(phi);
+                    velocities[i3] = speed * Math.sin(phi) * Math.cos(theta);
+                    velocities[i3 + 1] = speed * Math.sin(phi) * Math.sin(theta);
+                    velocities[i3 + 2] = speed * Math.cos(phi);
 
-                const burstHueIndex = (i + Math.floor(currentTime / 20)) % sbnfHues.length; 
-                const hueLightness = 0.55 + Math.random() * 0.10 + audioData.trebleEnergy * 0.05; 
-                color.setHSL(sbnfHues[burstHueIndex] / 360, 1.0, Math.min(0.85, hueLightness)); 
-                colorsAttribute[i3] = color.r;
-                colorsAttribute[i3 + 1] = color.g;
-                colorsAttribute[i3 + 2] = color.b;
+                    const burstHueIndex = (i + Math.floor(currentTime / 15)) % sbnfHues.length; 
+                    const hueLightness = 0.5 + Math.random() * 0.2 + audioData.trebleEnergy * 0.1; // Slightly less max lightness
+                    tempColor.setHSL(sbnfHues[burstHueIndex] / 360, 1.0, Math.min(0.8, hueLightness)); 
+                    colorsAttribute.array[i3] = tempColor.r;
+                    colorsAttribute.array[i3 + 1] = tempColor.g;
+                    colorsAttribute.array[i3 + 2] = tempColor.b;
+                    particlesSpawnedThisBeat++;
+                }
             }
-            if (particleGeometry.attributes.color) particleGeometry.attributes.color.needsUpdate = true;
         }
 
         for (let i = 0; i < PARTICLE_COUNT; i++) {
-            const i3 = i * 3;
-            const dx = -positions[i3];
-            const dy = -positions[i3 + 1];
-            const dz = -positions[i3 + 2];
-            const distSqToCenter = dx * dx + dy * dy + dz * dz;
-            
-            if (distSqToCenter > 0.0001) {
-                const distToCenter = Math.sqrt(distSqToCenter);
-                const attractionForce = gravityToCenter / (distSqToCenter * 0.025 + 0.025); 
-                velocities[i3] += (dx / distToCenter) * attractionForce * deltaTime;
-                velocities[i3 + 1] += (dy / distToCenter) * attractionForce * deltaTime;
-                velocities[i3 + 2] += (dz / distToCenter) * attractionForce * deltaTime;
-            }
+            if (lifetimes[i] > 0) {
+                const i3 = i * 3;
+                lifetimes[i] -= deltaTime;
 
-            positions[i3] += velocities[i3] * deltaTime * movementMultiplier;
-            positions[i3 + 1] += velocities[i3 + 1] * deltaTime * movementMultiplier;
-            positions[i3 + 2] += velocities[i3 + 2] * deltaTime * movementMultiplier;
+                if (lifetimes[i] <= 0) {
+                    positionsAttribute.array[i3] = 10000; // Move off-screen when dead
+                    velocities[i3] = velocities[i3+1] = velocities[i3+2] = 0;
+                } else {
+                    positionsAttribute.array[i3] += velocities[i3] * deltaTime;
+                    positionsAttribute.array[i3 + 1] += velocities[i3 + 1] * deltaTime;
+                    positionsAttribute.array[i3 + 2] += velocities[i3 + 2] * deltaTime;
 
-            velocities[i3] *= dragFactor;
-            velocities[i3 + 1] *= dragFactor;
-            velocities[i3 + 2] *= dragFactor;
-
-            const distSqFromOrigin = positions[i3] ** 2 + positions[i3 + 1] ** 2 + positions[i3 + 2] ** 2;
-            const speedSq = velocities[i3] ** 2 + velocities[i3 + 1] ** 2 + velocities[i3 + 2] ** 2;
-
-            if (distSqFromOrigin > positionResetThreshold * positionResetThreshold || (speedSq < 0.00004 && distSqFromOrigin > 12)) { 
-                positions[i3] = (Math.random() - 0.5) * 0.04;
-                positions[i3 + 1] = (Math.random() - 0.5) * 0.04;
-                positions[i3 + 2] = (Math.random() - 0.5) * 0.04;
-                velocities[i3] = (Math.random() - 0.5) * 0.35;
-                velocities[i3 + 1] = (Math.random() - 0.5) * 0.35;
-                velocities[i3 + 2] = (Math.random() - 0.5) * 0.35;
+                    velocities[i3] *= dragFactor;
+                    velocities[i3 + 1] *= dragFactor;
+                    velocities[i3 + 2] *= dragFactor;
+                    
+                    // Fade color (alpha via darkening)
+                    const fade = Math.pow(lifetimes[i] / (initialParticleLifetime * (0.7 + Math.random() * 0.6)), 2); // Quadratic fade
+                    colorsAttribute.array[i3] *= fade;
+                    colorsAttribute.array[i3 + 1] *= fade;
+                    colorsAttribute.array[i3 + 2] *= fade;
+                }
             }
         }
 
-        if (particleGeometry.attributes.position) particleGeometry.attributes.position.needsUpdate = true;
-        particles.rotation.y += 0.0012 * (1 + audioData.trebleEnergy * 3.0); 
-        particles.rotation.x += 0.0008 * (1 + audioData.midEnergy * 3.0);
-        camera.position.z = cameraBaseZ - audioData.rms * 15; 
+        positionsAttribute.needsUpdate = true;
+        colorsAttribute.needsUpdate = true;
+        
+        particles.rotation.y += 0.0010 * (1 + audioData.trebleEnergy * 2.5); 
+        particles.rotation.x += 0.0007 * (1 + audioData.midEnergy * 2.5);
+        camera.position.z = cameraBaseZ - audioData.rms * 20; // More subtle camera zoom
         camera.lookAt(scene.position);
     },
     cleanupWebGL: (webGLAssets) => {
         if (webGLAssets) {
             if (webGLAssets.particleGeometry) webGLAssets.particleGeometry.dispose();
             if (webGLAssets.particleMaterial) webGLAssets.particleMaterial.dispose();
-            if (webGLAssets.scene && webGLAssets.particles) {
-                webGLAssets.scene.remove(webGLAssets.particles);
-            }
-            if(webGLAssets.velocities) webGLAssets.velocities = null; 
         }
     },
   },
