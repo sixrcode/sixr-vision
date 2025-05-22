@@ -56,7 +56,9 @@ export function AudioControls({ value, audioInputDevices, isAudioToggling }: Aud
           </SelectTrigger>
           <SelectContent>
             <SelectItem value={DEFAULT_AUDIO_INPUT_VALUE}>Default System Microphone</SelectItem>
-            {audioInputDevices.map(device => (
+            {audioInputDevices
+              .filter(device => device.deviceId) // Filter out devices with empty deviceIds
+              .map(device => (
               <SelectItem key={device.deviceId} value={device.deviceId}>
                 {device.label || `Device (${device.deviceId.substring(0, 8)}...)`}
               </SelectItem>
