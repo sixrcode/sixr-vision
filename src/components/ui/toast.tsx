@@ -30,7 +30,7 @@ const toastVariants = cva(
   {
     variants: {
       variant: {
-        default: "border", // Keeps border style, color handled by inline style
+        default: "border", // Base classes, specific styling handled by inline style for default
         destructive:
           "destructive group border-destructive bg-destructive text-destructive-foreground",
       },
@@ -51,10 +51,10 @@ const Toast = React.forwardRef<
       ref={ref}
       className={cn(toastVariants({ variant }), className)}
       style={variant === 'default' ? {
-        backgroundColor: 'hsl(var(--background-hsl))',
-        color: 'hsl(var(--foreground-hsl))',
+        backgroundColor: 'hsl(var(--popover-hsl))',
+        color: 'hsl(var(--popover-foreground-hsl))',
         borderColor: 'hsl(var(--border-hsl))',
-        // borderWidth: '1px', // border class from cva handles this
+        borderWidth: '1px',
       } : {}}
       {...props}
     />
