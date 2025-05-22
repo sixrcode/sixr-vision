@@ -6,7 +6,7 @@ import { GeistMono } from 'geist/font/mono';
 import localFont from 'next/font/local';
 
 // The fonts.css file can be re-imported here if it contains active @font-face rules.
-// It's currently not imported as Torus font loading via next/font/local is disabled.
+// It's currently not imported as Torus font loading via next/font/local is (now being re-enabled).
 // import './fonts.css'; // Currently only contains comments
 import './globals.css';
 
@@ -37,30 +37,27 @@ const data70Font = localFont({
 });
 
 
-// === TORUS FONT CURRENTLY DISABLED DUE TO "FILE NOT FOUND" ERRORS ===
-// To re-enable:
-// 1. Uncomment the 'torusVariationsFont' constant definition below.
-// 2. Change 'torusVariations' to use the loaded font: const torusVariations = torusVariationsFont;
-// 3. Update 'src/lib/brandingConstants.ts' to use 'var(--font-torus-variations)'.
-// 4. Ensure the font file 'TorusVariations-VF.woff2' is in 'src/app/fonts/'.
-//    Adjust the 'path' in the src array below if using a different file type.
-
-/*
+// === TORUS FONT CONFIGURATION ===
+// Re-enabled to use Fontspring-DEMO-toruspro-variable.ttf
+// IMPORTANT:
+// 1. Ensure the font file 'Fontspring-DEMO-toruspro-variable.ttf' is in 'src/app/fonts/'.
+// 2. Create the 'src/app/fonts/' directory if it doesn't exist.
 const torusVariationsFont = localFont({
   src: [
     {
-      path: './fonts/TorusVariations-VF.woff2', // EXPECTS FONT FILE IN src/app/fonts/
-      // weight: '100 900', // Example for variable font
-      // style: 'normal',
+      // Path relative to this layout.tsx file
+      path: './fonts/Fontspring-DEMO-toruspro-variable.ttf',
+      // weight: '100 900', // Example for variable font - adjust if needed
+      // style: 'normal',   // Adjust if needed
     },
   ],
   variable: '--font-torus-variations',
   display: 'swap',
+  fallback: ['var(--font-geist-mono)', 'monospace'], // Fallback if Torus fails
 });
-*/
 
-// const torusVariations = torusVariationsFont; // Use this if font loading is re-enabled
-const torusVariations = { variable: '' }; // Placeholder if Torus font loading is disabled
+const torusVariations = torusVariationsFont;
+// const torusVariations = { variable: '' }; // Placeholder if Torus font loading is disabled
 
 export const metadata: Metadata = {
   title: 'SIXR Vision - SBNF Cosmic Grapevines',
