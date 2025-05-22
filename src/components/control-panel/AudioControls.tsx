@@ -13,6 +13,8 @@ import { ControlHint } from './ControlHint';
 import { LabelledSwitchControl } from './common/LabelledSwitchControl';
 import { AlertTriangle } from 'lucide-react';
 
+const DEFAULT_AUDIO_INPUT_VALUE = "__DEFAULT_AUDIO_INPUT__";
+
 type AudioControlsProps = {
   value: string; // For AccordionItem
   audioInputDevices: MediaDeviceInfo[];
@@ -23,7 +25,11 @@ export function AudioControls({ value, audioInputDevices, isAudioToggling }: Aud
   const { settings, updateSetting } = useSettings();
 
   const handleDeviceChange = (newDeviceId: string) => {
-    updateSetting('selectedAudioInputDeviceId', newDeviceId === '' ? undefined : newDeviceId);
+    if (newDeviceId === DEFAULT_AUDIO_INPUT_VALUE) {
+      updateSetting('selectedAudioInputDeviceId', undefined);
+    } else {
+      updateSetting('selectedAudioInputDeviceId', newDeviceId);
+    }
     // Re-initialization will be handled by ControlPanelView's useEffect
   };
 
@@ -40,15 +46,16 @@ export function AudioControls({ value, audioInputDevices, isAudioToggling }: Aud
           </TooltipContent>
         </Tooltip>
         <Select
-          value={settings.selectedAudioInputDeviceId || ''}
+          value={settings.selectedAudioInputDeviceId || DEFAULT_AUDIO_INPUT_VALUE}
           onValueChange={handleDeviceChange}
           disabled={audioInputDevices.length === 0 || isAudioToggling}
         >
           <SelectTrigger id="audioSource-select" aria-label="Select Audio Input Device">
-            <SelectValue placeholder="Default System Microphone" />
+            {/* SelectValue will display the selected item's children. Placeholder is a fallback. */}
+            <SelectValue placeholder="Select an audio source" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">Default System Microphone</SelectItem>
+            <SelectItem value={DEFAULT_AUDIO_INPUT_VALUE}>Default System Microphone</SelectItem>
             {audioInputDevices.map(device => (
               <SelectItem key={device.deviceId} value={device.deviceId}>
                 {device.label || `Device (${device.deviceId.substring(0, 8)}...)`}
@@ -150,4 +157,3 @@ export function AudioControls({ value, audioInputDevices, isAudioToggling }: Aud
     </ControlPanelSection>
   );
 }
-
