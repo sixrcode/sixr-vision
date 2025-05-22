@@ -1,8 +1,8 @@
 
 import type { Metadata } from 'next';
 import { Poppins } from 'next/font/google';
-// import { GeistSans } from 'geist/font/sans'; // Temporarily disabled due to 403 errors
-// import { GeistMono } from 'geist/font/mono'; // Temporarily disabled due to 403 errors
+// import { GeistSans } from 'geist/font/sans'; // Temporarily disabled due to 403 errors in Firebase Studio
+// import { GeistMono } from 'geist/font/mono'; // Temporarily disabled due to 403 errors in Firebase Studio
 import localFont from 'next/font/local';
 
 // The fonts.css file can be re-imported here if it contains active @font-face rules.
@@ -21,9 +21,10 @@ const poppins = Poppins({
   display: 'swap',
 });
 
-// Use a fallback for GeistSans and GeistMono if they are not being loaded
-const geistSans = { variable: '' }; // Fallback if GeistSans loading is disabled
-const geistMono = { variable: '' }; // Fallback if GeistMono loading is disabled
+// Fallback if GeistSans loading is disabled (due to 403 errors in Firebase Studio)
+const geistSans = { variable: '' };
+// Fallback if GeistMono loading is disabled (due to 403 errors in Firebase Studio)
+const geistMono = { variable: '' };
 
 // === DATA 70 FONT CONFIGURATION ===
 // IMPORTANT: Ensure the font file 'Data70.ttf' is in 'src/app/fonts/'.
@@ -37,10 +38,9 @@ const data70Font = localFont({
   variable: '--font-data70',
   display: 'swap',
   // Fallback if Data70 fails to load or is not yet available
-  fallback: ['var(--font-geist-mono)', 'monospace'],
+  fallback: ['monospace'], // Use system monospace as fallback
 });
-// const data70Font = { variable: ''}; // Fallback if Data70.ttf is not available
-
+// const data70Font = { variable: ''}; // Use this if Data70.ttf is confirmed unavailable & causing build errors
 
 // === TORUS FONT CONFIGURATION ===
 // Currently commented out due to font file not found issues.
@@ -59,7 +59,7 @@ const torusVariationsFont = localFont({
   ],
   variable: '--font-torus-variations',
   display: 'swap',
-  fallback: ['var(--font-geist-mono)', 'monospace'], // Fallback if Torus fails
+  fallback: ['monospace'], // Use system monospace as fallback
 });
 */
 const torusVariationsFont = { variable: '' }; // Placeholder if Torus font loading is disabled
