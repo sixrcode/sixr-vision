@@ -9,6 +9,19 @@ import { useScene } from '@/providers/SceneProvider';
 import { BrandingOverlay } from './BrandingOverlay';
 import { WebcamFeed } from './WebcamFeed';
 
+/**
+ * @fileOverview The main component responsible for rendering the visualizer canvas.
+ * It manages the animation loop, scene transitions, webcam feed integration,
+ * and overlaying branding elements.
+ */
+
+/**
+ * VisualizerView component.
+ * Handles the main canvas rendering loop, drawing the current scene,
+ * managing scene transitions, and integrating webcam and AI overlays.
+ * Also displays FPS and audio data for debugging if not in panic mode.
+ * @returns {JSX.Element} The VisualizerView component.
+ */
 export function VisualizerView() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const { settings } = useSettings();
@@ -29,6 +42,7 @@ export function VisualizerView() {
   const frameCountRef = useRef(0);
   const [fps, setFps] = useState(0);
 
+  // Effect to handle scene transitions
   useEffect(() => {
     if (settings.currentSceneId !== lastSceneIdRef.current) {
       if (settings.sceneTransitionActive && settings.sceneTransitionDuration > 0) {
@@ -49,6 +63,7 @@ export function VisualizerView() {
     }
   }, [settings.currentSceneId, settings.sceneTransitionActive, settings.sceneTransitionDuration, scenes]);
 
+  // Effect to load AI-generated overlay image
   useEffect(() => {
     if (settings.enableAiOverlay && settings.aiGeneratedOverlayUri) {
       const img = new Image();
@@ -66,8 +81,13 @@ export function VisualizerView() {
   }, [settings.enableAiOverlay, settings.aiGeneratedOverlayUri]);
 
 
+  /**
+   * The main drawing loop, called via requestAnimationFrame.
+   * Handles clearing the canvas, drawing the current scene (with transitions),
+   * AI overlays, FPS counter, and error messages.
+   */
   const drawLoop = useCallback(() => {
-    animationFrameIdRef.current = null;
+    animationFrameIdRef.current = null; // Clear ref for next request
 
     const canvas = canvasRef.current;
     if (!canvas) {
@@ -93,20 +113,19 @@ export function VisualizerView() {
       lastFrameTimeRef.current = now;
     }
 
-    // DEBUG LOG: Check received audioData
     const spectrumSum = audioData.spectrum.reduce((a, b) => a + b, 0);
     if (audioData.rms > 0.001 || spectrumSum > 0 || audioData.beat) {
-        console.log(
-            'VisualizerView - AudioData:',
-            'RMS:', audioData.rms.toFixed(3),
-            'Beat:', audioData.beat,
-            'Bass:', audioData.bassEnergy.toFixed(3),
-            'Mid:', audioData.midEnergy.toFixed(3),
-            'Treble:', audioData.trebleEnergy.toFixed(3),
-            'BPM:', audioData.bpm,
-            'Spectrum Sum:', spectrumSum,
-            'First 5 bins:', audioData.spectrum.slice(0,5)
-        );
+        // console.log( // Kept for debugging if needed, but can be verbose
+        //     'VisualizerView - AudioData:',
+        //     'RMS:', audioData.rms.toFixed(3),
+        //     'Beat:', audioData.beat,
+        //     'Bass:', audioData.bassEnergy.toFixed(3),
+        //     'Mid:', audioData.midEnergy.toFixed(3),
+        //     'Treble:', audioData.trebleEnergy.toFixed(3),
+        //     'BPM:', audioData.bpm,
+        //     'Spectrum Sum:', spectrumSum,
+        //     'First 5 bins:', Array.from(audioData.spectrum.slice(0,5))
+        // );
     }
 
 
@@ -120,8 +139,8 @@ export function VisualizerView() {
 
         if (canvasRef.current) {
             const computedStyle = getComputedStyle(canvasRef.current);
-            const destructiveColor = computedStyle.getPropertyValue('--destructive').trim();
-            ctx.fillStyle = destructiveColor || 'red';
+            const destructiveColor = computedStyle.getPropertyValue('--destructive').trim() || 'red';
+            ctx.fillStyle = destructiveColor;
         } else {
             ctx.fillStyle = 'red';
         }
@@ -198,12 +217,11 @@ export function VisualizerView() {
 
       // Draw FPS counter & Audio Data for Debugging
       if (!settings.panicMode && !lastError) {
-        ctx.font = '12px var(--font-geist-mono)'; // Use mono for better alignment
-        ctx.fillStyle = 'hsl(var(--foreground))';
+        ctx.font = '12px var(--font-geist-mono)';
+        ctx.fillStyle = 'hsl(var(--foreground-hsl))'; // Use themed foreground
         ctx.textAlign = 'left';
         ctx.fillText(`FPS: ${fps}`, 10, 20);
 
-        // On-screen audio data display
         ctx.textAlign = 'right';
         const lineSpacing = 14;
         let currentY = 20;
@@ -231,6 +249,7 @@ export function VisualizerView() {
     animationFrameIdRef.current = requestAnimationFrame(drawLoop);
   }, [audioData, currentScene, settings, webcamElement, lastError, isTransitioning, fps, scenes]);
 
+  // Effect to handle canvas resizing
   useEffect(() => {
     const canvas = canvasRef.current;
     if (canvas) {
@@ -239,20 +258,22 @@ export function VisualizerView() {
         const resizeObserver = new ResizeObserver(() => {
           canvas.width = parent.clientWidth;
           canvas.height = parent.clientHeight;
-          if(lastError) {
+          if(lastError) { // Re-trigger error display if canvas resizes during error
             setLastError(prev => prev ? prev + " " : "Canvas resized.");
           }
         });
         resizeObserver.observe(parent);
+        // Initial size set
         canvas.width = parent.clientWidth;
         canvas.height = parent.clientHeight;
         return () => resizeObserver.disconnect();
       }
     }
-  }, [lastError]);
+  }, [lastError]); // Re-run if lastError changes to ensure error text is redrawn after resize
 
+  // Effect to start and stop the main animation loop
   useEffect(() => {
-    lastSceneIdRef.current = settings.currentSceneId;
+    // lastSceneIdRef.current = settings.currentSceneId; // Not needed here as it's handled by transition effect
     animationFrameIdRef.current = requestAnimationFrame(drawLoop);
     return () => {
       if (animationFrameIdRef.current) {
@@ -260,7 +281,7 @@ export function VisualizerView() {
         animationFrameIdRef.current = null;
       }
     };
-  }, [drawLoop, settings.currentSceneId]);
+  }, [drawLoop]); // drawLoop is stable due to useCallback
 
   return (
     <div className="w-full h-full relative">

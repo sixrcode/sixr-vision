@@ -3,10 +3,11 @@
 
 /**
  * @fileOverview A flow to generate procedural textures and meshes from a text prompt.
+ * This flow utilizes an image generation model to create visual representations.
  *
- * - generateAssets - A function that handles the asset generation process.
- * - GenerateAssetsInput - The input type for the generateAssets function.
- * - GenerateAssetsOutput - The return type for the generateAssets function.
+ * @exports generateAssets - An asynchronous function that takes a prompt and returns data URIs for a generated texture and a mesh preview.
+ * @exports GenerateAssetsInput - The Zod schema type for the input to `generateAssets`.
+ * @exports GenerateAssetsOutput - The Zod schema type for the output of `generateAssets`.
  */
 
 import {ai} from '@/ai/genkit';
@@ -26,11 +27,17 @@ const GenerateAssetsOutputSchema = z.object({
   meshDataUri: z
     .string()
     .describe(
-      "A data URI containing the generated mesh, must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'."
+      "A data URI containing the generated mesh preview image, must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'."
     ),
 });
 export type GenerateAssetsOutput = z.infer<typeof GenerateAssetsOutputSchema>;
 
+/**
+ * Generates procedural assets (texture and mesh preview) based on a text prompt.
+ * @param {GenerateAssetsInput} input - The input object containing the text prompt.
+ * @returns {Promise<GenerateAssetsOutput>} A promise that resolves to an object containing data URIs for the generated texture and mesh preview.
+ * @throws {Error} If image generation fails to return a media URL for either asset.
+ */
 export async function generateAssets(input: GenerateAssetsInput): Promise<GenerateAssetsOutput> {
   return generateAssetsFlow(input);
 }
@@ -41,7 +48,7 @@ const generateAssetsFlow = ai.defineFlow(
     inputSchema: GenerateAssetsInputSchema,
     outputSchema: GenerateAssetsOutputSchema,
   },
-  async input => {
+  async (input: GenerateAssetsInput): Promise<GenerateAssetsOutput> => {
     const {media: textureMedia} = await ai.generate({
       model: 'googleai/gemini-2.0-flash-exp', 
       prompt: `Generate a seamless tileable texture based on the following artistic prompt: "${input.prompt}". Focus on abstract patterns and material qualities rather than literal depictions unless specified. Output as a square image suitable for texturing.`,
@@ -71,4 +78,3 @@ const generateAssetsFlow = ai.defineFlow(
     };
   }
 );
-

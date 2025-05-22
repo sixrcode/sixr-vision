@@ -25,11 +25,23 @@ import { toast } from '@/hooks/use-toast';
 import { SIXR_S_COLOR, SIXR_I_COLOR, SIXR_X_COLOR, SIXR_R_COLOR, TORUS_FONT_FAMILY } from '@/lib/brandingConstants';
 import { cn } from '@/lib/utils';
 
+/**
+ * @fileOverview The main view component for the Control Panel sidebar.
+ * It orchestrates various control sections, manages audio/webcam initialization,
+ * and provides global UI elements like the header and footer.
+ */
+
+/**
+ * Renders the control panel view for the SIXR Vision application.
+ * This component includes the header with global toggles, an accordion of control sections,
+ * and a footer with branding. It manages the initialization and toggling of audio and webcam.
+ * @returns {JSX.Element} The ControlPanelView component.
+ */
 export function ControlPanelView() {
   const { 
     initializeAudio, 
     stopAudioAnalysis, 
-    isInitialized, 
+    isInitialized, // This is isInitializedInternalActual from the hook
     error: audioError,
     audioInputDevices 
   } = useAudioAnalysis();
@@ -37,11 +49,25 @@ export function ControlPanelView() {
   const [isTogglingAudio, setIsTogglingAudio] = useState(false);
   const [isTogglingWebcam, setIsTogglingWebcam] = useState(false);
 
-  // Effect to handle re-initialization if selected audio device changes while audio is active
   const prevSelectedDeviceIdRef = useRef(settings.selectedAudioInputDeviceId);
+
+  // Welcome toast for first-time users
+  useEffect(() => {
+    const hasSeenWelcome = localStorage.getItem('sixrVisionWelcomeSeen');
+    if (!hasSeenWelcome) {
+      toast({
+        title: "Welcome to SIXR Vision!",
+        description: "Grant microphone and camera permissions when prompted to begin. Explore presets and controls on the right.",
+        duration: 7000,
+      });
+      localStorage.setItem('sixrVisionWelcomeSeen', 'true');
+    }
+  }, []);
+
+  // Effect to handle re-initialization if selected audio device changes while audio is active
   useEffect(() => {
     if (
-      isInitialized &&
+      isInitialized && // Check against the actual initialized state from the hook
       settings.selectedAudioInputDeviceId !== prevSelectedDeviceIdRef.current
     ) {
       console.log(
@@ -50,7 +76,7 @@ export function ControlPanelView() {
       const reinitialize = async () => {
         setIsTogglingAudio(true); 
         await stopAudioAnalysis();
-        await initializeAudio(); // Will now use the new deviceId from settings
+        await initializeAudio(); 
         setIsTogglingAudio(false);
       };
       reinitialize();
@@ -61,10 +87,14 @@ export function ControlPanelView() {
     isInitialized,
     stopAudioAnalysis,
     initializeAudio,
-    // setIsTogglingAudio // Not needed as it's a stable setter from useState
   ]);
 
 
+  /**
+   * Toggles the audio input on or off.
+   * Manages loading states and calls the appropriate functions from `useAudioAnalysis`.
+   * @async
+   */
   const handleAudioToggle = async () => {
     if (isTogglingAudio) return;
     console.log("ControlPanelView: Toggling audio. Current isInitialized:", isInitialized, "isTogglingAudio:", isTogglingAudio);
@@ -78,22 +108,15 @@ export function ControlPanelView() {
     console.log("ControlPanelView: Audio toggle finished. isInitialized will update on next render.");
   };
 
+  /**
+   * Toggles the webcam visibility setting.
+   * Manages loading states.
+   */
   const handleWebcamToggle = () => {
     if (isTogglingWebcam) return;
     console.log("ControlPanelView: Toggling webcam. Current state:", settings.showWebcam);
     setIsTogglingWebcam(true);
     updateSetting('showWebcam', !settings.showWebcam);
-    // If turning webcam ON, and audio is OFF, also turn ON audio by default
-    if (!settings.showWebcam && !isInitialized) {
-      // Check this logic: !settings.showWebcam means it was OFF, now turning ON.
-      // We should trigger audio init if it's not already on.
-      // The actual state will update after this function, so use the intended new state
-      const intendedShowWebcam = !settings.showWebcam;
-      if (intendedShowWebcam && !isInitialized) {
-        // Temporarily removed auto audio init on webcam toggle to simplify
-        // handleAudioToggle(); 
-      }
-    }
     setIsTogglingWebcam(false);
     console.log("ControlPanelView: Webcam toggle finished. New showWebcam setting:", !settings.showWebcam);
   };
@@ -161,7 +184,7 @@ export function ControlPanelView() {
           </Tooltip>
         </div>
       </header>
-      {audioError && !isInitialized && <p className="p-2 text-xs text-destructive bg-destructive/20 text-center">Audio Error: {audioError}. Please check microphone permissions.</p>}
+      {audioError && !isInitialized && <p className="p-2 text-xs text-destructive bg-destructive/20 text-center">Audio Error: {audioError}. Check mic permissions & selection.</p>}
       <ScrollArea className="flex-1 min-h-0">
         <div
           className="overflow-x-hidden control-panel-content-wrapper"
@@ -179,7 +202,7 @@ export function ControlPanelView() {
             <AudioControls 
               value="audio-engine" 
               audioInputDevices={audioInputDevices} 
-              isAudioToggling={isTogglingAudio} // Pass down for disabling select
+              isAudioToggling={isTogglingAudio}
             />
             <VisualControls value="visual-output" />
             <LogoAnimationControls value="logo-animation" />
@@ -208,4 +231,3 @@ export function ControlPanelView() {
     </div>
   );
 }
-
