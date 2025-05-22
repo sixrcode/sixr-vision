@@ -50,6 +50,7 @@ export type Settings = {
   sceneTransitionDuration: number; // milliseconds for crossfade
   sceneTransitionActive: boolean; // whether crossfade is enabled
   monitorAudio: boolean; // Play microphone input to speakers
+  selectedAudioInputDeviceId?: string; // Added for microphone selection
 
   // AI Visual Overlay Mixer Settings
   enableAiOverlay: boolean;
@@ -94,3 +95,4 @@ export const VALID_BLEND_MODES: CanvasRenderingContext2D['globalCompositeOperati
   'lighten', 'color-dodge', 'color-burn', 'hard-light', 'soft-light',
   'difference', 'exclusion', 'hue', 'saturation', 'color', 'luminosity'
 ];
+

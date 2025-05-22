@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import { SixrLogo } from '@/components/icons/SixrLogo';
@@ -26,27 +26,43 @@ import { SIXR_S_COLOR, SIXR_I_COLOR, SIXR_X_COLOR, SIXR_R_COLOR, TORUS_FONT_FAMI
 import { cn } from '@/lib/utils';
 
 export function ControlPanelView() {
-  const { initializeAudio, stopAudioAnalysis, isInitialized, error: audioError } = useAudioAnalysis();
+  const { 
+    initializeAudio, 
+    stopAudioAnalysis, 
+    isInitialized, 
+    error: audioError,
+    audioInputDevices 
+  } = useAudioAnalysis();
   const { settings, updateSetting } = useSettings();
   const [isTogglingAudio, setIsTogglingAudio] = useState(false);
   const [isTogglingWebcam, setIsTogglingWebcam] = useState(false);
 
+  // Effect to handle re-initialization if selected audio device changes while audio is active
+  const prevSelectedDeviceIdRef = useRef(settings.selectedAudioInputDeviceId);
   useEffect(() => {
-    // Welcome Toast Logic
-    if (typeof window !== 'undefined') {
-      const alreadyWelcomed = localStorage.getItem('sixrVisionWelcomed');
-      if (!alreadyWelcomed) {
-        toast({
-          title: "Welcome to SIXR Vision!",
-          description: "Grant microphone & camera permissions (buttons in header) to begin. Explore presets & controls on the right.",
-          duration: 9000,
-        });
-        localStorage.setItem('sixrVisionWelcomed', 'true');
-      }
+    if (
+      isInitialized &&
+      settings.selectedAudioInputDeviceId !== prevSelectedDeviceIdRef.current
+    ) {
+      console.log(
+        'Selected audio device changed while audio is active. Re-initializing audio.'
+      );
+      const reinitialize = async () => {
+        setIsTogglingAudio(true); 
+        await stopAudioAnalysis();
+        await initializeAudio(); // Will now use the new deviceId from settings
+        setIsTogglingAudio(false);
+      };
+      reinitialize();
     }
-    // REMOVED auto-initialization useEffect for audio and webcam
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    prevSelectedDeviceIdRef.current = settings.selectedAudioInputDeviceId;
+  }, [
+    settings.selectedAudioInputDeviceId,
+    isInitialized,
+    stopAudioAnalysis,
+    initializeAudio,
+    // setIsTogglingAudio // Not needed as it's a stable setter from useState
+  ]);
 
 
   const handleAudioToggle = async () => {
@@ -67,6 +83,17 @@ export function ControlPanelView() {
     console.log("ControlPanelView: Toggling webcam. Current state:", settings.showWebcam);
     setIsTogglingWebcam(true);
     updateSetting('showWebcam', !settings.showWebcam);
+    // If turning webcam ON, and audio is OFF, also turn ON audio by default
+    if (!settings.showWebcam && !isInitialized) {
+      // Check this logic: !settings.showWebcam means it was OFF, now turning ON.
+      // We should trigger audio init if it's not already on.
+      // The actual state will update after this function, so use the intended new state
+      const intendedShowWebcam = !settings.showWebcam;
+      if (intendedShowWebcam && !isInitialized) {
+        // Temporarily removed auto audio init on webcam toggle to simplify
+        // handleAudioToggle(); 
+      }
+    }
     setIsTogglingWebcam(false);
     console.log("ControlPanelView: Webcam toggle finished. New showWebcam setting:", !settings.showWebcam);
   };
@@ -94,7 +121,7 @@ export function ControlPanelView() {
                 )}
                 disabled={isTogglingAudio}
                 aria-pressed={isInitialized && !audioError}
-                aria-label={isInitialized && !audioError ? "Stop Audio Input" : (audioError ? "Retry Audio Initialization" : "Start Audio Input")}
+                aria-label={isTogglingAudio ? "Processing audio..." : (isInitialized && !audioError ? "Stop Audio Input" : (audioError ? "Retry Audio Initialization" : "Start Audio Input"))}
               >
                 {isTogglingAudio ? (
                   <Loader2 className="h-5 w-5 animate-spin" />
@@ -106,7 +133,7 @@ export function ControlPanelView() {
               </Button>
             </TooltipTrigger>
             <TooltipContent>
-              <p>{isTogglingAudio ? "Processing..." : isInitialized && !audioError ? 'Stop Audio Input' : (audioError ? 'Retry Audio Initialization' : 'Start Audio Input')}</p>
+              <p>{isTogglingAudio ? "Processing audio..." : isInitialized && !audioError ? 'Stop Audio Input' : (audioError ? 'Retry Audio Initialization' : 'Start Audio Input')}</p>
               {audioError && !isInitialized && <p className="text-destructive mt-1">Error: {audioError}</p>}
             </TooltipContent>
           </Tooltip>
@@ -149,7 +176,11 @@ export function ControlPanelView() {
             className="w-full py-4 space-y-1"
           >
             <PresetSelector value="presets" />
-            <AudioControls value="audio-engine" />
+            <AudioControls 
+              value="audio-engine" 
+              audioInputDevices={audioInputDevices} 
+              isAudioToggling={isTogglingAudio} // Pass down for disabling select
+            />
             <VisualControls value="visual-output" />
             <LogoAnimationControls value="logo-animation" />
             <WebcamControls value="webcam-layer" />
@@ -177,3 +208,4 @@ export function ControlPanelView() {
     </div>
   );
 }
+

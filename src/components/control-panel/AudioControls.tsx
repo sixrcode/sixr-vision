@@ -13,17 +13,53 @@ import { ControlHint } from './ControlHint';
 import { LabelledSwitchControl } from './common/LabelledSwitchControl';
 import { AlertTriangle } from 'lucide-react';
 
-
 type AudioControlsProps = {
   value: string; // For AccordionItem
+  audioInputDevices: MediaDeviceInfo[];
+  isAudioToggling: boolean;
 };
 
-export function AudioControls({ value }: AudioControlsProps) {
+export function AudioControls({ value, audioInputDevices, isAudioToggling }: AudioControlsProps) {
   const { settings, updateSetting } = useSettings();
+
+  const handleDeviceChange = (newDeviceId: string) => {
+    updateSetting('selectedAudioInputDeviceId', newDeviceId === '' ? undefined : newDeviceId);
+    // Re-initialization will be handled by ControlPanelView's useEffect
+  };
 
   return (
     <ControlPanelSection title="Audio Engine" value={value}>
       <div className="space-y-1">
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Label htmlFor="audioSource-select">Audio Input Device</Label>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Select the microphone or audio source for the visualizer.</p>
+            {audioInputDevices.length === 0 && <p className="text-xs text-muted-foreground">No audio input devices found or permission not granted.</p>}
+          </TooltipContent>
+        </Tooltip>
+        <Select
+          value={settings.selectedAudioInputDeviceId || ''}
+          onValueChange={handleDeviceChange}
+          disabled={audioInputDevices.length === 0 || isAudioToggling}
+        >
+          <SelectTrigger id="audioSource-select" aria-label="Select Audio Input Device">
+            <SelectValue placeholder="Default System Microphone" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="">Default System Microphone</SelectItem>
+            {audioInputDevices.map(device => (
+              <SelectItem key={device.deviceId} value={device.deviceId}>
+                {device.label || `Device (${device.deviceId.substring(0, 8)}...)`}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <ControlHint>Changes take effect when audio is (re)started.</ControlHint>
+      </div>
+
+      <div className="space-y-1 mt-3">
         <Tooltip>
           <TooltipTrigger asChild>
             <Label htmlFor="fftSize-select">FFT Bins</Label>
@@ -35,6 +71,7 @@ export function AudioControls({ value }: AudioControlsProps) {
         <Select
           value={String(settings.fftSize)}
           onValueChange={(val) => updateSetting('fftSize', Number(val) as typeof settings.fftSize)}
+          disabled={isAudioToggling}
         >
           <SelectTrigger id="fftSize-select" aria-label="Select FFT Bins">
             <SelectValue placeholder="Select FFT size" />
@@ -48,7 +85,7 @@ export function AudioControls({ value }: AudioControlsProps) {
         <ControlHint>Controls the resolution of audio frequency analysis.</ControlHint>
       </div>
 
-      <div className={cn("space-y-1", settings.enableAgc && "opacity-50 pointer-events-none")}>
+      <div className={cn("space-y-1 mt-3", settings.enableAgc && "opacity-50 pointer-events-none")}>
         <Tooltip>
           <TooltipTrigger asChild>
             <Label htmlFor="gain-slider" className={cn(settings.enableAgc && "text-muted-foreground")}>
@@ -66,7 +103,7 @@ export function AudioControls({ value }: AudioControlsProps) {
           step={0.05}
           value={[settings.gain]}
           onValueChange={([val]) => updateSetting('gain', val)}
-          disabled={settings.enableAgc}
+          disabled={settings.enableAgc || isAudioToggling}
           aria-label={`Manual Gain: ${settings.gain.toFixed(2)}${settings.enableAgc ? " (AGC Active)" : ""}`}
         />
       </div>
@@ -83,6 +120,7 @@ export function AudioControls({ value }: AudioControlsProps) {
         </>}
         containerClassName="pt-2"
         switchAriaLabel="Toggle Automatic Gain Control"
+        switchProps={{ disabled: isAudioToggling }}
       />
        <ControlHint>
         {settings.enableAgc ? "AGC is active. Manual gain is disabled." : "Adjust gain manually or enable AGC."}
@@ -105,9 +143,11 @@ export function AudioControls({ value }: AudioControlsProps) {
           }
           containerClassName="pt-2"
           switchAriaLabel="Toggle audio monitoring to speakers"
+          switchProps={{ disabled: isAudioToggling }}
         />
         <ControlHint>Hear what the microphone is picking up. Use with caution!</ControlHint>
       </div>
     </ControlPanelSection>
   );
 }
+
