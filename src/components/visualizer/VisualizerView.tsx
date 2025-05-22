@@ -9,7 +9,7 @@ import { useScene } from '@/providers/SceneProvider';
 import { BrandingOverlay } from './BrandingOverlay';
 import { WebcamFeed } from './WebcamFeed';
 import * as THREE from 'three';
-import { SBNF_BODY_FONT_FAMILY } from '@/lib/constants';
+import { SBNF_BODY_FONT_FAMILY } from '@/lib/brandingConstants'; // Corrected import path
 
 /**
  * @fileOverview The main component responsible for rendering the visualizer canvas.
@@ -28,7 +28,7 @@ export function VisualizerView() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const { settings } = useSettings();
   const { audioData } = useAudioData();
-  const { currentScene, scenes } = useScene();
+  const { currentScene, scenes } = useScene(); // Added scenes for renderer type checking
   const animationFrameIdRef = useRef<number | null>(null);
   const [webcamElement, setWebcamElement] = useState<HTMLVideoElement | null>(null);
   const [lastError, setLastError] = useState<string | null>(null);
@@ -38,8 +38,9 @@ export function VisualizerView() {
   const webGLRendererRef = useRef<THREE.WebGLRenderer | null>(null);
   const webGLSceneRef = useRef<THREE.Scene | null>(null);
   const webGLCameraRef = useRef<THREE.PerspectiveCamera | null>(null);
-  const currentSceneWebGLAssetsRef = useRef<any>(null);
-  const previousSceneWebGLAssetsRef = useRef<any>(null); // Added declaration
+  const currentSceneWebGLAssetsRef = useRef<any>(null); // Holds assets from currentScene.initWebGL
+  const previousSceneWebGLAssetsRef = useRef<any>(null);
+
 
   // Scene transition refs
   const previousSceneRef = useRef<SceneDefinition | null>(null);
@@ -55,7 +56,7 @@ export function VisualizerView() {
   const frameCountRef = useRef(0);
   const [fps, setFps] = useState(0);
   const lastLoggedFpsRef = useRef<number>(0);
-  const fpsDropThreshold = 10; // Example threshold
+  const fpsDropThreshold = 10; 
   const fpsLogIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
 
@@ -71,7 +72,7 @@ export function VisualizerView() {
     if (settings.currentSceneId !== lastSceneIdRef.current && currentScene) {
       const prevSceneObject = scenes.find(s => s.id === lastSceneIdRef.current);
 
-      if (prevSceneObject && currentScene && prevSceneObject.rendererType !== currentScene.rendererType) {
+      if (prevSceneObject && currentScene && (prevSceneObject.rendererType || '2d') !== (currentScene.rendererType || '2d')) {
         console.log(`Renderer type changed from ${prevSceneObject.rendererType || '2d'} to ${currentScene.rendererType || '2d'}. Remounting canvas.`);
         setCanvasKey(prevKey => prevKey + 1); // Force re-mount of canvas
       }
@@ -84,24 +85,31 @@ export function VisualizerView() {
         if (isCrossRendererTransition) {
           previousSceneRef.current = null;
           setIsTransitioning(false);
-          if (previousSceneWebGLAssetsRef.current && prevSceneObject?.cleanupWebGL) {
+          if (previousSceneWebGLAssetsRef.current && prevSceneObject?.cleanupWebGL && typeof previousSceneWebGLAssetsRef.current.scene?.dispose === 'function') {
+            console.log(`Cleaning up previous WebGL assets for scene: ${prevSceneObject.id} during cross-renderer transition.`);
             prevSceneObject.cleanupWebGL(previousSceneWebGLAssetsRef.current);
           }
           previousSceneWebGLAssetsRef.current = null;
-        } else if (prevSceneObject.rendererType !== 'webgl' && currentScene.rendererType !== 'webgl') {
+        } else if (prevSceneObject.rendererType !== 'webgl' && currentScene.rendererType !== 'webgl') { // Both are 2D
           previousSceneRef.current = prevSceneObject;
           setIsTransitioning(true);
           transitionStartTimeRef.current = performance.now();
-        } else {
-          previousSceneRef.current = null;
+        } else { // Both are WebGL (or other non-2D transition case, treat as instant for now)
+          previousSceneRef.current = null; // No 2D transition for WebGL scenes yet
           setIsTransitioning(false); 
+           if (previousSceneWebGLAssetsRef.current && prevSceneObject?.cleanupWebGL && typeof previousSceneWebGLAssetsRef.current.scene?.dispose === 'function') {
+             console.log(`Cleaning up previous WebGL assets for scene: ${prevSceneObject.id} during same-renderer or non-2D transition.`);
+            prevSceneObject.cleanupWebGL(previousSceneWebGLAssetsRef.current);
+          }
+          previousSceneWebGLAssetsRef.current = null;
         }
       } else {
         previousSceneRef.current = null;
         setIsTransitioning(false);
-         if (previousSceneWebGLAssetsRef.current && prevSceneObject?.cleanupWebGL) {
-            prevSceneObject.cleanupWebGL(previousSceneWebGLAssetsRef.current);
-          }
+         if (previousSceneWebGLAssetsRef.current && prevSceneObject?.cleanupWebGL && typeof previousSceneWebGLAssetsRef.current.scene?.dispose === 'function') {
+           console.log(`Cleaning up previous WebGL assets for scene: ${prevSceneObject?.id} as transitions are inactive or no prevSceneObject.`);
+           prevSceneObject.cleanupWebGL(previousSceneWebGLAssetsRef.current);
+         }
         previousSceneWebGLAssetsRef.current = null;
       }
       lastSceneIdRef.current = settings.currentSceneId;
@@ -114,66 +122,52 @@ export function VisualizerView() {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    // Cleanup logic for the *current* scene's WebGL assets if it's being replaced by a non-WebGL scene
-    // or if the current scene changes *from* a WebGL scene to another scene.
-    if (currentSceneWebGLAssetsRef.current && currentScene?.id !== lastSceneIdRef.current && scenes.find(s => s.id === lastSceneIdRef.current)?.rendererType === 'webgl') {
-      const oldSceneDef = scenes.find(s => s.id === lastSceneIdRef.current);
-      if (oldSceneDef?.cleanupWebGL) {
-        console.log(`Cleaning up WebGL assets for old scene: ${oldSceneDef.id}`);
-        oldSceneDef.cleanupWebGL(currentSceneWebGLAssetsRef.current);
+    // Cleanup logic if the current scene is WebGL and is being replaced, or if the canvas is re-keyed
+    if (currentSceneWebGLAssetsRef.current) {
+      const sceneDefForCleanup = scenes.find(s => s.id === (currentScene?.id || lastSceneIdRef.current)); // Try current or last ID
+      if (sceneDefForCleanup?.cleanupWebGL && typeof currentSceneWebGLAssetsRef.current.scene?.dispose === 'function' ) {
+        console.log(`Cleaning up WebGL assets for scene: ${sceneDefForCleanup.id} (WebGL init effect start)`);
+        sceneDefForCleanup.cleanupWebGL(currentSceneWebGLAssetsRef.current);
       }
       currentSceneWebGLAssetsRef.current = null;
     }
     
-    // Dispose main WebGL renderer if the new scene isn't WebGL
-    if (webGLRendererRef.current && ((currentScene?.rendererType || '2d') !== 'webgl' || !currentScene) ) {
-      console.log("Disposing main WebGL renderer and scene refs as scene is not WebGL or not current.");
+    // Dispose main WebGL renderer if it exists
+    if (webGLRendererRef.current) {
+      console.log("Disposing existing main WebGL renderer (WebGL init effect start).");
       webGLRendererRef.current.dispose();
       webGLRendererRef.current = null;
       webGLSceneRef.current = null;
       webGLCameraRef.current = null;
-      currentSceneWebGLAssetsRef.current = null; 
     }
 
 
     if (currentScene && (currentScene.rendererType === 'webgl') && currentScene.initWebGL) {
-      // Only initialize if it's a new WebGL scene or if the canvas was re-keyed
-      if (!webGLRendererRef.current || currentScene.id !== lastSceneIdRef.current || !currentSceneWebGLAssetsRef.current) {
-          console.log(`Initializing WebGL for scene: ${currentScene.id} on canvas (key: ${canvasKey})`);
-        try {
-          // Ensure previous scene's WebGL assets are cleaned up before initializing new ones
-          if (currentSceneWebGLAssetsRef.current && scenes.find(s => s.id === lastSceneIdRef.current)?.cleanupWebGL) {
-            scenes.find(s => s.id === lastSceneIdRef.current)!.cleanupWebGL(currentSceneWebGLAssetsRef.current);
-          }
-          currentSceneWebGLAssetsRef.current = null; // Clear old assets
-
-          const { renderer, scene, camera, ...assets } = currentScene.initWebGL(canvas, settings);
-          webGLRendererRef.current = renderer;
-          webGLSceneRef.current = scene;
-          webGLCameraRef.current = camera;
-          currentSceneWebGLAssetsRef.current = assets; 
-        } catch (e) {
-          console.error("Error during WebGL initialization for scene:", currentScene.id, e);
-          setLastError(e instanceof Error ? e.message : String(e));
-          if (webGLRendererRef.current) {
-            webGLRendererRef.current.dispose();
-            webGLRendererRef.current = null;
-          }
+      console.log(`Initializing WebGL for scene: ${currentScene.id} on canvas (key: ${canvasKey})`);
+      try {
+        const { renderer, scene, camera, ...assets } = currentScene.initWebGL(canvas, settings);
+        webGLRendererRef.current = renderer;
+        webGLSceneRef.current = scene;
+        webGLCameraRef.current = camera;
+        currentSceneWebGLAssetsRef.current = assets; 
+      } catch (e) {
+        console.error("Error during WebGL initialization for scene:", currentScene.id, e);
+        setLastError(e instanceof Error ? e.message : String(e));
+        if (webGLRendererRef.current) {
+          webGLRendererRef.current.dispose();
+          webGLRendererRef.current = null;
         }
       }
     }
 
     return () => {
-      // This cleanup runs if currentScene, settings, scenes, or canvasKey change, OR if the component unmounts.
-      // It's critical if the scene was WebGL and is now changing OR if canvas is re-keyed.
-      if ((currentScene?.rendererType === 'webgl') && currentSceneWebGLAssetsRef.current && currentScene?.cleanupWebGL) {
-        console.log(`Cleaning up WebGL assets for scene: ${currentScene.id} due to effect re-run or unmount (WebGL init effect)`);
+      if (currentSceneWebGLAssetsRef.current && currentScene?.cleanupWebGL && typeof currentSceneWebGLAssetsRef.current.scene?.dispose === 'function') {
+        console.log(`Cleaning up WebGL assets for scene: ${currentScene.id} due to effect re-run or unmount (WebGL init effect cleanup)`);
         currentScene.cleanupWebGL(currentSceneWebGLAssetsRef.current);
         currentSceneWebGLAssetsRef.current = null;
       }
-      // General renderer disposal if this effect cleans up and no new WebGL scene is set by the next render
-      if (webGLRendererRef.current && ((currentScene?.rendererType || '2d') !== 'webgl' || !currentScene)) {
-        console.log("Disposing main WebGL renderer on effect cleanup (VisualizerView - WebGL init effect).");
+      if (webGLRendererRef.current) {
+        console.log("Disposing main WebGL renderer on effect cleanup (VisualizerView - WebGL init effect cleanup).");
         webGLRendererRef.current.dispose();
         webGLRendererRef.current = null;
         webGLSceneRef.current = null;
@@ -220,7 +214,7 @@ export function VisualizerView() {
         }
         lastLoggedFpsRef.current = fps;
       }
-    }, 5000); // Log FPS every 5 seconds
+    }, 5000); 
     return () => {
       if (fpsLogIntervalRef.current) clearInterval(fpsLogIntervalRef.current);
     };
@@ -476,4 +470,3 @@ export function VisualizerView() {
   );
 }
 
-    
