@@ -2,7 +2,7 @@
 "use client";
 
 import { useEffect, useRef, useCallback, useState } from 'react';
-import type { SceneDefinition } from '@/types';
+import type { SceneDefinition, Settings } from '@/types';
 import { useSettings } from '@/providers/SettingsProvider';
 import { useAudioData } from '@/providers/AudioDataProvider';
 import { useScene } from '@/providers/SceneProvider';
@@ -41,7 +41,8 @@ export function VisualizerView() {
   const lastFrameTimeRef = useRef(performance.now());
   const frameCountRef = useRef(0);
   const [fps, setFps] = useState(0);
-
+  const lastLoggedFpsRef = useRef<number>(0);
+  const fpsDropThreshold = 10; // Warn if FPS drops by this much
 
   // Effect to handle scene transitions
   useEffect(() => {
@@ -81,7 +82,6 @@ export function VisualizerView() {
     }
   }, [settings.enableAiOverlay, settings.aiGeneratedOverlayUri]);
 
-
   const updateFps = useCallback(() => {
     const now = performance.now();
     const delta = now - lastFrameTimeRef.current;
@@ -92,6 +92,24 @@ export function VisualizerView() {
       lastFrameTimeRef.current = now;
     }
   }, []);
+
+  // Periodic FPS logging
+  useEffect(() => {
+    const fpsLogInterval = setInterval(() => {
+      if (!settings.panicMode && fps > 0) { // Only log if FPS is calculated and not in panic
+        console.log(`[Performance Monitor] Current FPS: ${fps}`);
+        if (lastLoggedFpsRef.current > 0 && (lastLoggedFpsRef.current - fps > fpsDropThreshold)) {
+          console.warn(`[Performance Monitor] Significant FPS drop detected! From ~${lastLoggedFpsRef.current} to ${fps}`);
+        }
+        lastLoggedFpsRef.current = fps;
+      }
+    }, 5000); // Log every 5 seconds
+
+    return () => {
+      clearInterval(fpsLogInterval);
+    };
+  }, [fps, settings.panicMode, fpsDropThreshold]);
+
 
   const drawPrimarySceneContent = useCallback((ctx: CanvasRenderingContext2D) => {
     if (isTransitioning && previousSceneRef.current && currentScene) {
@@ -136,10 +154,10 @@ export function VisualizerView() {
       ctx.globalAlpha = originalAlpha;
       ctx.globalCompositeOperation = originalCompositeOperation;
     }
-  }, [settings.enableAiOverlay, settings.aiGeneratedOverlayUri, settings.aiOverlayOpacity, settings.aiOverlayBlendMode, aiOverlayImageRef]);
+  }, [settings.enableAiOverlay, settings.aiOverlayOpacity, settings.aiOverlayBlendMode]);
 
   const drawDebugInfo = useCallback((ctx: CanvasRenderingContext2D) => {
-    ctx.font = '12px var(--font-geist-mono)';
+    ctx.font = '12px var(--font-geist-mono, monospace)'; // Added monospace fallback
     ctx.fillStyle = 'hsl(var(--foreground-hsl))';
     ctx.textAlign = 'left';
     ctx.fillText(`FPS: ${fps}`, 10, 20);
@@ -178,12 +196,13 @@ export function VisualizerView() {
   const drawErrorState = useCallback((ctx: CanvasRenderingContext2D) => {
     ctx.fillStyle = 'hsl(var(--background-hsl))';
     ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-    ctx.font = '14px var(--font-geist-sans)';
+    ctx.font = '14px var(--font-poppins, sans-serif)'; // Added sans-serif fallback
 
-    let errorColor = 'red'; // Default fallback
-    if (canvasRef.current) {
-        const computedStyle = getComputedStyle(canvasRef.current);
-        errorColor = computedStyle.getPropertyValue('--destructive').trim() || 'red';
+    let errorColor = 'red'; 
+    const computedStyle = getComputedStyle(ctx.canvas); // Use ctx.canvas
+    const destructiveColor = computedStyle.getPropertyValue('--destructive').trim();
+    if (destructiveColor) {
+        errorColor = destructiveColor;
     }
     ctx.fillStyle = errorColor;
 
@@ -213,14 +232,17 @@ export function VisualizerView() {
 
   const drawSceneAndOverlays = useCallback((ctx: CanvasRenderingContext2D) => {
     drawPrimarySceneContent(ctx);
-    if (lastError) return; // Don't draw overlays or debug info if there's a scene error
+    if (lastError) return; 
     drawAiGeneratedOverlay(ctx);
-    drawDebugInfo(ctx);
-  }, [drawPrimarySceneContent, drawAiGeneratedOverlay, drawDebugInfo, lastError]);
+    // Only draw debug info if not in panic mode and if there's no error
+    if (!settings.panicMode && !lastError) {
+      drawDebugInfo(ctx);
+    }
+  }, [drawPrimarySceneContent, drawAiGeneratedOverlay, drawDebugInfo, lastError, settings.panicMode]);
 
 
   const drawLoop = useCallback(() => {
-    animationFrameIdRef.current = null; // Clear ref for next request
+    animationFrameIdRef.current = null; 
 
     const canvas = canvasRef.current;
     if (!canvas) {
@@ -246,9 +268,9 @@ export function VisualizerView() {
       } else if (settings.panicMode) {
         ctx.fillStyle = 'black';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
-        if (lastError) setLastError(null); // Clear error if panic mode is activated
+        if (lastError) setLastError(null); 
       } else {
-         if (lastError) setLastError(null); // Clear previous error if now drawing successfully
+         if (lastError) setLastError(null); 
         drawSceneAndOverlays(ctx);
       }
 
@@ -272,11 +294,8 @@ export function VisualizerView() {
         const resizeObserver = new ResizeObserver(() => {
           canvas.width = parent.clientWidth;
           canvas.height = parent.clientHeight;
-          // No need to explicitly re-trigger error display on resize here,
-          // the drawLoop will handle it on its next frame.
         });
         resizeObserver.observe(parent);
-        // Initial size set
         canvas.width = parent.clientWidth;
         canvas.height = parent.clientHeight;
         return () => resizeObserver.disconnect();
@@ -303,3 +322,4 @@ export function VisualizerView() {
     </div>
   );
 }
+
