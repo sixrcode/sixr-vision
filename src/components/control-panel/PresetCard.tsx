@@ -16,14 +16,19 @@ type PresetCardProps = {
 
 const PresetCard = React.forwardRef<HTMLDivElement, PresetCardProps>(
   ({ scene, isActive, onClick, onKeyDown, className, ...props }, ref) => {
+    const cardStyle: React.CSSProperties = {
+      backgroundColor: isActive ? 'hsl(var(--accent-hsl))' : 'hsl(var(--card-hsl))',
+    };
+
     return (
       <Card
         ref={ref}
+        style={cardStyle}
         className={cn(
           "w-full h-auto shrink-0 cursor-pointer transition-all hover:shadow-lg",
           isActive
-            ? "border-primary ring-2 ring-primary bg-accent opacity-100" // Active: Orange-Yellow bg, Orange-Red border/ring
-            : "border-border bg-card", // Inactive: Dark Purple bg, Lighter Purple border. Fully opaque.
+            ? "border-primary ring-2 ring-primary text-accent-foreground opacity-100" // text-accent-foreground for active card text
+            : "border-border text-card-foreground", // text-card-foreground for inactive card text
           className
         )}
         onClick={onClick}
@@ -45,7 +50,10 @@ const PresetCard = React.forwardRef<HTMLDivElement, PresetCardProps>(
             />
           ) : (
             <div className="w-full h-[60px] flex items-center justify-center bg-muted rounded-md p-1">
-              <span className="text-xs text-muted-foreground text-center break-words">
+              <span className={cn(
+                "text-xs text-center break-words",
+                isActive ? "text-accent-foreground" : "text-muted-foreground"
+              )}>
                 {scene.name}
               </span>
             </div>
