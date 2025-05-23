@@ -24,7 +24,7 @@ export function VisualizerView() {
   const overlayCanvasRef = useRef<HTMLCanvasElement>(null);
 
   const { settings } = useSettings();
-  const settingsRef = useRef(settings);
+  const settingsRef = useRef(settings); // Use a ref to ensure stable callbacks relying on settings
   useEffect(() => {
     settingsRef.current = settings;
   }, [settings]);
@@ -35,15 +35,18 @@ export function VisualizerView() {
     audioDataRef.current = audioData;
   }, [audioData]);
 
-  const { scenes, currentScene } = useScene(); // Use currentScene from context
+  const { scenes, currentScene } = useScene();
   const animationFrameIdRef = useRef<number | null>(null);
   const [webcamElement, setWebcamElement] = useState<HTMLVideoElement | null>(null);
   const [lastError, setLastError] = useState<string | null>(null);
   const aiOverlayImageRef = useRef<HTMLImageElement | null>(null);
 
+  // WebGL specific refs
   const webGLRendererRef = useRef<THREE.WebGLRenderer | null>(null);
   const currentSceneWebGLAssetsRef = useRef<(Omit<WebGLSceneAssets, 'renderer'> & { sceneId?: string }) | null>(null);
   const previousSceneWebGLAssetsRef = useRef<(Omit<WebGLSceneAssets, 'renderer'> & { sceneId?: string }) | null>(null);
+  const previousScene2DRef = useRef<SceneDefinition | null>(null);
+
 
   const [isTransitioning2D, setIsTransitioning2D] = useState(false);
   const transition2DStartTimeRef = useRef<number>(0);
@@ -60,24 +63,36 @@ export function VisualizerView() {
   // Effect to manage canvasKey for re-mounting on renderer type switch
   useEffect(() => {
     const activeSceneRendererType = currentScene?.rendererType || '2d';
+    console.log(`[VisualizerView CanvasKey Effect Check] currentScene: ${currentScene?.id}, currentRendererType: ${activeSceneRendererType}, prevRendererType: ${prevRendererTypeRef.current}`);
 
     if (prevRendererTypeRef.current !== undefined && prevRendererTypeRef.current !== activeSceneRendererType) {
       console.log(`[VisualizerView CanvasKey Effect] Renderer type changing from ${prevRendererTypeRef.current} to ${activeSceneRendererType}. Remounting canvases by incrementing canvasKey.`);
       setCanvasKey(key => key + 1);
     }
-    if(currentScene){ // Initialize prevRendererTypeRef on first meaningful render with a scene
+    if(currentScene){
         prevRendererTypeRef.current = activeSceneRendererType;
+    } else if (prevRendererTypeRef.current !== undefined && !currentScene) {
+        // If currentScene becomes undefined (e.g., no scene selected),
+        // and previous was WebGL, we might need to remount to ensure canvas is clean for potential 2D fallback.
+        // Or, if previous was 2D, just keep canvas as is. For now, assume a switch to '2d' type.
+        if (prevRendererTypeRef.current === 'webgl') {
+            console.log(`[VisualizerView CanvasKey Effect] Scene became undefined, previous was WebGL. Remounting canvas.`);
+            setCanvasKey(key => key + 1);
+        }
+        prevRendererTypeRef.current = '2d'; // Default to 2d if no scene
+    } else if (prevRendererTypeRef.current === undefined && !currentScene) {
+        prevRendererTypeRef.current = '2d'; // Initial default
     }
   }, [currentScene]);
 
 
   // Effect for WebGL initialization and cleanup
   useEffect(() => {
+    console.log(`[WebGL/CanvasKey Effect] Running. CurrentSceneId: ${currentScene?.id}, RendererType: ${currentScene?.rendererType}, CanvasKey: ${canvasKey}, Webcam: ${webcamElement ? 'Available' : 'Not Available'}`);
     setLastError(null); // Clear previous errors on scene/canvas/webcam change
-    const canvas = canvasRef.current;
-    const sceneDefinition = currentScene; // Use scene from context
 
-    console.log(`[WebGL/CanvasKey Effect] Running. Scene: ${sceneDefinition?.id}, RendererType: ${sceneDefinition?.rendererType}, CanvasKey: ${canvasKey}, Webcam: ${webcamElement ? 'Available' : 'Not Available'}`);
+    const canvas = canvasRef.current;
+    const sceneDefinition = currentScene;
 
     if (!canvas) {
       console.log("[WebGL/CanvasKey Effect] Main canvas missing, ensuring cleanup.");
@@ -95,10 +110,10 @@ export function VisualizerView() {
       }
       currentSceneWebGLAssetsRef.current = null;
       if (previousSceneWebGLAssetsRef.current?.sceneId) {
-        const prevSceneToClean = scenes.find(s => s.id === previousSceneWebGLAssetsRef.current?.sceneId);
-         if (prevSceneToClean?.cleanupWebGL) {
-          console.log(`[WebGL/CanvasKey Effect] Cleaning up previous (transition) WebGL scene assets ${prevSceneToClean.id}.`);
-          prevSceneToClean.cleanupWebGL(previousSceneWebGLAssetsRef.current as Omit<WebGLSceneAssets, 'renderer'>);
+        const prevTransitionSceneToClean = scenes.find(s => s.id === previousSceneWebGLAssetsRef.current?.sceneId);
+         if (prevTransitionSceneToClean?.cleanupWebGL) {
+          console.log(`[WebGL/CanvasKey Effect] Cleaning up previous (transition) WebGL scene assets ${prevTransitionSceneToClean.id}.`);
+          prevTransitionSceneToClean.cleanupWebGL(previousSceneWebGLAssetsRef.current as Omit<WebGLSceneAssets, 'renderer'>);
         }
       }
       previousSceneWebGLAssetsRef.current = null;
@@ -106,6 +121,16 @@ export function VisualizerView() {
     }
 
     if (sceneDefinition?.rendererType === 'webgl') {
+      // Ensure previous WebGL scene assets are cleaned up IF IT'S A DIFFERENT SCENE
+      if (currentSceneWebGLAssetsRef.current?.sceneId && currentSceneWebGLAssetsRef.current.sceneId !== sceneDefinition.id) {
+        const prevSceneDefToClean = scenes.find(s => s.id === currentSceneWebGLAssetsRef.current?.sceneId);
+        if (prevSceneDefToClean?.cleanupWebGL) {
+          console.log(`[WebGL/CanvasKey Effect] Cleaning up WebGL assets for previous scene: ${prevSceneDefToClean.id}`);
+          prevSceneDefToClean.cleanupWebGL(currentSceneWebGLAssetsRef.current as Omit<WebGLSceneAssets, 'renderer'>);
+        }
+        currentSceneWebGLAssetsRef.current = null; // Nullify so new scene assets will be created
+      }
+
       if (!webGLRendererRef.current) {
         console.log("[WebGL/CanvasKey Effect] Creating new WebGLRenderer instance.");
         try {
@@ -124,38 +149,32 @@ export function VisualizerView() {
             return;
         }
       } else {
-        // Ensure existing renderer is using the current canvas if canvasKey changed
+        // Renderer exists, ensure it's using the current canvas (important if canvasKey changed)
         if (webGLRendererRef.current.domElement !== canvas) {
-            console.log("[WebGL/CanvasKey Effect] WebGLRenderer exists, but canvas changed. Re-attaching renderer.");
-            // This scenario is complex; ideally, dispose old & create new or re-init renderer with new canvas.
-            // For simplicity of this step, we assume if canvasKey changes, a new renderer is made if one wasn't already.
-            // If renderer exists and canvas changes, we might need to dispose/recreate it.
-            // The logic above already handles creating if it's null.
-            // If it's not null but the canvas is different, it implies the old one should have been disposed.
+          console.warn("[WebGL/CanvasKey Effect] WebGLRenderer exists, but canvas DOM element changed. Disposing old, creating new.");
+          webGLRendererRef.current.dispose();
+          try {
+            webGLRendererRef.current = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: false, powerPreference: 'high-performance' });
+          } catch (e) {
+            console.error("[WebGL/CanvasKey Effect] Error re-creating WebGLRenderer for new canvas:", e);
+            setLastError(e instanceof Error ? e.message : String(e));
+            webGLRendererRef.current = null;
+            return;
+          }
         }
         webGLRendererRef.current.setSize(canvas.width, canvas.height); // Ensure size is up-to-date
         webGLRendererRef.current.setPixelRatio(Math.min(window.devicePixelRatio, 1.2));
       }
 
-
-      // Cleanup previous scene's WebGL assets if different
-      if (currentSceneWebGLAssetsRef.current?.sceneId && currentSceneWebGLAssetsRef.current.sceneId !== sceneDefinition.id) {
-        const prevSceneDefToClean = scenes.find(s => s.id === currentSceneWebGLAssetsRef.current?.sceneId);
-        if (prevSceneDefToClean?.cleanupWebGL) {
-          console.log(`[WebGL/CanvasKey Effect] Cleaning up previous WebGL scene assets: ${prevSceneDefToClean.id}`);
-          prevSceneDefToClean.cleanupWebGL(currentSceneWebGLAssetsRef.current as Omit<WebGLSceneAssets, 'renderer'>);
-        }
-        currentSceneWebGLAssetsRef.current = null;
-      }
-      
-      if (sceneDefinition.initWebGL && 
+      // Initialize scene-specific WebGL assets if they don't exist for the current scene or if webcam availability changed (for scenes depending on it)
+      if (sceneDefinition.initWebGL &&
         (!currentSceneWebGLAssetsRef.current || currentSceneWebGLAssetsRef.current.sceneId !== sceneDefinition.id ||
-         (sceneDefinition.id === 'mirror_silhouette' && currentSceneWebGLAssetsRef.current.webcamElement !== webcamElement))
+         (currentSceneWebGLAssetsRef.current.webcamElement !== webcamElement)) // Re-init if webcam status changed
       ) {
         try {
-          console.log(`[WebGL/CanvasKey Effect] Calling initWebGL for ${sceneDefinition.id} (Webcam: ${webcamElement ? 'Passed' : 'Not Passed'})`);
-          const initializedAssets = sceneDefinition.initWebGL(canvas, settingsRef.current, webcamElement);
-          currentSceneWebGLAssetsRef.current = { ...initializedAssets, sceneId: sceneDefinition.id, webcamElement };
+          console.log(`[WebGL/CanvasKey Effect] Calling initWebGL for ${sceneDefinition.id} (WebcamElement: ${webcamElement ? 'Passed' : 'Not Passed'})`);
+          const initializedAssets = sceneDefinition.initWebGL(canvas, settingsRef.current, webcamElement); // Pass webcamElement
+          currentSceneWebGLAssetsRef.current = { ...initializedAssets, sceneId: sceneDefinition.id, webcamElement }; // Store webcamElement with assets
           console.log(`[WebGL/CanvasKey Effect] initWebGL for ${sceneDefinition.id} successful.`);
         } catch (e) {
           console.error(`[WebGL/CanvasKey Effect] Error during WebGL initialization for scene ${sceneDefinition.id}:`, e);
@@ -178,17 +197,26 @@ export function VisualizerView() {
         }
         currentSceneWebGLAssetsRef.current = null;
       }
-      if (previousSceneWebGLAssetsRef.current?.sceneId) {
-         const prevSceneToClean = scenes.find(s => s.id === previousSceneWebGLAssetsRef.current?.sceneId);
-         if (prevSceneToClean?.cleanupWebGL) {
-          console.log(`[WebGL/CanvasKey Effect] Cleaning up previous (transition) WebGL scene assets ${prevSceneToClean.id}.`);
-          prevSceneToClean.cleanupWebGL(previousSceneWebGLAssetsRef.current as Omit<WebGLSceneAssets, 'renderer'>);
+       if (previousSceneWebGLAssetsRef.current?.sceneId) { // Also clean up any lingering previous transition WebGL assets
+         const prevTransitionSceneToClean = scenes.find(s => s.id === previousSceneWebGLAssetsRef.current?.sceneId);
+         if (prevTransitionSceneToClean?.cleanupWebGL) {
+          console.log(`[WebGL/CanvasKey Effect] Cleaning up previous (transition) WebGL scene assets ${prevTransitionSceneToClean.id}.`);
+          prevTransitionSceneToClean.cleanupWebGL(previousSceneWebGLAssetsRef.current as Omit<WebGLSceneAssets, 'renderer'>);
         }
          previousSceneWebGLAssetsRef.current = null;
       }
     }
 
-  }, [currentScene, canvasKey, webcamElement, scenes]); // settingsRef removed to avoid re-init on all settings change
+    // Cleanup function for the effect
+    return () => {
+      // This cleanup will run when currentScene, canvasKey, or webcamElement changes, OR on unmount.
+      // We want to be careful not to dispose of the renderer if only the scene definition changes but canvasKey is the same,
+      // unless the new scene is 2D.
+      console.log(`[WebGL/CanvasKey Effect - CLEANUP] Effect for scene '${sceneDefinition?.id}' (key: ${canvasKey}) is cleaning up.`);
+      // Specific cleanup for the outgoing scene's assets (not the shared renderer) happens above.
+      // The shared renderer is disposed only if switching to 2D or if the canvas itself is unmounted/re-keyed.
+    };
+  }, [currentScene, canvasKey, webcamElement, scenes]); // Added scenes as a dependency as it's used. settingsRef removed to avoid re-init on all settings change
 
 
   useEffect(() => {
@@ -203,15 +231,15 @@ export function VisualizerView() {
     }
   }, [settingsRef.current.enableAiOverlay, settingsRef.current.aiGeneratedOverlayUri]);
 
-
   const get2DContext = useCallback((): CanvasRenderingContext2D | null => {
     const canvas = canvasRef.current;
     if (!canvas) return null;
-    // Check intended renderer type based on settings, not just currentScene state
+
+    // Check the *intended* scene type based on settings to prevent conflicts
     const intendedSceneDef = scenes.find(s => s.id === settingsRef.current.currentSceneId);
     if (intendedSceneDef?.rendererType === 'webgl') {
-      // console.warn("[VisualizerView get2DContext] Attempted to get 2D context for a WebGL-intended canvas. Aborting.");
-      return null;
+        // console.warn("[VisualizerView get2DContext] Attempted to get 2D context for a WebGL-intended canvas. Aborting.");
+        return null;
     }
     try {
       return canvas.getContext('2d');
@@ -219,7 +247,7 @@ export function VisualizerView() {
       console.error("VisualizerView: Error getting 2D context for main canvas:", e);
       return null;
     }
-  }, [scenes, settingsRef]); // settingsRef is stable
+  }, [scenes]); // settingsRef removed to use its .current value which is stable within useCallback
 
   const getOverlay2DContext = useCallback((): CanvasRenderingContext2D | null => {
     const canvas = overlayCanvasRef.current;
@@ -261,6 +289,7 @@ export function VisualizerView() {
     };
   }, [fps]);
 
+
   const drawPrimarySceneContent = useCallback((
     ctx: CanvasRenderingContext2D,
     sceneToDraw: SceneDefinition,
@@ -274,7 +303,7 @@ export function VisualizerView() {
       sceneToDraw.draw(ctx, currentAudioData, currentSettings, webcamElement);
       ctx.restore();
     }
-  }, [webcamElement, settingsRef, audioDataRef]);
+  }, [webcamElement]); // settingsRef and audioDataRef are stable refs
 
   const drawAiGeneratedOverlay2D = useCallback((overlayCtx: CanvasRenderingContext2D | null) => {
     const currentSettings = settingsRef.current;
@@ -288,9 +317,9 @@ export function VisualizerView() {
       overlayCtx.globalAlpha = originalAlpha;
       overlayCtx.globalCompositeOperation = originalCompositeOperation;
     }
-  }, [settingsRef]);
+  }, []); // settingsRef is a stable ref
 
-  const drawProceduralVinesOnOverlay = useCallback((overlayCtx: CanvasRenderingContext2D, vines?: ProceduralVine[]) => {
+  const drawProceduralVinesOnOverlay = useCallback((overlayCtx: CanvasRenderingContext2D | null, vines?: ProceduralVine[]) => {
     if (!overlayCtx || !vines || vines.length === 0) return;
 
     vines.forEach(vine => {
@@ -301,7 +330,7 @@ export function VisualizerView() {
       for (let i = 1; i < vine.points.length; i++) {
         overlayCtx.lineTo(vine.points[i].x, vine.points[i].y);
       }
-      
+
       let strokeColor = vine.color;
       if (strokeColor.startsWith('hsl(') && !strokeColor.startsWith('hsla(')) {
         strokeColor = strokeColor.replace('hsl(', `hsla(`).replace(')', `, ${vine.opacity.toFixed(2)})`);
@@ -311,10 +340,10 @@ export function VisualizerView() {
         const alphaMatch = strokeColor.match(/,(?:\s*([0-9.]+)\))/);
         if (alphaMatch && alphaMatch[1]) {
             strokeColor = strokeColor.replace(alphaMatch[0], `, ${vine.opacity.toFixed(2)})`);
-        } else { 
+        } else {
             strokeColor = strokeColor.slice(0, -1) + `, ${vine.opacity.toFixed(2)})`;
         }
-      } else { 
+      } else {
         const originalGlobalAlpha = overlayCtx.globalAlpha;
         overlayCtx.globalAlpha = vine.opacity;
         overlayCtx.strokeStyle = strokeColor;
@@ -322,10 +351,10 @@ export function VisualizerView() {
         overlayCtx.lineCap = 'round';
         overlayCtx.lineJoin = 'round';
         overlayCtx.stroke();
-        overlayCtx.globalAlpha = originalGlobalAlpha; 
-        return; 
+        overlayCtx.globalAlpha = originalGlobalAlpha;
+        return;
       }
-      
+
       overlayCtx.strokeStyle = strokeColor;
       overlayCtx.lineWidth = Math.max(0.5, vine.thickness);
       overlayCtx.lineCap = 'round';
@@ -334,12 +363,13 @@ export function VisualizerView() {
     });
   }, []);
 
+
   const drawDebugInfo = useCallback((overlayCtx: CanvasRenderingContext2D | null) => {
     if (!overlayCtx) return;
     const currentAudioData = audioDataRef.current || INITIAL_AUDIO_DATA;
-    const spectrum = currentAudioData.spectrum || INITIAL_AUDIO_DATA.spectrum;
+    const spectrumForLog = currentAudioData.spectrum || INITIAL_AUDIO_DATA.spectrum;
     const canvas = overlayCtx.canvas;
-    overlayCtx.font = `12px ${SBNF_BODY_FONT_FAMILY}`;
+    overlayCtx.font = `12px ${SBNF_BODY_FONT_FAMILY}`; // Using SBNF body font
     const currentFgColor = getComputedStyle(document.documentElement).getPropertyValue('--foreground').trim() || 'white';
     overlayCtx.fillStyle = currentFgColor;
 
@@ -349,8 +379,6 @@ export function VisualizerView() {
     overlayCtx.textAlign = 'right';
     const lineSpacing = 14;
     let currentY = 20;
-    
-    // console.log(`VisualizerView - AudioData: RMS: ${currentAudioData.rms.toFixed(3)} Beat: ${currentAudioData.beat} Bass: ${currentAudioData.bassEnergy.toFixed(3)} Mid: ${currentAudioData.midEnergy.toFixed(3)} Treble: ${currentAudioData.trebleEnergy.toFixed(3)} BPM: ${currentAudioData.bpm} Spectrum Sum: ${currentAudioData.spectrum.reduce((s,v)=>s+v,0)} First 5 bins: ${Array.from(currentAudioData.spectrum.slice(0,5))}`);
 
     overlayCtx.fillText(`RMS: ${currentAudioData.rms.toFixed(3)}`, canvas.width - 10, currentY); currentY += lineSpacing;
     overlayCtx.fillText(`Beat: ${currentAudioData.beat ? 'YES' : 'NO'}`, canvas.width - 10, currentY); currentY += lineSpacing;
@@ -362,8 +390,7 @@ export function VisualizerView() {
         currentY += lineSpacing;
         overlayCtx.fillText(`Scene: ${currentScene.id} (${currentScene.rendererType})`, canvas.width - 10, currentY);
     }
-
-  }, [fps, currentScene, audioDataRef]);
+  }, [fps, currentScene]); // audioDataRef is stable
 
   const drawErrorState = useCallback((targetCtx: CanvasRenderingContext2D | null) => {
     if (!targetCtx || !lastError) return;
@@ -384,50 +411,50 @@ export function VisualizerView() {
     });
   }, [lastError]);
 
-  // This drawSceneAndOverlays function is the heart of the rendering logic.
-  // It decides whether to use 2D or WebGL rendering based on the currentScene.
+
   const drawSceneAndOverlays = useCallback(() => {
     const mainCanvas = canvasRef.current;
     const overlayCv = overlayCanvasRef.current;
-    const activeSceneDefinition = currentScene; // Use scene from context
-    const currentSettingsVal = settingsRef.current;
-    const currentAudioDataVal = audioDataRef.current;
+    const currentSettingsVal = settingsRef.current; // Use from ref for stability in callbacks
+    const currentAudioDataVal = audioDataRef.current; // Use from ref
 
     if (!mainCanvas || !overlayCv) return;
-    
+
     const overlayCtx = getOverlay2DContext();
     if (overlayCtx) {
         overlayCtx.clearRect(0, 0, overlayCv.width, overlayCv.height);
     } else {
-        console.warn("[DrawLoop] Could not get overlay 2D context.");
+        // console.warn("[DrawLoop] Could not get overlay 2D context.");
     }
 
     if (currentSettingsVal.panicMode) {
-      if (lastError && overlayCtx) drawErrorState(overlayCtx); // Draw error on overlay if panic AND error
-      if (webGLRendererRef.current && activeSceneDefinition?.rendererType === 'webgl') {
-        const panicColor = new THREE.Color(0x000000);
-        webGLRendererRef.current.setClearColor(panicColor, 1);
-        webGLRendererRef.current.clear();
-      } else {
-        const mainCtx = get2DContext();
-        if(mainCtx) {
-          mainCtx.fillStyle = 'black';
-          mainCtx.fillRect(0, 0, mainCanvas.width, mainCanvas.height);
+        if (lastError && overlayCtx) drawErrorState(overlayCtx); // Draw error on overlay if panic AND error
+        else if (overlayCtx) overlayCtx.clearRect(0, 0, overlayCv.width, overlayCv.height); // Clear overlay if no error
+
+        if (webGLRendererRef.current) {
+            const panicColor = new THREE.Color(0x000000);
+            webGLRendererRef.current.setClearColor(panicColor, 1);
+            webGLRendererRef.current.clear();
+        } else { // If no WebGL renderer, it implies a 2D path for main or error
+            const mainCtx = get2DContext(); // This will be null if WebGL is intended
+            if (mainCtx) {
+                mainCtx.fillStyle = 'black';
+                mainCtx.fillRect(0, 0, mainCanvas.width, mainCanvas.height);
+            }
         }
-      }
-      return;
+        return;
     }
 
     if (lastError) {
-      if (overlayCtx) drawErrorState(overlayCtx);
-      // Main canvas clear for error state (important to prevent context conflicts on next scene)
-      if (activeSceneDefinition?.rendererType === 'webgl' && webGLRendererRef.current) {
+      if (overlayCtx) drawErrorState(overlayCtx); // Draw error on overlay canvas
+      // Attempt to clear main canvas safely
+      if (webGLRendererRef.current && currentScene?.rendererType === 'webgl') {
         const bgColorString = getComputedStyle(document.documentElement).getPropertyValue('--background-hsl').trim();
         const bgColorThree = new THREE.Color(bgColorString ? `hsl(${bgColorString})` : '#000000');
         webGLRendererRef.current.setClearColor(bgColorThree, 1);
         webGLRendererRef.current.clear();
-      } else { // Also clear if it was a 2D scene that errored or if no scene type known
-        const mainCtx = get2DContext(); // This get2DContext now checks intended type
+      } else {
+        const mainCtx = get2DContext();
         if (mainCtx) {
           const bgColor = getComputedStyle(document.documentElement).getPropertyValue('--background').trim() || 'black';
           mainCtx.fillStyle = bgColor;
@@ -437,91 +464,103 @@ export function VisualizerView() {
       return;
     }
 
-    // Main scene rendering
-    if (activeSceneDefinition?.rendererType === 'webgl') {
-      if (webGLRendererRef.current && currentSceneWebGLAssetsRef.current?.sceneId === activeSceneDefinition.id && activeSceneDefinition.drawWebGL) {
-        const { scene, camera, ...assets } = currentSceneWebGLAssetsRef.current;
-        if (scene && camera) {
-          activeSceneDefinition.drawWebGL({
-            renderer: webGLRendererRef.current,
-            scene, camera, audioData: currentAudioDataVal, settings: currentSettingsVal,
-            webGLAssets: assets, canvasWidth: mainCanvas.width, canvasHeight: mainCanvas.height, webcamElement
-          });
-          webGLRendererRef.current.render(scene, camera);
-        } else if (overlayCtx) {
-          overlayCtx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--muted-foreground').trim() || 'gray';
-          overlayCtx.textAlign = 'center';
-          overlayCtx.font = `16px ${SBNF_BODY_FONT_FAMILY}`;
-          overlayCtx.fillText(`WebGL scene '${activeSceneDefinition.name}' assets loading...`, mainCanvas.width / 2, mainCanvas.height / 2);
+    // Main scene rendering logic
+    if (currentScene?.rendererType === 'webgl') {
+        if (webGLRendererRef.current && currentSceneWebGLAssetsRef.current?.sceneId === currentScene.id && currentScene.drawWebGL) {
+            const { scene, camera, ...assets } = currentSceneWebGLAssetsRef.current;
+            if (scene && camera) {
+                currentScene.drawWebGL({
+                    renderer: webGLRendererRef.current,
+                    scene, camera, audioData: currentAudioDataVal, settings: currentSettingsVal,
+                    webGLAssets: assets, canvasWidth: mainCanvas.width, canvasHeight: mainCanvas.height, webcamElement
+                });
+                webGLRendererRef.current.render(scene, camera);
+            } else if (overlayCtx) {
+                const bgColor = getComputedStyle(document.documentElement).getPropertyValue('--background').trim() || 'black';
+                const mainCtx = get2DContext(); // Check if main can be 2D for this message
+                if(mainCtx) { // Only draw on main if it's NOT going to be WebGL
+                    mainCtx.fillStyle = bgColor;
+                    mainCtx.fillRect(0, 0, mainCanvas.width, mainCanvas.height);
+                }
+                overlayCtx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--muted-foreground').trim() || 'gray';
+                overlayCtx.textAlign = 'center';
+                overlayCtx.font = `16px ${SBNF_BODY_FONT_FAMILY}`;
+                overlayCtx.fillText(`WebGL scene '${currentScene.name}' assets not ready...`, mainCanvas.width / 2, mainCanvas.height / 2);
+            }
+        } else if (webGLRendererRef.current) { // Renderer exists, but scene assets not ready or mismatched
+            const bgColorString = getComputedStyle(document.documentElement).getPropertyValue('--background-hsl').trim();
+            const bgColorThree = new THREE.Color(bgColorString ? `hsl(${bgColorString})` : '#000000');
+            webGLRendererRef.current.setClearColor(bgColorThree, 1);
+            webGLRendererRef.current.clear();
+            if (overlayCtx) {
+                overlayCtx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--muted-foreground').trim() || 'gray';
+                overlayCtx.textAlign = 'center';
+                overlayCtx.font = `16px ${SBNF_BODY_FONT_FAMILY}`;
+                overlayCtx.fillText(currentScene ? `WebGL scene '${currentScene.name}' loading...` : 'Loading WebGL scene...', mainCanvas.width / 2, mainCanvas.height / 2);
+            }
+        } else if (overlayCtx) { // No WebGL renderer yet, and it's a WebGL scene
+             const bgColor = getComputedStyle(document.documentElement).getPropertyValue('--background').trim() || 'black';
+            const mainCtx = get2DContext();
+            if(mainCtx) {
+                mainCtx.fillStyle = bgColor;
+                mainCtx.fillRect(0, 0, mainCanvas.width, mainCanvas.height);
+            }
+            overlayCtx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--muted-foreground').trim() || 'gray';
+            overlayCtx.textAlign = 'center';
+            overlayCtx.font = `16px ${SBNF_BODY_FONT_FAMILY}`;
+            overlayCtx.fillText('Initializing WebGL renderer...', mainCanvas.width / 2, mainCanvas.height / 2);
         }
-      } else if (webGLRendererRef.current) { // Renderer exists, but scene assets not ready or mismatched
-        const bgColorString = getComputedStyle(document.documentElement).getPropertyValue('--background-hsl').trim();
-        const bgColorThree = new THREE.Color(bgColorString ? `hsl(${bgColorString})` : '#000000');
-        webGLRendererRef.current.setClearColor(bgColorThree, 1);
-        webGLRendererRef.current.clear();
-        if (overlayCtx) {
-          overlayCtx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--muted-foreground').trim() || 'gray';
-          overlayCtx.textAlign = 'center';
-          overlayCtx.font = `16px ${SBNF_BODY_FONT_FAMILY}`;
-          overlayCtx.fillText(activeSceneDefinition ? `WebGL scene '${activeSceneDefinition.name}' loading...` : 'Loading WebGL scene...', mainCanvas.width / 2, mainCanvas.height / 2);
+    } else if (currentScene?.rendererType === '2d' || !currentScene) {
+        const mainCtx = get2DContext();
+        if (mainCtx) {
+            mainCtx.clearRect(0, 0, mainCanvas.width, mainCanvas.height); // Clear before drawing
+            if (currentScene?.draw) {
+                if (isTransitioning2D && previousScene2DRef.current?.draw && currentScene.rendererType === '2d' && currentSettingsVal.sceneTransitionActive) {
+                    const elapsedTime = performance.now() - transition2DStartTimeRef.current;
+                    const progress = Math.min(1, elapsedTime / currentSettingsVal.sceneTransitionDuration);
+                    drawPrimarySceneContent(mainCtx, previousScene2DRef.current, 1 - progress);
+                    drawPrimarySceneContent(mainCtx, currentScene, progress);
+                    if (progress >= 1) setIsTransitioning2D(false);
+                } else {
+                    drawPrimarySceneContent(mainCtx, currentScene);
+                }
+            } else if (overlayCtx) { // Draw placeholder on overlay if mainCtx is for 2D but no draw function
+                const bgColor = getComputedStyle(document.documentElement).getPropertyValue('--background').trim() || 'black';
+                mainCtx.fillStyle = bgColor; // Still clear main canvas
+                mainCtx.fillRect(0, 0, mainCanvas.width, mainCanvas.height);
+
+                overlayCtx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--muted-foreground').trim() || 'gray';
+                overlayCtx.textAlign = 'center';
+                overlayCtx.font = `16px ${SBNF_BODY_FONT_FAMILY}`;
+                overlayCtx.fillText(currentScene ? `Scene '${currentScene.name}' (2D) has no draw function.` : 'No scene selected.', mainCanvas.width / 2, mainCanvas.height / 2);
+            }
+        } else if (overlayCtx && currentScene?.rendererType !== 'webgl') {
+            overlayCtx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--destructive').trim() || 'red';
+            overlayCtx.textAlign = 'center';
+            overlayCtx.font = `16px ${SBNF_BODY_FONT_FAMILY}`;
+            overlayCtx.fillText('Error: Could not get 2D context for main canvas.', mainCanvas.width / 2, mainCanvas.height / 2);
         }
-      }
-    } else if (activeSceneDefinition?.rendererType === '2d' || !activeSceneDefinition) { // 2D scene or no scene selected
-      const mainCtx = get2DContext(); // This will return null if the *intended* scene is WebGL, preventing conflict.
-      if (mainCtx) {
-        mainCtx.clearRect(0, 0, mainCanvas.width, mainCanvas.height);
-        if (activeSceneDefinition?.draw) {
-          // 2D Scene Transition Logic
-          if (isTransitioning2D && previousScene2DRef.current?.draw && activeSceneDefinition.rendererType === '2d' && currentSettingsVal.sceneTransitionActive) {
-            const elapsedTime = performance.now() - transition2DStartTimeRef.current;
-            const progress = Math.min(1, elapsedTime / currentSettingsVal.sceneTransitionDuration);
-            
-            const prevSceneObj = scenes.find(s => s.id === previousScene2DRef.current?.id);
-            if (prevSceneObj?.draw) drawPrimarySceneContent(mainCtx, prevSceneObj, 1 - progress);
-            
-            drawPrimarySceneContent(mainCtx, activeSceneDefinition, progress);
-            if (progress >= 1) setIsTransitioning2D(false);
-          } else {
-            drawPrimarySceneContent(mainCtx, activeSceneDefinition);
-          }
-        } else if (overlayCtx) { // Draw placeholder on overlay if mainCtx is for 2D but no draw function
-          const bgColor = getComputedStyle(document.documentElement).getPropertyValue('--background').trim() || 'black';
-          mainCtx.fillStyle = bgColor; // Still clear main canvas
-          mainCtx.fillRect(0, 0, mainCanvas.width, mainCanvas.height);
-          overlayCtx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--muted-foreground').trim() || 'gray';
-          overlayCtx.textAlign = 'center';
-          overlayCtx.font = `16px ${SBNF_BODY_FONT_FAMILY}`;
-          overlayCtx.fillText(activeSceneDefinition ? `Scene '${activeSceneDefinition.name}' (2D) missing draw function` : 'No scene selected or scene loading...', mainCanvas.width / 2, mainCanvas.height / 2);
-        }
-      } else if (overlayCtx && activeSceneDefinition?.rendererType !== 'webgl') {
-        // This case handles if get2DContext() returned null because the canvas was busy or another error,
-        // but a 2D scene was intended. We draw a fallback message on the overlay.
-        overlayCtx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--muted-foreground').trim() || 'gray';
-        overlayCtx.textAlign = 'center';
-        overlayCtx.font = `16px ${SBNF_BODY_FONT_FAMILY}`;
-        overlayCtx.fillText('Error: Could not get 2D drawing context for main canvas.', mainCanvas.width / 2, mainCanvas.height / 2);
-      }
     }
 
-    // Draw 2D overlays on the separate overlay canvas
+    // Draw 2D overlays (AI overlay, procedural vines, debug info) on the separate overlay canvas
     if (overlayCtx && !currentSettingsVal.panicMode && !lastError) {
         drawAiGeneratedOverlay2D(overlayCtx);
-        if (currentSceneWebGLAssetsRef.current?.vinesData?.activeVines && activeSceneDefinition?.rendererType === 'webgl') {
+        if (currentScene?.rendererType === 'webgl' && currentSceneWebGLAssetsRef.current?.vinesData?.activeVines) {
             drawProceduralVinesOnOverlay(overlayCtx, currentSceneWebGLAssetsRef.current.vinesData.activeVines);
         }
         drawDebugInfo(overlayCtx);
     }
   }, [
-    currentScene, 
+    currentScene, // Source of truth for current scene definition
     get2DContext, getOverlay2DContext, drawErrorState, drawPrimarySceneContent,
     drawAiGeneratedOverlay2D, drawDebugInfo, drawProceduralVinesOnOverlay,
-    isTransitioning2D, webcamElement, settingsRef, audioDataRef, lastError, scenes // Added scenes
+    isTransitioning2D, webcamElement, settingsRef, audioDataRef, lastError // Other dependencies
   ]);
 
 
   const drawLoop = useCallback(() => {
     updateFps();
-    drawSceneAndOverlays(); // Call the main drawing orchestrator
+    drawSceneAndOverlays();
     animationFrameIdRef.current = requestAnimationFrame(drawLoop);
   }, [updateFps, drawSceneAndOverlays]);
 
@@ -539,7 +578,7 @@ export function VisualizerView() {
         animationFrameIdRef.current = null;
       }
     };
-  }, [drawLoop]); // Now depends on the stable drawLoop
+  }, [drawLoop]);
 
   useEffect(() => {
     const mainC = canvasRef.current;
@@ -563,11 +602,11 @@ export function VisualizerView() {
 
           if (webGLRendererRef.current) {
             webGLRendererRef.current.setSize(newWidth, newHeight);
-            const sceneAssets = currentSceneWebGLAssetsRef.current; 
+            const sceneAssets = currentSceneWebGLAssetsRef.current;
             if (sceneAssets?.camera) {
               const camera = sceneAssets.camera;
               if (camera instanceof THREE.PerspectiveCamera) {
-                camera.aspect = newWidth / newHeight;
+                camera.aspect = newWidth > 0 && newHeight > 0 ? newWidth / newHeight : 1;
               } else if (camera instanceof THREE.OrthographicCamera) {
                 camera.left = -newWidth / 2;
                 camera.right = newWidth / 2;
@@ -598,7 +637,7 @@ export function VisualizerView() {
           if (sceneAssets?.camera) {
             const camera = sceneAssets.camera;
              if (camera instanceof THREE.PerspectiveCamera) {
-                camera.aspect = initialWidth / initialHeight;
+                camera.aspect = initialWidth > 0 && initialHeight > 0 ? initialWidth / initialHeight : 1;
               } else if (camera instanceof THREE.OrthographicCamera) {
                 camera.left = -initialWidth / 2;
                 camera.right = initialWidth / 2;
@@ -611,15 +650,15 @@ export function VisualizerView() {
         return () => resizeObserver.disconnect();
       }
     }
-  }, [canvasKey]); // Only re-observe on canvasKey change
+  }, [canvasKey]);
 
   // Handle 2D scene transitions
   useEffect(() => {
-    if (currentScene?.rendererType === '2d') {
-        const activeSceneDefinition = currentScene;
-        if (previousScene2DRef.current && 
-            previousScene2DRef.current.id !== activeSceneDefinition.id && 
-            settingsRef.current.sceneTransitionActive && 
+    const activeSceneDefinition = currentScene;
+    if (activeSceneDefinition?.rendererType === '2d') {
+        if (previousScene2DRef.current &&
+            previousScene2DRef.current.id !== activeSceneDefinition.id &&
+            settingsRef.current.sceneTransitionActive &&
             settingsRef.current.sceneTransitionDuration > 0) {
             setIsTransitioning2D(true);
             transition2DStartTimeRef.current = performance.now();
@@ -644,5 +683,3 @@ export function VisualizerView() {
     </div>
   );
 }
-
-    
