@@ -22,7 +22,7 @@ import { Accordion } from '@/components/ui/accordion';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { useSettings } from '@/providers/SettingsProvider';
 import { toast } from '@/hooks/use-toast';
-import { SIXR_S_COLOR, SIXR_I_COLOR, SIXR_X_COLOR, SIXR_R_COLOR, TORUS_FONT_FAMILY, SBNF_TITLE_FONT_FAMILY } from '@/lib/brandingConstants';
+import { SBNF_TITLE_FONT_FAMILY, SIXR_S_COLOR, SIXR_I_COLOR, SIXR_X_COLOR, SIXR_R_COLOR } from '@/lib/brandingConstants';
 import { cn } from '@/lib/utils';
 
 /**
@@ -38,18 +38,20 @@ import { cn } from '@/lib/utils';
  * @returns {JSX.Element} The ControlPanelView component.
  */
 export function ControlPanelView() {
-  const { 
-    initializeAudio, 
-    stopAudioAnalysis, 
+  const {
+    initializeAudio,
+    stopAudioAnalysis,
     isInitialized: isAudioInitialized,
     error: audioError,
-    audioInputDevices 
+    audioInputDevices
   } = useAudioAnalysis();
   const { settings, updateSetting } = useSettings();
   const [isTogglingAudio, setIsTogglingAudio] = useState(false);
   const [isTogglingWebcam, setIsTogglingWebcam] = useState(false);
 
   const prevSelectedAudioDeviceIdRef = useRef(settings.selectedAudioInputDeviceId);
+  const initialActivationAttempted = useRef(false);
+
 
   useEffect(() => {
     const hasSeenWelcome = localStorage.getItem('sixrVisionWelcomeSeen');
@@ -61,10 +63,47 @@ export function ControlPanelView() {
       });
       localStorage.setItem('sixrVisionWelcomeSeen', 'true');
     }
-    // Auto-initialization of audio/webcam is now handled by explicit user clicks
-    // on the header toggle buttons.
-  }, []); 
+  }, []);
 
+
+  useEffect(() => {
+    if (initialActivationAttempted.current) {
+      return;
+    }
+    initialActivationAttempted.current = true; 
+
+    const autoActivate = async () => {
+      // Auto-initialize Audio
+      // Note: isAudioInitialized, audioError are from the hook's current state closure in this effect
+      if (!isAudioInitialized && !audioError) {
+        console.log("ControlPanelView: Auto-initializing audio on load.");
+        setIsTogglingAudio(true); 
+        await initializeAudio();
+        setIsTogglingAudio(false);
+      }
+
+      // Auto-enable Webcam
+      // Note: settings.showWebcam is from the hook's current state closure
+      if (!settings.showWebcam) {
+        console.log("ControlPanelView: Auto-enabling webcam on load.");
+        setIsTogglingWebcam(true);
+        updateSetting('showWebcam', true);
+        // Brief delay to allow UI to potentially catch up if needed, though often not necessary for simple state updates.
+        await new Promise(resolve => setTimeout(resolve, 50)); 
+        setIsTogglingWebcam(false);
+      }
+    };
+
+    // Delay slightly to ensure all initial states are settled and avoid immediate intense operations
+    const timerId = setTimeout(() => {
+      autoActivate();
+    }, 500); // 500ms delay
+
+    return () => {
+      clearTimeout(timerId);
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Intentionally empty: run once on mount. initializeAudio, updateSetting, settings, audioError, isAudioInitialized are captured from initial render.
 
   // Effect to handle re-initialization if selected audio device changes while audio is active
   useEffect(() => {
@@ -76,9 +115,9 @@ export function ControlPanelView() {
         'Selected audio device changed while audio is active. Re-initializing audio.'
       );
       const reinitialize = async () => {
-        setIsTogglingAudio(true); 
+        setIsTogglingAudio(true);
         await stopAudioAnalysis();
-        await initializeAudio(); 
+        await initializeAudio();
         setIsTogglingAudio(false);
       };
       reinitialize();
@@ -104,15 +143,18 @@ export function ControlPanelView() {
     console.log("ControlPanelView: Audio toggle finished. isInitialized will update on next render.");
   };
 
-  const handleWebcamToggle = () => {
+  const handleWebcamToggle = async () => {
     if (isTogglingWebcam) return;
     const newWebcamState = !settings.showWebcam;
     console.log("ControlPanelView: Toggling webcam. Current state:", settings.showWebcam, "New state:", newWebcamState);
     setIsTogglingWebcam(true);
     updateSetting('showWebcam', newWebcamState);
-    setTimeout(() => setIsTogglingWebcam(false), 100); 
+    // Small delay to allow for any UI updates related to webcam state change, if necessary
+    await new Promise(resolve => setTimeout(resolve, 50));
+    setIsTogglingWebcam(false);
     console.log("ControlPanelView: Webcam toggle finished. New showWebcam setting:", newWebcamState);
   };
+
 
   return (
     <div className="h-full flex flex-col bg-control-panel-background text-control-panel-foreground">
@@ -178,7 +220,7 @@ export function ControlPanelView() {
         </div>
       </header>
       {audioError && !isAudioInitialized && <p className="p-2 text-xs text-destructive bg-destructive/20 text-center">Audio Error: {audioError}. Check mic permissions & selection.</p>}
-      
+
       <ScrollArea className="flex-1 min-h-0">
         <div
           className="overflow-x-hidden control-panel-content-wrapper"
@@ -189,14 +231,13 @@ export function ControlPanelView() {
         >
           <Accordion
             type="multiple"
-            // Initial open sections
-            defaultValue={['presets', 'audio-engine', 'visual-output', 'ai-visual-overlay-mixer']} 
-            className="w-full py-4 space-y-2" // Increased space-y from 1 to 2
+            defaultValue={['presets', 'audio-engine', 'visual-output', 'ai-visual-overlay-mixer']}
+            className="w-full py-4 space-y-2"
           >
             <PresetSelector value="presets" />
-            <AudioControls 
-              value="audio-engine" 
-              audioInputDevices={audioInputDevices} 
+            <AudioControls
+              value="audio-engine"
+              audioInputDevices={audioInputDevices}
               isAudioToggling={isTogglingAudio}
             />
             <VisualControls value="visual-output" />
@@ -214,7 +255,7 @@ export function ControlPanelView() {
       <footer className="p-2 border-t border-control-panel-border text-center">
         <p className="text-xs text-muted-foreground">
           &copy;{' '}
-          <span style={{ fontFamily: TORUS_FONT_FAMILY }}>
+          <span style={{ fontFamily: 'var(--font-torus-variations)' }}>
             <span style={{ color: SIXR_S_COLOR }}>S</span>
             <span style={{ color: SIXR_I_COLOR }}>I</span>
             <span style={{ color: SIXR_X_COLOR }}>X</span>
