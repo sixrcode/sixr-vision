@@ -46,6 +46,7 @@ export function LogoAnimationControls({ value }: LogoAnimationControlsProps) {
           step={0.01}
           value={[logoOpacity]}
           onValueChange={([val]) => updateSetting('logoOpacity', val)}
+          aria-label={`Overall Logo Opacity: ${logoOpacity.toFixed(2)}`}
         />
       </div>
 
@@ -62,7 +63,7 @@ export function LogoAnimationControls({ value }: LogoAnimationControlsProps) {
           value={logoAnimationSettings.type}
           onValueChange={(val) => handleAnimationSettingChange('type', val as LogoAnimationType)}
         >
-          <SelectTrigger id="logo-animation-type-select">
+          <SelectTrigger id="logo-animation-type-select" aria-label={`Select Logo Animation Type, current value ${logoAnimationSettings.type}`}>
             <SelectValue placeholder="Select animation type" />
           </SelectTrigger>
           <SelectContent>
@@ -91,6 +92,7 @@ export function LogoAnimationControls({ value }: LogoAnimationControlsProps) {
             value={logoAnimationSettings.color}
             onChange={(e) => handleAnimationSettingChange('color', e.target.value)}
             className="h-10"
+            aria-label={`Logo Animation Color, current value ${logoAnimationSettings.color}`}
           />
         </div>
       )}
@@ -114,6 +116,7 @@ export function LogoAnimationControls({ value }: LogoAnimationControlsProps) {
             step={0.1}
             value={[logoAnimationSettings.speed]}
             onValueChange={([val]) => handleAnimationSettingChange('speed', val)}
+            aria-label={`Logo Animation Speed: ${logoAnimationSettings.speed.toFixed(1)}`}
           />
           <ControlHint>
             {currentAnimType === 'blink' ? 'Higher is faster blinking.' :

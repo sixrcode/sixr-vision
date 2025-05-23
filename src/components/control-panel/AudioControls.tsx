@@ -51,13 +51,12 @@ export function AudioControls({ value, audioInputDevices, isAudioToggling }: Aud
           disabled={audioInputDevices.length === 0 || isAudioToggling}
         >
           <SelectTrigger id="audioSource-select" aria-label="Select Audio Input Device">
-            {/* SelectValue will display the selected item's children. Placeholder is a fallback. */}
             <SelectValue placeholder="Select an audio source" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value={DEFAULT_AUDIO_INPUT_VALUE}>Default System Microphone</SelectItem>
             {audioInputDevices
-              .filter(device => device.deviceId) // Filter out devices with empty deviceIds
+              .filter(device => device.deviceId) 
               .map(device => (
               <SelectItem key={device.deviceId} value={device.deviceId}>
                 {device.label || `Device (${device.deviceId.substring(0, 8)}...)`}
@@ -82,7 +81,7 @@ export function AudioControls({ value, audioInputDevices, isAudioToggling }: Aud
           onValueChange={(val) => updateSetting('fftSize', Number(val) as typeof settings.fftSize)}
           disabled={isAudioToggling}
         >
-          <SelectTrigger id="fftSize-select" aria-label="Select FFT Bins">
+          <SelectTrigger id="fftSize-select" aria-label={`Select FFT Bins, current value ${settings.fftSize}`}>
             <SelectValue placeholder="Select FFT size" />
           </SelectTrigger>
           <SelectContent>
@@ -113,7 +112,7 @@ export function AudioControls({ value, audioInputDevices, isAudioToggling }: Aud
           value={[settings.gain]}
           onValueChange={([val]) => updateSetting('gain', val)}
           disabled={settings.enableAgc || isAudioToggling}
-          aria-label={`Manual Gain: ${settings.gain.toFixed(2)}${settings.enableAgc ? " (AGC Active)" : ""}`}
+          aria-label={`Manual Gain: ${settings.gain.toFixed(2)}${settings.enableAgc ? ". Automatic Gain Control is Active." : ""}`}
         />
       </div>
       

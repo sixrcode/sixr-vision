@@ -14,13 +14,13 @@ import { useAudioData } from '@/providers/AudioDataProvider';
 import { useScene } from '@/providers/SceneProvider';
 import { generateVisualOverlay, type GenerateVisualOverlayInput, type GenerateVisualOverlayOutput } from '@/ai/flows/generate-visual-overlay';
 import { ControlPanelSection } from '../ControlPanelSection';
-import { Layers, Wand2, Loader2, RefreshCw } from 'lucide-react';
+import { Layers, Wand2, Loader2 } from 'lucide-react';
 import { VALID_BLEND_MODES } from '@/types';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { ControlHint } from '../ControlHint';
 import { LabelledSwitchControl } from '../common/LabelledSwitchControl';
 import { AiSuggestedPromptDisplay } from '../common/AiSuggestedPromptDisplay';
-import { DEFAULT_SETTINGS } from '@/lib/constants'; // Added import
+import { DEFAULT_SETTINGS } from '@/lib/constants';
 
 type AiVisualOverlayMixerProps = {
   value: string; // For AccordionItem
@@ -41,17 +41,13 @@ export function AiVisualOverlayMixer({ value }: AiVisualOverlayMixerProps) {
     setLocalPrompt(settings.aiOverlayPrompt);
   }, [settings.aiOverlayPrompt]);
 
-  const handleGenerateOverlay = useCallback(async (promptToUse: string, isInitialOrPeriodic: boolean = false) => {
+  const handleGenerateOverlay = useCallback(async (promptToUse: string) => {
     if (!currentScene) {
-      if (!isInitialOrPeriodic) { // Don't toast for automatic attempts if scene isn't ready
-        toast({ title: 'No Scene Active', description: 'Please select a scene first to provide context for the overlay.', variant: 'destructive' });
-      }
+      toast({ title: 'No Scene Active', description: 'Please select a scene first to provide context for the overlay.', variant: 'destructive' });
       return false;
     }
     if (!promptToUse.trim()) {
-      if (!isInitialOrPeriodic) {
-        toast({ title: 'Prompt Required', description: 'Please enter a prompt for the overlay.', variant: 'destructive' });
-      }
+      toast({ title: 'Prompt Required', description: 'Please enter a prompt for the overlay.', variant: 'destructive' });
       return false;
     }
 
@@ -72,13 +68,12 @@ export function AiVisualOverlayMixer({ value }: AiVisualOverlayMixerProps) {
 
       const result: GenerateVisualOverlayOutput = await generateVisualOverlay(input);
       updateSetting('aiGeneratedOverlayUri', result.overlayImageDataUri);
-      if (promptToUse !== settings.aiOverlayPrompt) { // Only update prompt setting if it was manually changed
+      if (promptToUse !== settings.aiOverlayPrompt) {
         updateSetting('aiOverlayPrompt', promptToUse);
       }
-      if (!isInitialOrPeriodic || (isInitialOrPeriodic && !settings.enableAiOverlay) ) { // Toast for manual or if enabling for first time
-        toast({ title: 'AI Overlay Generated', description: 'Visual overlay created!' });
-      }
-      if (isInitialOrPeriodic && !settings.enableAiOverlay) {
+      toast({ title: 'AI Overlay Generated', description: 'Visual overlay created!' });
+      // Automatically enable overlay if it wasn't already, after successful generation
+      if (!settings.enableAiOverlay) {
         updateSetting('enableAiOverlay', true);
       }
       return true;
@@ -87,15 +82,13 @@ export function AiVisualOverlayMixer({ value }: AiVisualOverlayMixerProps) {
       let description = 'Could not generate overlay.';
       if (error instanceof Error) {
         description = error.message;
-        if (error.message.toLowerCase().includes("500 internal server error") || error.message.toLowerCase().includes("internal error has occurred")) {
+         if (error.message.toLowerCase().includes("500 internal server error") || error.message.toLowerCase().includes("internal error has occurred")) {
           description = "AI service encountered an internal error. This is often temporary. Please try again in a few moments, or try a different prompt.";
         } else if (error.message.toLowerCase().includes("rate limit")) {
           description = "AI service rate limit hit. Please wait before trying again or enable periodic regeneration with a longer interval.";
         }
       }
-      if (!isInitialOrPeriodic) { // Only toast for manual attempts
-        toast({ title: 'Overlay Generation Failed', description, variant: 'destructive' });
-      }
+      toast({ title: 'Overlay Generation Failed', description, variant: 'destructive' });
       updateSetting('aiGeneratedOverlayUri', null);
       return false;
     } finally {
@@ -104,16 +97,17 @@ export function AiVisualOverlayMixer({ value }: AiVisualOverlayMixerProps) {
   }, [currentScene, audioData, updateSetting, toast, settings.aiOverlayPrompt, settings.enableAiOverlay]);
 
 
-  // Effect for initial overlay generation on load
+  // Initial overlay generation on load
   useEffect(() => {
     if (!settings.aiGeneratedOverlayUri && currentScene && !initialGenerationAttempted.current && !isLoading) {
       console.log("AiVisualOverlayMixer: Attempting initial AI overlay generation.");
       initialGenerationAttempted.current = true;
-      handleGenerateOverlay(settings.aiOverlayPrompt || DEFAULT_SETTINGS.aiOverlayPrompt, true);
+      // Use the default prompt from constants for initial generation
+      handleGenerateOverlay(DEFAULT_SETTINGS.aiOverlayPrompt || "ethereal wisps of light");
     }
-  }, [currentScene, settings.aiGeneratedOverlayUri, isLoading, handleGenerateOverlay, settings.aiOverlayPrompt]);
+  }, [currentScene, settings.aiGeneratedOverlayUri, isLoading, handleGenerateOverlay]);
 
-  // Effect for periodic regeneration
+  // Periodic regeneration
   useEffect(() => {
     if (settings.enableAiOverlay && settings.enablePeriodicAiOverlay) {
       if (periodicUpdateIntervalId.current) {
@@ -122,7 +116,7 @@ export function AiVisualOverlayMixer({ value }: AiVisualOverlayMixerProps) {
       periodicUpdateIntervalId.current = setInterval(() => {
         if (!isLoading) {
           console.log(`AiVisualOverlayMixer: Triggering periodic regeneration. Interval: ${settings.aiOverlayRegenerationInterval}s`);
-          handleGenerateOverlay(settings.aiOverlayPrompt, true);
+          handleGenerateOverlay(settings.aiOverlayPrompt);
         }
       }, settings.aiOverlayRegenerationInterval * 1000);
     } else {
@@ -169,6 +163,7 @@ export function AiVisualOverlayMixer({ value }: AiVisualOverlayMixerProps) {
             onChange={(e) => setLocalPrompt(e.target.value)}
             placeholder={DEFAULT_SETTINGS.aiOverlayPrompt}
             disabled={isLoading}
+            aria-label="AI Overlay Prompt"
           />
           <AiSuggestedPromptDisplay
             suggestedPrompt={settings.lastAISuggestedAssetPrompt}
@@ -188,7 +183,7 @@ export function AiVisualOverlayMixer({ value }: AiVisualOverlayMixerProps) {
           ) : (
             <Layers className="mr-2 h-4 w-4" />
           )}
-          {isLoading ? 'Generating Overlay...' : 'Generate New Overlay'}
+          {isLoading ? 'Generating...' : 'Generate New Overlay'}
         </Button>
         {!currentScene && <ControlHint className="text-destructive text-center">Select a scene first to generate an overlay.</ControlHint>}
 
@@ -243,7 +238,7 @@ export function AiVisualOverlayMixer({ value }: AiVisualOverlayMixerProps) {
                 onValueChange={(val) => updateSetting('aiOverlayBlendMode', val as GlobalCompositeOperation)}
                 disabled={isLoading || !settings.enableAiOverlay}
               >
-                <SelectTrigger id="ai-overlay-blend-mode-select" aria-label="Select AI Overlay Blend Mode">
+                <SelectTrigger id="ai-overlay-blend-mode-select" aria-label={`Select AI Overlay Blend Mode, current value ${settings.aiOverlayBlendMode}`}>
                   <SelectValue placeholder="Select blend mode" />
                 </SelectTrigger>
                 <SelectContent>
@@ -295,4 +290,3 @@ export function AiVisualOverlayMixer({ value }: AiVisualOverlayMixerProps) {
     </ControlPanelSection>
   );
 }
-
