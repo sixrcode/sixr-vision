@@ -9,11 +9,17 @@ export type LogoAnimationSettings = {
   color: string;
 };
 
+// Defines the assets specific to a WebGL scene, managed by VisualizerView
+// and passed to the scene's drawWebGL function.
+// The scene's initWebGL function is responsible for creating and returning these.
 export type WebGLSceneAssets = {
-  scene: THREE.Scene;
-  camera: THREE.PerspectiveCamera | THREE.OrthographicCamera;
-  renderer: THREE.WebGLRenderer;
-  // Scene-specific assets, e.g., for particle systems, materials, video textures
+  scene: THREE.Scene; // The specific Three.js scene for this preset
+  camera: THREE.PerspectiveCamera | THREE.OrthographicCamera; // The camera for this preset
+  // Note: The WebGLRenderer is managed globally by VisualizerView and passed to drawWebGL,
+  // so individual scenes should not create or return their own renderer.
+
+  // Scene-specific assets can be added here with a more specific type
+  // if needed, or accessed via [key: string]: any;
   particles?: THREE.Points;
   particleMaterial?: THREE.PointsMaterial; // Or other material types
   particleGeometry?: THREE.BufferGeometry;
@@ -24,32 +30,86 @@ export type WebGLSceneAssets = {
   PARTICLE_COUNT?: number;
   lastBeatTime?: number;
   lastAmbientSpawnTime?: number;
-  lastFrameTime?: number;
+  lastFrameTimeWebGL?: number;
   tempColor?: THREE.Color;
   bgColor?: THREE.Color;
   rotationSpeed?: THREE.Vector3;
+
+  // For webcam-based scenes like Mirror Silhouette
   videoTexture?: THREE.VideoTexture;
   planeMesh?: THREE.Mesh;
   shaderMaterial?: THREE.ShaderMaterial;
-  geometries?: THREE.BufferGeometry[]; // For Echoing Shapes
-  activeShapes?: any[]; // For Echoing Shapes, more specific type if possible
-  spawnInterval?: number; // For Echoing Shapes
-  shapeBaseLifetime?: number; // For Echoing Shapes
-  segments?: THREE.Mesh[]; // For Geometric Tunnel
-  numSegments?: number; // For Geometric Tunnel
-  segmentDepth?: number; // For Geometric Tunnel
-  segmentSpeed?: number; // For Geometric Tunnel
-  cameraBaseFov?: number; // For Geometric Tunnel
-  ringGeometry?: THREE.BufferGeometry; // For Frequency Rings
-  activeRings?: any[]; // For Frequency Rings
-  lastSpawnTimes?: number[]; // For Frequency Rings
-  instancedMesh?: THREE.InstancedMesh; // For Neon Pulse Grid
-  GRID_SIZE?: number; // For Neon Pulse Grid
-  cellWidth?: number; // For Neon Pulse Grid
-  cellHeight?: number; // For Neon Pulse Grid
-  cellStates?: any[]; // For Neon Pulse Grid
+
+  // For Echoing Shapes
+  geometries?: THREE.BufferGeometry[]; // Circle, Square, Triangle
+  activeShapes?: Array<{
+    mesh: THREE.Mesh;
+    lifetime: number;
+    initialScale: number;
+    maxScale: number;
+    currentOpacity: number;
+    targetOpacity: number;
+    rotationSpeed: number;
+    spawnTime: number;
+  }>;
+  spawnCooldown?: number;
+  lastSpawnTime?: number;
+
+  // For Frequency Rings
+  ringGeometry?: THREE.RingGeometry;
+  activeBassRings?: Array<any>; // Consider defining a specific RingDataType
+  activeMidRings?: Array<any>;
+  activeTrebleRings?: Array<any>;
+
+  // For Neon Pulse Grid and Spectrum Bars (using InstancedMesh)
+  instancedMesh?: THREE.InstancedMesh;
+  cellStates?: Array<{ // For Neon Pulse Grid
+    targetHue: number;
+    targetLightness: number;
+    currentLightness: number;
+    lastPulseTime: number;
+  }>;
+  GRID_SIZE_X?: number;
+  GRID_SIZE_Y?: number;
+  totalCells?: number;
+  cellBaseWidth?: number; // Renamed from cellWidth for clarity
+  cellBaseHeight?: number; // Renamed from cellHeight for clarity
+  dummy?: THREE.Object3D; // For InstancedMesh matrix updates
+
+  // For Spectrum Bars
+  numBars?: number;
+  // barBaseWidth is already defined above for Neon Pulse Grid, can be reused if same logic
+  // barActualWidth is usually calculated dynamically
+
+  // For Mirror Silhouette - Procedural Vines
+  noiseTexture?: THREE.DataTexture;
+  vinesData?: {
+    activeVines: ProceduralVine[];
+    nextVineId: number;
+    lastSpawnTime: number;
+    spawnCooldown: number;
+    maxVines: number;
+  };
+  // For Mirror Silhouette - Grape Clusters
+  grapeGeometry?: THREE.BufferGeometry;
+  grapeMaterial?: THREE.PointsMaterial;
+  grapes?: THREE.Points;
+  grapePositions?: Float32Array;
+  grapeColors?: Float32Array;
+  grapeTargetSizes?: Float32Array;
+  grapeCurrentSizes?: Float32Array;
+  grapeLifetimes?: Float32Array;
+  grapeSpawnTimes?: Float32Array;
+  GRAPE_COUNT?: number;
+  lastGrapeSpawnTime?: number;
+
+  // Scene-specific flags for optimization or state
+  lastCanvasWidth?: number;
+  lastCanvasHeight?: number;
+  sceneId?: string; // To ensure assets are for the correct scene during cleanup
+
   // Allow any other scene-specific assets
-  [key: string]: any; 
+  [key: string]: any;
 };
 
 
@@ -57,30 +117,32 @@ export type SceneDefinition = {
   id: string;
   name: string;
   meta?: Record<string, any>;
-  rendererType?: '2d' | 'webgl';
+  rendererType?: '2d' | 'webgl'; // Default to '2d' if not specified
+  // For 2D Canvas scenes
   draw?: (
     canvasContext: CanvasRenderingContext2D,
     audioData: AudioData,
     settings: Settings,
-    webcamFeed?: HTMLVideoElement
+    webcamFeed?: HTMLVideoElement | null
   ) => void;
+  // For WebGL scenes
   initWebGL?: (
     canvas: HTMLCanvasElement,
     settings: Settings,
-    webcamElement?: HTMLVideoElement | null // Make webcamElement explicitly optional here
-  ) => WebGLSceneAssets;
+    webcamElement?: HTMLVideoElement | null // Optional webcam element
+  ) => Omit<WebGLSceneAssets, 'renderer'>; // Scenes should not return the renderer
   drawWebGL?: (params: {
-    renderer: THREE.WebGLRenderer; 
-    scene: THREE.Scene; 
-    camera: THREE.PerspectiveCamera | THREE.OrthographicCamera; 
+    renderer: THREE.WebGLRenderer; // Passed in by VisualizerView
+    scene: THREE.Scene;
+    camera: THREE.PerspectiveCamera | THREE.OrthographicCamera;
     audioData: AudioData;
     settings: Settings;
-    webGLAssets: any; 
+    webGLAssets: WebGLSceneAssets; // Specific assets for this scene
     canvasWidth: number;
     canvasHeight: number;
     webcamElement?: HTMLVideoElement | null;
   }) => void;
-  cleanupWebGL?: (webGLAssets: WebGLSceneAssets) => void; 
+  cleanupWebGL?: (webGLAssets: Omit<WebGLSceneAssets, 'renderer'>) => void; // To dispose of Three.js objects
   thumbnailUrl?: string;
   dataAiHint?: string;
 };
@@ -120,7 +182,7 @@ export type Settings = {
   aiOverlayBlendMode: GlobalCompositeOperation;
   aiOverlayPrompt: string;
   enablePeriodicAiOverlay: boolean;
-  aiOverlayRegenerationInterval: number;
+  aiOverlayRegenerationInterval: number; // In seconds
 };
 
 export type PaletteGenieColor = {
@@ -161,3 +223,22 @@ export const VALID_BLEND_MODES: GlobalCompositeOperation[] = [
   'lighten', 'color-dodge', 'color-burn', 'hard-light', 'soft-light',
   'difference', 'exclusion', 'hue', 'saturation', 'color', 'luminosity'
 ];
+
+// For Mirror Silhouette vines
+export type VinePoint = { x: number; y: number };
+export type ProceduralVine = {
+  id: number;
+  points: VinePoint[];
+  color: string;
+  opacity: number;
+  currentLength: number;
+  maxLength: number;
+  spawnTime: number;
+  lifetime: number;
+  thickness: number;
+  curlFactor: number;
+  angle: number;
+  startX: number;
+  startY: number;
+  speed: number;
+};
