@@ -9,7 +9,7 @@
 * **Interactive Camera Layer:**  Users can enable a live camera feed with mirror toggling and motion sensitivity.  Optionally, an AI segmentation model can isolate performers from the background for crisp visual effects.  This lets the performer become part of the scene (for example, glowing silhouettes or particle effects keyed to human motion).
 * **Built-in Scenes & Branding:**  A registry of built-in scenes (e.g. Spectrum Bars, Radial Burst, Mirror Silhouette, Particle Finale, and an optional Spline Hero) are provided.  The system cross-fades between scenes by BPM or manual cues.  Custom SIXR branding (logo shimmer, rotating watermark, and beat-flash outline) is overlaid on the visuals for a cohesive event look.
 * **AI Creative Kit:**  Users can generate color palettes and textures with AI.  The *Palette Genie* tool produces harmonious HSB color sets, and a style-transfer shader can apply artistic textures.  Even procedural assets (3D meshes or images) can be generated from text prompts or audio cues, enabling rapid creative exploration.
-* **User Interface:**  A responsive control panel (built with React/Next.js) offers sliders for audio gain, brightness, gamma, and more.  Preset thumbnails let users preview scenes.  Keyboard shortcuts (1-5 for presets, **P** to panic/blackout, **L** to toggle logo blackout, *Ctrl+Z* to undo) and a JSON-based cue list player provide quick control.
+* **User Interface:**  A responsive control panel (built with React/Next.js) offers sliders for audio gain, brightness, gamma, and more.  Preset thumbnails let users preview scenes.  Keyboard shortcuts (1-9 for presets, **P** to panic/blackout, **L** to toggle logo blackout, *Ctrl+Z* to undo) and a JSON-based cue list player provide quick control.
 * **Remote Control API:**  A WebSocket/OSC interface mirrors the UI commands (`/preset`, `/gain`, `/panic`, etc.). This lets external devices (tablets, lighting consoles, etc.) trigger changes in the show.
 * **Lighting Integration (Art-Net):**  Audio signals are sent to stage lighting via Art-Net DMX.  For example, the music beat controls DMX channel 1 and audio RMS (overall level) controls channel 2. Lighting consoles can also send return signals to flip scenes.
 * **Performance Watchdog:**  A built-in monitor tracks rendering frame rate.  If performance drops below \~50 FPS for 2 seconds, the system automatically halves the FFT resolution and silences heavy shaders. This adaptive mechanism keeps visuals smooth under load.
@@ -53,7 +53,7 @@
 * **Access the app:** Open your browser to [http://localhost:9002](http://localhost:9002) (or the configured host/port).  You should see the SIXR Vision interface with a visualizer canvas and side control panel.
 * **Audio input:** Play music on your device or enable microphone input. The visuals will react to the audio. Adjust sliders (gain, AGC, etc.) to tune the responsiveness.
 * **Webcam:** Click the camera toggle to enable your webcam. Allow browser permission. Use **Mirror** toggle to flip the feed. Motion in front of the camera will influence certain scenes.
-* **Presets:** Click on scene thumbnails or press number keys **1–5** to load built-in scenes. Scenes cross-fade automatically on beat (if sync is enabled). Press **P** to blackout (panic mode), and **L** to toggle the SIXR logo blackout.
+* **Presets:** Click on scene thumbnails or press number keys **1–9** to load built-in scenes. Scenes cross-fade automatically on beat (if sync is enabled). Press **P** to blackout (panic mode), and **L** to toggle the SIXR logo blackout.
 * **AI tools:** Use the Palette Genie and other creative tools in the panel to generate colors or art assets (these may require AI API keys). For example, try the SBNF-themed prompt to generate cosmic vine imagery.
 * **Remote control:** The app listens for WebSocket/OSC commands. You can send commands like `{"route":"/preset","value":"radial_burst"}` to change scenes remotely. (An Art-Net lighting console can send/receive as well.)
 * **Performance monitoring:** If you experience frame drops, note the on-screen FPS display or heatmap. The watchdog will self-adjust settings to try to recover smoothness. Use the IndexedDB logs (downloadable CSV) to review performance over time.
@@ -68,4 +68,24 @@ By contributing, you agree to follow a standard [Contributor Covenant](https://w
 
 ## License
 
-This project currently has no license. (Placeholder: Add an open-source license here, e.g. MIT License.)
+MIT License
+
+Copyright (c) [Year] [Full Name of Copyright Holder / SIXR Lab]
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
