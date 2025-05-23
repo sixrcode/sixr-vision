@@ -11,7 +11,7 @@ import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
-import { Sheet, SheetContent } from "@/components/ui/sheet"
+import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet" // Added SheetTitle import
 import { Skeleton } from "@/components/ui/skeleton"
 import {
   Tooltip,
@@ -33,7 +33,7 @@ type SidebarContext = {
   setOpen: (open: boolean) => void
   openMobile: boolean
   setOpenMobile: (open: boolean) => void
-  isMobile: boolean
+  isMobile: boolean | undefined;
   toggleSidebar: () => void
 }
 
@@ -92,6 +92,7 @@ const SidebarProvider = React.forwardRef<
 
     // Helper to toggle the sidebar.
     const toggleSidebar = React.useCallback(() => {
+      if (isMobile === undefined) return; // Do nothing if isMobile is not yet determined
       return isMobile
         ? setOpenMobile((open) => !open)
         : setOpen((open) => !open)
@@ -178,11 +179,15 @@ const Sidebar = React.forwardRef<
   ) => {
     const { isMobile, state, openMobile, setOpenMobile } = useSidebar()
 
+    if (isMobile === undefined) {
+      return null; // Or a loading skeleton/placeholder
+    }
+
     if (collapsible === "none") {
       return (
         <div
           className={cn(
-            "flex h-full w-[--sidebar-width] flex-col bg-sidebar text-sidebar-foreground", 
+            "flex h-full w-[--sidebar-width] flex-col bg-sidebar text-sidebar-foreground",
             className
           )}
           ref={ref}
@@ -197,10 +202,10 @@ const Sidebar = React.forwardRef<
       return (
         <Sheet open={openMobile} onOpenChange={setOpenMobile} {...props}>
           <SheetContent
-            data-sidebar="sidebar" 
-            data-mobile="true"    
+            data-sidebar="sidebar"
+            data-mobile="true"
             className={cn(
-              "w-[--sidebar-width] p-0 bg-sidebar text-sidebar-foreground [&>button]:hidden", 
+              "w-[--sidebar-width] p-0 bg-sidebar text-sidebar-foreground [&>button]:hidden",
               className
             )}
             style={
@@ -210,6 +215,7 @@ const Sidebar = React.forwardRef<
             }
             side={side}
           >
+            <SheetTitle className="sr-only">Control Panel</SheetTitle>
             <div className="flex h-full w-full flex-col">{children}</div>
           </SheetContent>
         </Sheet>
@@ -219,7 +225,7 @@ const Sidebar = React.forwardRef<
     return (
       <div
         ref={ref}
-        className="group peer hidden md:block text-sidebar-foreground" 
+        className="group peer hidden md:block text-sidebar-foreground"
         data-state={state}
         data-collapsible={state === "collapsed" ? collapsible : ""}
         data-variant={variant}
@@ -251,7 +257,7 @@ const Sidebar = React.forwardRef<
           {...props}
         >
           <div
-            data-sidebar="sidebar" 
+            data-sidebar="sidebar"
             className={cn(
               "flex h-full w-full flex-col bg-sidebar text-sidebar-foreground group-data-[variant=floating]:rounded-lg group-data-[variant=floating]:border group-data-[variant=floating]:border-sidebar-border group-data-[variant=floating]:shadow"
             )}
@@ -466,9 +472,12 @@ const SidebarGroupAction = React.forwardRef<
       ref={ref}
       data-sidebar="group-action"
       className={cn(
-        "absolute right-3 top-3.5 flex aspect-square w-5 items-center justify-center rounded-md p-0 text-sidebar-foreground outline-none ring-sidebar-ring transition-transform hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 [&>svg]:size-4 [&>svg]:shrink-0",
+        "absolute right-3 top-3.5 flex aspect-square w-5 items-center justify-center rounded-md p-0 text-sidebar-foreground outline-none ring-sidebar-ring transition-transform transition-opacity duration-200 ease-in-out hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 peer-hover/menu-button:text-sidebar-accent-foreground [&>svg]:size-4 [&>svg]:shrink-0",
         // Increases the hit area of the button on mobile.
         "after:absolute after:-inset-2 after:md:hidden",
+        "peer-data-[size=sm]/menu-button:top-1",
+        "peer-data-[size=default]/menu-button:top-1.5",
+        "peer-data-[size=lg]/menu-button:top-2.5",
         "group-data-[collapsible=icon]:hidden",
         className
       )}
@@ -589,7 +598,7 @@ const SidebarMenuButton = React.forwardRef<
         <TooltipContent
           side="right"
           align="center"
-          hidden={state !== "collapsed" || isMobile}
+          hidden={state !== "collapsed" || (isMobile === true)} // Updated condition for hidden
           {...tooltip}
         />
       </Tooltip>
@@ -766,4 +775,3 @@ export {
   SidebarTrigger,
   useSidebar,
 }
-
