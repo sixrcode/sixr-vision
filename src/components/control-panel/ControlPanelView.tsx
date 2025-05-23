@@ -115,7 +115,7 @@ export function ControlPanelView() {
 
 
   return (
-    <div className="h-full flex flex-col bg-control-panel-background text-control-panel-foreground">
+    <div className="h-full flex flex-col bg-control-panel-background text-control-panel-foreground" role="navigation" aria-label="Control Panel">
       <header className="p-4 border-b border-control-panel-border flex justify-between items-center">
         <div className="flex items-center">
           <SixrLogo className="h-6 w-auto mr-2" />
@@ -225,3 +225,4 @@ export function ControlPanelView() {
     </div>
   );
 }
+

@@ -1,9 +1,8 @@
 
 "use client";
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Button } from '@/components/ui/button';
-import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { useAudioData } from '@/providers/AudioDataProvider';
@@ -29,7 +28,8 @@ export function AiPresetChooser({ value }: AiPresetChooserProps) {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
   const [autoLoadEnabled, setAutoLoadEnabled] = useState(false); 
-  const [initialLoadAttempted, setInitialLoadAttempted] = useState(false);
+  const initialLoadAttemptedRef = useRef(false);
+  const periodicUpdateIntervalId = useRef<NodeJS.Timeout | null>(null);
 
   const fetchSuggestion = useCallback(async (isAutoTrigger = false) => {
     if (isLoading && !isAutoTrigger) return; 
@@ -47,19 +47,25 @@ export function AiPresetChooser({ value }: AiPresetChooserProps) {
       setSuggestedSceneInfo(result);
       updateSetting('lastAISuggestedAssetPrompt', result.suggestedAssetPrompt);
 
-      if (autoLoadEnabled && scenes.find(s => s.id === result.sceneId)) {
-        setCurrentSceneById(result.sceneId);
+      const sceneExists = scenes.find(s => s.id === result.sceneId);
+
+      if (autoLoadEnabled && sceneExists) {
+        setCurrentSceneById(result.sceneId, 'ai_auto_suggestion');
         if (!isAutoTrigger) { 
           toast({ title: 'AI Scene Loaded', description: `Switched to ${result.sceneId} based on audio analysis.` });
         }
+      } else if (autoLoadEnabled && !sceneExists && !isAutoTrigger) {
+         toast({ title: 'AI Suggestion Error', description: `AI suggested scene "${result.sceneId}", but it's not available.`, variant: 'destructive' });
       } else if (autoLoadEnabled && !isAutoTrigger) {
-         toast({ title: 'AI Suggestion', description: `Suggested ${result.sceneId}, but it's not available or auto-load conditions not met.` });
+         toast({ title: 'AI Suggestion', description: `Suggested ${result.sceneId}, but auto-load conditions not met.` });
+      } else if (!isAutoTrigger && !sceneExists) {
+        toast({ title: 'AI Suggestion Error', description: `AI suggested scene "${result.sceneId}", but it's not available. Asset idea: "${result.suggestedAssetPrompt}"`, variant: 'destructive' });
       } else if (!isAutoTrigger) {
         toast({ title: 'AI Suggestion', description: `Suggested scene: ${result.sceneId}. Asset idea: "${result.suggestedAssetPrompt}"` });
       }
       
-      if (isAutoTrigger && !initialLoadAttempted) {
-        setInitialLoadAttempted(true); // Mark that the initial auto-load attempt has happened
+      if (isAutoTrigger && !initialLoadAttemptedRef.current) {
+        initialLoadAttemptedRef.current = true; 
       }
 
     } catch (error) {
@@ -71,24 +77,22 @@ export function AiPresetChooser({ value }: AiPresetChooserProps) {
           variant: 'destructive',
         });
       }
-      if (isAutoTrigger && !initialLoadAttempted) {
-        setInitialLoadAttempted(true); 
+      if (isAutoTrigger && !initialLoadAttemptedRef.current) {
+        initialLoadAttemptedRef.current = true; 
       }
     } finally {
       setIsLoading(false);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [audioData, autoLoadEnabled, setCurrentSceneById, toast, scenes, updateSetting, isLoading, initialLoadAttempted]);
+  }, [audioData, autoLoadEnabled, setCurrentSceneById, toast, scenes, updateSetting, isLoading]);
 
 
   // Effect for initial scene suggestion on load (if autoLoadEnabled is true by default for the component)
-  useEffect(() => {
+ useEffect(() => {
     let timerId: NodeJS.Timeout | undefined;
-    if (!initialLoadAttempted && autoLoadEnabled && audioData.rms > 0.01 && audioData.bpm > 0) { 
+    if (!initialLoadAttemptedRef.current && autoLoadEnabled && audioData.rms > 0.01 && audioData.bpm > 0) { 
       console.log("AiPresetChooser: Attempting initial AI scene suggestion.");
-      // Delay slightly to allow other initializations
       timerId = setTimeout(() => {
-        if (!initialLoadAttempted) { // Double check before fetching
+        if (!initialLoadAttemptedRef.current) { 
             fetchSuggestion(true); 
         }
       }, 5000); 
@@ -96,31 +100,38 @@ export function AiPresetChooser({ value }: AiPresetChooserProps) {
     return () => {
         if(timerId) clearTimeout(timerId);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [audioData.rms, audioData.bpm, initialLoadAttempted, autoLoadEnabled]); // Removed fetchSuggestion from here
+  }, [audioData.rms, audioData.bpm, autoLoadEnabled, fetchSuggestion]);
 
 
   // Effect for periodic auto-loading if enabled by user
   useEffect(() => {
-    let periodicTimer: NodeJS.Timeout | undefined;
-    if (autoLoadEnabled && initialLoadAttempted) { // Only start periodic after initial attempt
-      periodicTimer = setInterval(() => { 
+    if (periodicUpdateIntervalId.current) {
+      clearInterval(periodicUpdateIntervalId.current);
+      periodicUpdateIntervalId.current = null;
+    }
+    if (autoLoadEnabled && initialLoadAttemptedRef.current) { // Only start periodic after initial attempt
+      periodicUpdateIntervalId.current = setInterval(() => { 
         if (audioData.bpm > 0 && (audioData.bassEnergy > 0.1 || audioData.midEnergy > 0.1 || audioData.trebleEnergy > 0.1)) {
            fetchSuggestion(true);
         }
       }, 30000); 
     }
     return () => {
-      if (periodicTimer) clearInterval(periodicTimer); 
+      if (periodicUpdateIntervalId.current) {
+        clearInterval(periodicUpdateIntervalId.current);
+        periodicUpdateIntervalId.current = null;
+      } 
     };
-  }, [audioData, autoLoadEnabled, fetchSuggestion, initialLoadAttempted]);
+  }, [audioData, autoLoadEnabled, fetchSuggestion, initialLoadAttemptedRef]);
 
   const handleLoadSuggested = () => {
-    if (suggestedSceneInfo?.sceneId && scenes.find(s => s.id === suggestedSceneInfo.sceneId)) {
-      setCurrentSceneById(suggestedSceneInfo.sceneId);
-      toast({ title: 'Scene Loaded', description: `Switched to ${suggestedSceneInfo.sceneId}.` });
-    } else if (suggestedSceneInfo?.sceneId) {
-       toast({ title: 'Scene Not Found', description: `Scene ${suggestedSceneInfo.sceneId} is not available.`, variant: 'destructive' });
+    if (suggestedSceneInfo?.sceneId) {
+      if (scenes.find(s => s.id === suggestedSceneInfo.sceneId)) {
+        setCurrentSceneById(suggestedSceneInfo.sceneId, 'manual_ai_suggestion_load');
+        toast({ title: 'Scene Loaded', description: `Switched to ${suggestedSceneInfo.sceneId}.` });
+      } else {
+        toast({ title: 'Scene Not Found', description: `Suggested scene "${suggestedSceneInfo.sceneId}" is not available.`, variant: 'destructive' });
+      }
     }
   };
 
@@ -172,3 +183,4 @@ export function AiPresetChooser({ value }: AiPresetChooserProps) {
     </ControlPanelSection>
   );
 }
+

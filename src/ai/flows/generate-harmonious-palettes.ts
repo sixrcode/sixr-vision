@@ -53,6 +53,8 @@ const defaultSafetySettings = [
   { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
 ];
 
+const MODEL_NAME_TEXT = 'googleai/gemini-2.0-flash'; // As defined in src/ai/genkit.ts for default text model
+
 const prompt = ai.definePrompt({
   name: 'generateHarmoniousPalettesPrompt',
   input: {schema: GenerateHarmoniousPalettesInputSchema},
@@ -87,7 +89,7 @@ const generateHarmoniousPalettesFlow = ai.defineFlow(
       return generatePalettesCache.get(cacheKey)!;
     }
 
-    console.log(`[Cache Miss] generateHarmoniousPalettesFlow: Generating palette for input: ${cacheKey}`);
+    console.log(`[Cache Miss] generateHarmoniousPalettesFlow: Generating palette for input: ${cacheKey} using model: ${MODEL_NAME_TEXT}`);
     const startTime = performance.now();
     const {output} = await prompt(input);
     const endTime = performance.now();

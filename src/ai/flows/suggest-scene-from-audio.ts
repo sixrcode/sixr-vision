@@ -50,6 +50,8 @@ const defaultSafetySettings = [
   { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
 ];
 
+const MODEL_NAME_TEXT = 'googleai/gemini-2.0-flash'; // As defined in src/ai/genkit.ts for default text model
+
 const prompt = ai.definePrompt({
   name: 'suggestSceneFromAudioPrompt',
   input: {schema: SuggestSceneFromAudioInputSchema},
@@ -96,7 +98,7 @@ const suggestSceneFromAudioFlow = ai.defineFlow(
       console.log(`[Cache Hit] suggestSceneFromAudioFlow: Returning cached scene suggestion for input: ${cacheKey}`);
       return suggestSceneCache.get(cacheKey)!;
     }
-    console.log(`[Cache Miss] suggestSceneFromAudioFlow: Generating scene suggestion for input: ${cacheKey}`);
+    console.log(`[Cache Miss] suggestSceneFromAudioFlow: Generating scene suggestion for input: ${cacheKey} using model: ${MODEL_NAME_TEXT}`);
 
     const startTime = performance.now();
     const {output} = await prompt(input);

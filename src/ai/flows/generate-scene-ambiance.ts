@@ -49,6 +49,8 @@ const defaultSafetySettings = [
   { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
 ];
 
+const MODEL_NAME_TEXT = 'googleai/gemini-2.0-flash'; // As defined in src/ai/genkit.ts for default text model
+
 const prompt = ai.definePrompt({
   name: 'generateSceneAmbiancePrompt',
   input: {schema: GenerateSceneAmbianceInputSchema},
@@ -89,7 +91,7 @@ const generateSceneAmbianceFlow = ai.defineFlow(
       console.log(`[Cache Hit] generateSceneAmbianceFlow: Returning cached ambiance for key: ${cacheKey} (audioData not part of cache key)`);
       return generateAmbianceCache.get(cacheKey)!;
     }
-    console.log(`[Cache Miss] generateSceneAmbianceFlow: Generating ambiance for key: ${cacheKey}`);
+    console.log(`[Cache Miss] generateSceneAmbianceFlow: Generating ambiance for key: ${cacheKey} using model: ${MODEL_NAME_TEXT}`);
     
     const startTime = performance.now();
     const {output} = await prompt(input);
