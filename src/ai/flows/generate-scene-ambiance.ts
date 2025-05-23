@@ -1,81 +1,78 @@
-
 'use server';
 /**
- * @fileOverview A Genkit flow to generate evocative ambiance text based on audio data and current scene.
+ * @fileOverview An AI agent that generates evocative ambiance text based on audio data and the current scene.
  *
- * - generateSceneAmbiance - A function that handles the ambiance text generation.
- * - GenerateSceneAmbianceInput - The input type for the generateSceneAmbiance function.
- * - GenerateSceneAmbianceOutput - The return type for the generateSceneAmbiance function.
+ * - generateSceneAmbiance - Main entry point for generating ambiance text.
+ * - GenerateSceneAmbianceInput - Zod schema for the input.
+ * - GenerateSceneAmbianceOutput - Zod schema for the output.
  */
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
-import type { AudioData } from '@/types'; // Assuming AudioData is defined here
+import { defaultSafetySettings } from '../sharedConstants';
 
-// Re-define a Zod schema for the parts of AudioData we need, as we can't directly import the TS type into Zod.
+// Define a Zod schema for the audio data fields we need for this flow
 const AudioDataInputSchema = z.object({
-  bassEnergy: z.number().describe('The energy of the bass frequencies (0-1).'),
-  midEnergy: z.number().describe('The energy of the mid frequencies (0-1).'),
-  trebleEnergy: z.number().describe('The energy of the treble frequencies (0-1).'),
-  rms: z.number().describe('The overall root mean square volume (0-1).'),
-  bpm: z.number().describe('The estimated beats per minute of the audio.'),
+  bassEnergy: z.number().describe('Bass-band energy (0-1).'),
+  midEnergy: z.number().describe('Mid-band energy (0-1).'),
+  trebleEnergy: z.number().describe('Treble-band energy (0-1).'),
+  rms: z.number().describe('Overall root mean square volume (0-1).'),
+  bpm: z.number().describe('Estimated beats per minute of the audio.'),
   beat: z.boolean().describe('Whether a beat is currently detected.'),
-  // spectrum can be omitted for this flow as it's high-cardinality and less useful for high-level mood.
 });
 
 const GenerateSceneAmbianceInputSchema = z.object({
   audioData: AudioDataInputSchema.describe('Current characteristics of the audio input.'),
-  currentSceneId: z.string().describe('The ID of the currently active visualizer scene (e.g., "radial_burst", "spectrum_bars").'),
+  currentSceneId: z.string().describe('The ID of the currently active visualizer scene.'),
   currentSceneName: z.string().describe('The display name of the currently active visualizer scene (e.g., "Radial Burst").'),
 });
 export type GenerateSceneAmbianceInput = z.infer<typeof GenerateSceneAmbianceInputSchema>;
 
 const GenerateSceneAmbianceOutputSchema = z.object({
-  ambianceText: z.string().describe('A short, evocative phrase or sentence (1-2 sentences, max 30 words) describing the current audiovisual mood and ambiance, ideally reflecting themes of "Cosmic Grapevines" (growth, connection, stars, seeds, vines).'),
+  ambianceText: z.string().describe('A short, evocative text (1-2 sentences, ~30 words) describing the current audiovisual mood, inspired by "Cosmic Grapevines" theme.'),
 });
 export type GenerateSceneAmbianceOutput = z.infer<typeof GenerateSceneAmbianceOutputSchema>;
 
 // In-memory cache for this flow
-const generateAmbianceCache = new Map<string, GenerateSceneAmbianceOutput>();
+const ambianceCache = new Map<string, GenerateSceneAmbianceOutput>();
+const MODEL_NAME_TEXT = 'googleai/gemini-2.0-flash';
 
-export async function generateSceneAmbiance(input: GenerateSceneAmbianceInput): Promise<GenerateSceneAmbianceOutput> {
+console.log(`[AI Flow Init] generateSceneAmbianceFlow uses model: ${MODEL_NAME_TEXT}`);
+
+export async function generateSceneAmbiance(
+  input: GenerateSceneAmbianceInput
+): Promise<GenerateSceneAmbianceOutput> {
   return generateSceneAmbianceFlow(input);
 }
 
-const defaultSafetySettings = [
-  { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
-  { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
-  { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
-  { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
-];
-
-const MODEL_NAME_TEXT = 'googleai/gemini-2.0-flash'; // As defined in src/ai/genkit.ts for default text model
-
-const prompt = ai.definePrompt({
+const ambiancePrompt = ai.definePrompt({
   name: 'generateSceneAmbiancePrompt',
   input: {schema: GenerateSceneAmbianceInputSchema},
   output: {schema: GenerateSceneAmbianceOutputSchema},
-  prompt: `You are a creative director for an audio-visualizer. The overall theme is "Cosmic Grapevines," evoking growth, connection, and celestial journeys.
-Your task is to write a short, evocative ambiance text (1-2 sentences, maximum 30 words) that captures the current mood and feeling conveyed by the audio and visuals, weaving in metaphors related to the "Cosmic Grapevines" theme (e.g., seeds, roots, vines, stars, cosmic growth, connection).
+  prompt: `
+You are a creative director for an audio-visualizer experience themed "Cosmic Grapevines," inspired by Octavia E. Butler's "Parable of the Sower."
+Your task is to generate a short, evocative ambiance text (1-2 sentences, maximum 30 words) that captures the current audiovisual mood.
+Use metaphors of seeds, roots, vines, stars, growth, connection, and transformation where appropriate.
+The language should be poetic and slightly visionary.
 
-Current Scene: "{{currentSceneName}}" (ID: {{currentSceneId}})
-Audio Characteristics:
-- Bass Energy: {{audioData.bassEnergy}} (0-1 scale)
-- Mid Energy: {{audioData.midEnergy}} (0-1 scale)
-- Treble Energy: {{audioData.trebleEnergy}} (0-1 scale)
-- Overall Volume (RMS): {{audioData.rms}} (0-1 scale)
-- Estimated BPM: {{audioData.bpm}}
+Current Visualizer Scene: "{{currentSceneName}}" (ID: {{currentSceneId}})
+Current Audio Mood:
+- Bass Energy: {{audioData.bassEnergy}}
+- Mid Energy: {{audioData.midEnergy}}
+- Treble Energy: {{audioData.trebleEnergy}}
+- Overall Volume (RMS): {{audioData.rms}}
+- Tempo (BPM): {{audioData.bpm}}
 - Beat Detected: {{audioData.beat}}
 
-Consider the scene's nature and combine it with the audio data to describe the atmosphere. For example:
-- If 'Radial Burst' is active with high energy audio: "Explosive energy pulses from the core, scattering seeds of light across the cosmic void."
-- If 'Mirror Silhouette' is active with low energy, atmospheric audio: "A fleeting reflection sways, a solitary seed dreaming of starlit vines."
-- If 'Spectrum Bars' is active with complex audio: "Digital monoliths rise and fall, charting the growth of an intricate soundscape."
-
-Generate the ambiance text, reflecting the "Cosmic Grapevines" theme.`,
+Combine the scene's nature with the audio data to describe the atmosphere.
+Example for high energy in "Radial Burst": "Explosive energy pulses from the core, painting the void with every beat."
+Example for low energy in "Mirror Silhouette": "A fleeting reflection dances in the ethereal glow, swaying to a gentle rhythm."
+Example for "Cosmic Grapevines" theme: "Tender green lights unfurl into a constellation – the music plants a seed among the stars."
+  `.trim(),
   config: {
+    model: MODEL_NAME_TEXT,
     safetySettings: defaultSafetySettings,
-  }
+  },
 });
 
 const generateSceneAmbianceFlow = ai.defineFlow(
@@ -85,26 +82,28 @@ const generateSceneAmbianceFlow = ai.defineFlow(
     outputSchema: GenerateSceneAmbianceOutputSchema,
   },
   async (input: GenerateSceneAmbianceInput): Promise<GenerateSceneAmbianceOutput> => {
-    // Simplified cache key: uses scene ID and name, omits dynamic audioData for basic caching
-    const cacheKey = `sceneId:${input.currentSceneId}_sceneName:${input.currentSceneName}`;
-    if (generateAmbianceCache.has(cacheKey)) {
-      console.log(`[Cache Hit] generateSceneAmbianceFlow: Returning cached ambiance for key: ${cacheKey} (audioData not part of cache key)`);
-      return generateAmbianceCache.get(cacheKey)!;
+    // Simplified cache key: use scene ID and a hash of the prompt string itself,
+    // as audio data is too dynamic for effective direct caching in this context.
+    // For more nuanced caching, one might categorize audioData into 'low', 'medium', 'high' energy states.
+    const cacheKey = `${input.currentSceneId}-${input.currentSceneName}`;
+
+    if (ambianceCache.has(cacheKey)) {
+      console.log(`[Cache Hit] generateSceneAmbianceFlow: Returning cached ambiance for key: ${cacheKey}`);
+      return ambianceCache.get(cacheKey)!;
     }
-    console.log(`[Cache Miss] generateSceneAmbianceFlow: Generating ambiance for key: ${cacheKey} using model: ${MODEL_NAME_TEXT}`);
+    console.log(`[Cache Miss] generateSceneAmbianceFlow: Generating ambiance for key: "${cacheKey}" using model: ${MODEL_NAME_TEXT}`);
     
     const startTime = performance.now();
-    const {output} = await prompt(input);
+    const {output} = await ambiancePrompt(input);
     const endTime = performance.now();
     console.log(`[AI Benchmark] generateSceneAmbianceFlow prompt call took ${(endTime - startTime).toFixed(2)} ms`);
 
-    if (!output) {
+    if (!output || !output.ambianceText) {
       throw new Error('AI failed to generate ambiance text.');
     }
-
-    generateAmbianceCache.set(cacheKey, output);
+    
+    ambianceCache.set(cacheKey, output);
     console.log(`[Cache Set] generateSceneAmbianceFlow: Cached ambiance for key: ${cacheKey}`);
     return output;
   }
 );
-

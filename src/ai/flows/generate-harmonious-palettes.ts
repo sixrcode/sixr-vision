@@ -1,16 +1,20 @@
 
 'use server';
 /**
- * @fileOverview A harmonious color palette generator AI agent.
+ * @fileOverview A harmonious color-palette generator AI agent.
  *
- * - generateHarmoniousPalettes - A function that handles the color palette generation process.
- * - GenerateHarmoniousPalettesInput - The input type for the generateHarmoniousPalettes function.
- * - GenerateHarmoniousPalettesOutput - The return type for the generateHarmoniousPalettes function.
+ * - generateHarmoniousPalettes  – main entry point
+ * - GenerateHarmoniousPalettesInput / Output – typed Zod schemas
  */
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 import { HARMONIOUS_PALETTES_PROMPT } from '@/ai/prompts'; // Import the prompt
+import { defaultSafetySettings } from '../sharedConstants';
+
+/* ────────────────────────────────────────────────────────────────────────── */
+/*  Types & Schemas                                                          */
+/* ────────────────────────────────────────────────────────────────────────── */
 
 const GenerateHarmoniousPalettesInputSchema = z.object({
   baseColorHue: z
@@ -30,14 +34,11 @@ export type GenerateHarmoniousPalettesInput = z.infer<
 
 const GenerateHarmoniousPalettesOutputSchema = z.array(
   z.object({
-    hue: z.number().describe('The hue of the color, between 0 and 360.'),
-    saturation:
-      z.number().describe('The saturation of the color, between 0 and 100.'),
-    brightness:
-      z.number().describe('The brightness of the color, between 0 and 100.'),
-  })
+    hue: z.number(),          // 0-360
+    saturation: z.number(),   // 0-100
+    brightness: z.number(),   // 0-100
+  }),
 );
-
 export type GenerateHarmoniousPalettesOutput = z.infer<
   typeof GenerateHarmoniousPalettesOutputSchema
 >;
@@ -88,16 +89,12 @@ export async function generateHarmoniousPalettes(
   return generateHarmoniousPalettesFlow(input);
 }
 
-const defaultSafetySettings = [
-  { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
-  { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
-  { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
-  { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
-];
-
 const MODEL_NAME_TEXT = 'googleai/gemini-2.0-flash';
 console.log(`[AI Flow Init] generateHarmoniousPalettesFlow uses model: ${MODEL_NAME_TEXT}`);
 
+/* ────────────────────────────────────────────────────────────────────────── */
+/*  Prompt definition                                                        */
+/* ────────────────────────────────────────────────────────────────────────── */
 
 const harmoniousPalettePrompt = ai.definePrompt({
   name: 'generateHarmoniousPalettesPrompt',
@@ -106,8 +103,13 @@ const harmoniousPalettePrompt = ai.definePrompt({
   prompt: HARMONIOUS_PALETTES_PROMPT, // Use imported prompt
   config: {
     safetySettings: defaultSafetySettings,
+    model: MODEL_NAME_TEXT, // Ensure model is specified in prompt config
   }
 });
+
+/* ────────────────────────────────────────────────────────────────────────── */
+/*  Flow definition                                                          */
+/* ────────────────────────────────────────────────────────────────────────── */
 
 const generateHarmoniousPalettesFlow = ai.defineFlow(
   {
@@ -115,7 +117,9 @@ const generateHarmoniousPalettesFlow = ai.defineFlow(
     inputSchema: GenerateHarmoniousPalettesInputSchema,
     outputSchema: GenerateHarmoniousPalettesOutputSchema,
   },
-  async (input: GenerateHarmoniousPalettesInput): Promise<GenerateHarmoniousPalettesOutput> => {
+  async (
+    input: GenerateHarmoniousPalettesInput,
+  ): Promise<GenerateHarmoniousPalettesOutput> => {
     const cacheKey = JSON.stringify(input);
     const cachedResult = getFromCache(cacheKey);
     if (cachedResult) {
@@ -140,5 +144,5 @@ const generateHarmoniousPalettesFlow = ai.defineFlow(
     setInCache(cacheKey, output);
     console.log(`[Cache Set] generateHarmoniousPalettesFlow: Cached palette for input: ${cacheKey}`);
     return output;
-  }
+  },
 );

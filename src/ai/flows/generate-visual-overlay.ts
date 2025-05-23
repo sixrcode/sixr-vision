@@ -10,6 +10,7 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
+import { defaultSafetySettings } from '../sharedConstants';
 
 // Re-define a Zod schema for the parts of AudioData we need.
 const AudioContextInputSchema = z.object({
@@ -43,13 +44,6 @@ export async function generateVisualOverlay(input: GenerateVisualOverlayInput): 
   return generateVisualOverlayFlow(input);
 }
 
-const defaultSafetySettings = [
-  { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
-  { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
-  { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
-  { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
-];
-
 // This Genkit flow does not use a separate handlebars prompt object because
 // the prompt to the image generation model is constructed dynamically within the flow.
 const generateVisualOverlayFlow = ai.defineFlow(
@@ -59,13 +53,12 @@ const generateVisualOverlayFlow = ai.defineFlow(
     outputSchema: GenerateVisualOverlayOutputSchema,
   },
   async (input: GenerateVisualOverlayInput): Promise<GenerateVisualOverlayOutput> => {
-    // Simplified cache key: uses prompt and scene name, omits dynamic audioContext for basic caching
-    const cacheKey = `prompt:${input.prompt}_scene:${input.currentSceneName}`;
+    const cacheKey = JSON.stringify(input);
     if (generateOverlayCache.has(cacheKey)) {
-      console.log(`[Cache Hit] generateVisualOverlayFlow: Returning cached overlay for key: ${cacheKey} (audioContext not part of cache key)`);
+      console.log(`[Cache Hit] generateVisualOverlayFlow: Returning cached overlay for input: ${cacheKey}`);
       return generateOverlayCache.get(cacheKey)!;
     }
-    console.log(`[Cache Miss] generateVisualOverlayFlow: Generating overlay for key: ${cacheKey}`);
+    console.log(`[Cache Miss] generateVisualOverlayFlow: Generating overlay for input: ${cacheKey}`);
 
     let audioDescription = "The audio is";
     if (input.audioContext.rms < 0.2) audioDescription += " calm and quiet";
@@ -111,7 +104,7 @@ const generateVisualOverlayFlow = ai.defineFlow(
     };
 
     generateOverlayCache.set(cacheKey, result);
-    console.log(`[Cache Set] generateVisualOverlayFlow: Cached overlay for key: ${cacheKey}`);
+    console.log(`[Cache Set] generateVisualOverlayFlow: Cached overlay for input: ${cacheKey}`);
     return result;
   }
 );
