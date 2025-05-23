@@ -9,8 +9,8 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
-import { HARMONIOUS_PALETTES_PROMPT } from '@/ai/prompts'; // Import the prompt
-import { defaultSafetySettings } from '../sharedConstants';
+import { HARMONIOUS_PALETTES_PROMPT } from '@/ai/prompts';
+import { defaultSafetySettings, MODEL_NAME_TEXT_GENERATION } from '../sharedConstants';
 
 /* ────────────────────────────────────────────────────────────────────────── */
 /*  Types & Schemas                                                          */
@@ -79,18 +79,21 @@ function setInCache(key: string, value: GenerateHarmoniousPalettesOutput): void 
   generatePalettesCacheOrder.push(key);
 }
 
-
+/**
+ * Generates a harmonious color palette.
+ * Test cases:
+ * - Input validation for numColors (min 2, max 10) should be handled by Zod.
+ * - Input validation for baseColorHue (min 0, max 360) should be handled by Zod.
+ * - Cache hit: Call twice with same input, assert AI model (mocked) is not called on second invocation.
+ * - AI failure: Mock AI model to return undefined/null output, assert flow throws an error.
+ */
 export async function generateHarmoniousPalettes(
   input: GenerateHarmoniousPalettesInput
 ): Promise<GenerateHarmoniousPalettesOutput> {
-  // Input validation will be handled by Zod when the flow is invoked.
-  // Test case consideration: Call with input.numColors < 2 or > 10 to check Zod error.
-  // Test case consideration: Call with input.baseColorHue < 0 or > 360.
   return generateHarmoniousPalettesFlow(input);
 }
 
-const MODEL_NAME_TEXT = 'googleai/gemini-2.0-flash';
-console.log(`[AI Flow Init] generateHarmoniousPalettesFlow uses model: ${MODEL_NAME_TEXT}`);
+console.log(`[AI Flow Init] generateHarmoniousPalettesFlow uses model: ${MODEL_NAME_TEXT_GENERATION}`);
 
 /* ────────────────────────────────────────────────────────────────────────── */
 /*  Prompt definition                                                        */
@@ -100,10 +103,10 @@ const harmoniousPalettePrompt = ai.definePrompt({
   name: 'generateHarmoniousPalettesPrompt',
   input: {schema: GenerateHarmoniousPalettesInputSchema},
   output: {schema: GenerateHarmoniousPalettesOutputSchema},
-  prompt: HARMONIOUS_PALETTES_PROMPT, // Use imported prompt
+  prompt: HARMONIOUS_PALETTES_PROMPT,
   config: {
     safetySettings: defaultSafetySettings,
-    model: MODEL_NAME_TEXT, // Ensure model is specified in prompt config
+    model: MODEL_NAME_TEXT_GENERATION,
   }
 });
 
@@ -124,20 +127,16 @@ const generateHarmoniousPalettesFlow = ai.defineFlow(
     const cachedResult = getFromCache(cacheKey);
     if (cachedResult) {
       console.log(`[Cache Hit] generateHarmoniousPalettesFlow: Returning cached palette for input: ${cacheKey}`);
-      // Test case consideration: Call twice with same input, second call should hit cache.
-      // (Mock ai.generate and assert it's not called on second invocation).
       return cachedResult;
     }
 
-    console.log(`[Cache Miss] generateHarmoniousPalettesFlow: Generating palette for input: ${cacheKey} using model: ${MODEL_NAME_TEXT}`);
+    console.log(`[Cache Miss] generateHarmoniousPalettesFlow: Generating palette for input: ${cacheKey} using model: ${MODEL_NAME_TEXT_GENERATION}`);
     const startTime = performance.now();
-    // The 'harmoniousPalettePrompt' defined above uses HARMONIOUS_PALETTES_PROMPT string
     const {output} = await harmoniousPalettePrompt(input);
     const endTime = performance.now();
-    console.log(`[AI Benchmark] generateHarmoniousPalettesFlow prompt call took ${(endTime - startTime).toFixed(2)} ms`);
+    console.log(`[AI Benchmark] generateHarmoniousPalettesFlow prompt call took ${(endTime - startTime).toFixed(2)} ms for model ${MODEL_NAME_TEXT_GENERATION}`);
     
     if (!output) {
-        // Test case consideration: Mock ai.generate to return undefined/null output.
         throw new Error('AI failed to generate a palette.');
     }
     

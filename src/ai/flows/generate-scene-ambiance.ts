@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview An AI agent that generates evocative ambiance text based on audio data and the current scene.
@@ -9,7 +10,8 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
-import { defaultSafetySettings } from '../sharedConstants';
+import { defaultSafetySettings, MODEL_NAME_TEXT_GENERATION } from '../sharedConstants';
+import { GENERATE_SCENE_AMBIANCE_PROMPT } from '../prompts';
 
 // Define a Zod schema for the audio data fields we need for this flow
 const AudioDataInputSchema = z.object({
@@ -35,9 +37,8 @@ export type GenerateSceneAmbianceOutput = z.infer<typeof GenerateSceneAmbianceOu
 
 // In-memory cache for this flow
 const ambianceCache = new Map<string, GenerateSceneAmbianceOutput>();
-const MODEL_NAME_TEXT = 'googleai/gemini-2.0-flash';
 
-console.log(`[AI Flow Init] generateSceneAmbianceFlow uses model: ${MODEL_NAME_TEXT}`);
+console.log(`[AI Flow Init] generateSceneAmbianceFlow uses model: ${MODEL_NAME_TEXT_GENERATION}`);
 
 export async function generateSceneAmbiance(
   input: GenerateSceneAmbianceInput
@@ -49,28 +50,9 @@ const ambiancePrompt = ai.definePrompt({
   name: 'generateSceneAmbiancePrompt',
   input: {schema: GenerateSceneAmbianceInputSchema},
   output: {schema: GenerateSceneAmbianceOutputSchema},
-  prompt: `
-You are a creative director for an audio-visualizer experience themed "Cosmic Grapevines," inspired by Octavia E. Butler's "Parable of the Sower."
-Your task is to generate a short, evocative ambiance text (1-2 sentences, maximum 30 words) that captures the current audiovisual mood.
-Use metaphors of seeds, roots, vines, stars, growth, connection, and transformation where appropriate.
-The language should be poetic and slightly visionary.
-
-Current Visualizer Scene: "{{currentSceneName}}" (ID: {{currentSceneId}})
-Current Audio Mood:
-- Bass Energy: {{audioData.bassEnergy}}
-- Mid Energy: {{audioData.midEnergy}}
-- Treble Energy: {{audioData.trebleEnergy}}
-- Overall Volume (RMS): {{audioData.rms}}
-- Tempo (BPM): {{audioData.bpm}}
-- Beat Detected: {{audioData.beat}}
-
-Combine the scene's nature with the audio data to describe the atmosphere.
-Example for high energy in "Radial Burst": "Explosive energy pulses from the core, painting the void with every beat."
-Example for low energy in "Mirror Silhouette": "A fleeting reflection dances in the ethereal glow, swaying to a gentle rhythm."
-Example for "Cosmic Grapevines" theme: "Tender green lights unfurl into a constellation – the music plants a seed among the stars."
-  `.trim(),
+  prompt: GENERATE_SCENE_AMBIANCE_PROMPT,
   config: {
-    model: MODEL_NAME_TEXT,
+    model: MODEL_NAME_TEXT_GENERATION,
     safetySettings: defaultSafetySettings,
   },
 });
@@ -82,21 +64,18 @@ const generateSceneAmbianceFlow = ai.defineFlow(
     outputSchema: GenerateSceneAmbianceOutputSchema,
   },
   async (input: GenerateSceneAmbianceInput): Promise<GenerateSceneAmbianceOutput> => {
-    // Simplified cache key: use scene ID and a hash of the prompt string itself,
-    // as audio data is too dynamic for effective direct caching in this context.
-    // For more nuanced caching, one might categorize audioData into 'low', 'medium', 'high' energy states.
-    const cacheKey = `${input.currentSceneId}-${input.currentSceneName}`;
+    const cacheKey = `${input.currentSceneId}-${input.currentSceneName}-${Math.round(input.audioData.rms*10)}-${Math.round(input.audioData.bpm/10)}`; // Simplified cache key
 
     if (ambianceCache.has(cacheKey)) {
       console.log(`[Cache Hit] generateSceneAmbianceFlow: Returning cached ambiance for key: ${cacheKey}`);
       return ambianceCache.get(cacheKey)!;
     }
-    console.log(`[Cache Miss] generateSceneAmbianceFlow: Generating ambiance for key: "${cacheKey}" using model: ${MODEL_NAME_TEXT}`);
+    console.log(`[Cache Miss] generateSceneAmbianceFlow: Generating ambiance for key: "${cacheKey}" using model: ${MODEL_NAME_TEXT_GENERATION}`);
     
     const startTime = performance.now();
     const {output} = await ambiancePrompt(input);
     const endTime = performance.now();
-    console.log(`[AI Benchmark] generateSceneAmbianceFlow prompt call took ${(endTime - startTime).toFixed(2)} ms`);
+    console.log(`[AI Benchmark] generateSceneAmbianceFlow prompt call took ${(endTime - startTime).toFixed(2)} ms for model ${MODEL_NAME_TEXT_GENERATION}`);
 
     if (!output || !output.ambianceText) {
       throw new Error('AI failed to generate ambiance text.');

@@ -1,4 +1,4 @@
-// The below code is auto-generated. Do not edit this code manually.
+
 'use server';
 
 /**
@@ -11,7 +11,8 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
-import { defaultSafetySettings } from '../sharedConstants';
+import { defaultSafetySettings, MODEL_NAME_TEXT_GENERATION } from '../sharedConstants';
+import { SUGGEST_SCENE_FROM_AUDIO_PROMPT } from '../prompts';
 
 /* ────────────────────────────────────────────────────────────
    ▸  Input / Output Schemas
@@ -30,7 +31,7 @@ export type SuggestSceneFromAudioInput = z.infer<
 const SuggestSceneFromAudioOutputSchema = z.object({
   sceneId:              z.string().describe('ID of the suggested scene'),
   reason:               z.string().describe('Why this scene fits, in Cosmic-Grapevines metaphors'),
-  suggestedAssetPrompt: z.string().describe('2-5 word prompt for procedural assets'),
+  suggestedAssetPrompt: z.string().describe('2-5 word prompt for procedural assets, Cosmic Grapevines themed'),
 });
 export type SuggestSceneFromAudioOutput = z.infer<
   typeof SuggestSceneFromAudioOutputSchema
@@ -41,12 +42,37 @@ export type SuggestSceneFromAudioOutput = z.infer<
    ──────────────────────────────────────────────────────────── */
 
 const sceneCache = new Map<string, SuggestSceneFromAudioOutput>();
+const MAX_CACHE_SIZE = 50; // Define max size for the cache
+const sceneCacheOrder: string[] = []; // For LRU logic
+
+function getFromCache(key: string): SuggestSceneFromAudioOutput | undefined {
+  if (sceneCache.has(key)) {
+    const index = sceneCacheOrder.indexOf(key);
+    if (index > -1) sceneCacheOrder.splice(index, 1);
+    sceneCacheOrder.push(key);
+    return sceneCache.get(key);
+  }
+  return undefined;
+}
+
+function setInCache(key: string, value: SuggestSceneFromAudioOutput): void {
+  if (sceneCache.size >= MAX_CACHE_SIZE && !sceneCache.has(key)) {
+    const lruKey = sceneCacheOrder.shift();
+    if (lruKey) {
+      sceneCache.delete(lruKey);
+      console.log(`[Cache Evict] suggestSceneFromAudioFlow: Evicted ${lruKey} from cache.`);
+    }
+  }
+  sceneCache.set(key, value);
+  const index = sceneCacheOrder.indexOf(key);
+  if (index > -1) sceneCacheOrder.splice(index, 1);
+  sceneCacheOrder.push(key);
+}
 
 /* ────────────────────────────────────────────────────────────
    ▸  Constants
    ──────────────────────────────────────────────────────────── */
-
-const MODEL_NAME_TEXT = 'googleai/gemini-2.0-flash'; // default text model
+console.log(`[AI Flow Init] suggestSceneFromAudioFlow uses model: ${MODEL_NAME_TEXT_GENERATION}`);
 
 /* ────────────────────────────────────────────────────────────
    ▸  Prompt Definition
@@ -56,31 +82,11 @@ const scenePrompt = ai.definePrompt({
   name:   'suggestSceneFromAudioPrompt',
   input:  { schema: SuggestSceneFromAudioInputSchema },
   output: { schema: SuggestSceneFromAudioOutputSchema },
-  prompt: `
-You are an AI scene-selection expert for an audio-reactive visualiser.
-Theme: **Cosmic Grapevines** (growth, connection, cosmic journey).
-
-Given bass/mid/treble energy and BPM, choose the most fitting scene from
-the list below, explain **why** in a short metaphor, and give a 2–5-word
-procedural-asset prompt that matches the mood.
-
-Scenes list:
-- spectrum_bars       (vertical frequency bars; energy conduits)
-- radial_burst        (center-out particle bursts; seed explosions)
-- mirror_silhouette   (reflective performer silhouette; cosmic entity)
-- particle_finale     (dense particle bloom; universe of stars)
-- neon_pulse_grid     (pulsing lattice; cosmic lattice)
-- frequency_rings     (concentric waves; energy ripples)
-- strobe_light        (flashing peaks)
-- echoing_shapes      (appearing shapes; sprouting seeds)
-- geometric_tunnel    (flying tunnel; journey through vine network)
-
-Bass Energy:   {{bassEnergy}}
-Mid Energy:    {{midEnergy}}
-Treble Energy: {{trebleEnergy}}
-BPM:           {{bpm}}
-  `.trim(),
-  config: { safetySettings: defaultSafetySettings },
+  prompt: SUGGEST_SCENE_FROM_AUDIO_PROMPT,
+  config: { 
+    safetySettings: defaultSafetySettings,
+    model: MODEL_NAME_TEXT_GENERATION,
+  },
 });
 
 /* ────────────────────────────────────────────────────────────
@@ -96,22 +102,22 @@ const suggestSceneFromAudioFlow = ai.defineFlow(
   async (input: SuggestSceneFromAudioInput): Promise<SuggestSceneFromAudioOutput> => {
     const cacheKey = JSON.stringify(input);
 
-    /* 1. Try cache first */
-    if (sceneCache.has(cacheKey)) {
-      console.log(`[Cache HIT] Scene suggestion for ${cacheKey}`);
-      return sceneCache.get(cacheKey)!;
+    const cachedResult = getFromCache(cacheKey);
+    if (cachedResult) {
+      console.log(`[Cache HIT] suggestSceneFromAudioFlow for ${cacheKey}`);
+      return cachedResult;
     }
 
-    /* 2. Call Gemini model */
-    console.log(`[Cache MISS] Generating scene via ${MODEL_NAME_TEXT} for ${cacheKey}`);
+    console.log(`[Cache MISS] suggestSceneFromAudioFlow: Generating scene via ${MODEL_NAME_TEXT_GENERATION} for ${cacheKey}`);
     const t0 = performance.now();
     const { output } = await scenePrompt(input);
     const dt = (performance.now() - t0).toFixed(1);
 
     if (!output) throw new Error('AI failed to produce a scene suggestion.');
 
-    console.log(`[AI] Scene generated in ${dt} ms – caching under ${cacheKey}`);
-    sceneCache.set(cacheKey, output);
+    console.log(`[AI Benchmark] suggestSceneFromAudioFlow prompt call took ${dt} ms for model ${MODEL_NAME_TEXT_GENERATION}`);
+    setInCache(cacheKey, output);
+    console.log(`[Cache Set] suggestSceneFromAudioFlow: Cached scene suggestion under ${cacheKey}`);
     return output;
   }
 );
