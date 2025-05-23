@@ -20,6 +20,15 @@ export function OtherControls({ value }: OtherControlsProps) {
   const { settings, updateSetting } = useSettings();
 
   const handleExportLog = () => {
+    // --- PRIVACY & SECURITY NOTE for future full implementation ---
+    // If this feature is built out to use IndexedDB:
+    // 1. Clearly inform the user what data is being logged locally.
+    // 2. Obtain consent if logging potentially sensitive inputs (e.g., detailed AI prompts beyond operational parameters).
+    // 3. Avoid logging raw audio/video data or PII unless absolutely necessary and secured.
+    // 4. Consider options for users to clear their local rehearsal log.
+    // 5. The current simulation logs operational data like scene changes and setting values.
+    // --- End of Privacy Note ---
+
     // Simulate log entries
     const sampleLogEntries: RehearsalLogEntry[] = [
       {
