@@ -74,7 +74,7 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{
             __html: `
               html {
-                background-color: hsl(var(--background-hsl)); /* Matches --background-hsl from globals.css */
+                background-color: hsl(258, 56%, 47%); /* SBNF Deep Purple - literal value for FOUC prevention */
               }
             `,
           }}

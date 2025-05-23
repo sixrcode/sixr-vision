@@ -4,13 +4,14 @@
 import { Button } from '@/components/ui/button';
 import { useSettings } from '@/providers/SettingsProvider';
 import { ControlPanelSection } from './ControlPanelSection';
-import { AlertTriangle, ZapOff, FileJson, Database } from 'lucide-react';
+import { AlertTriangle, ZapOff, FileJson, Database, Trash2 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import { ControlHint } from './ControlHint';
 import { LabelledSwitchControl } from './common/LabelledSwitchControl';
 import { cn } from '@/lib/utils';
 import type { RehearsalLogEntry } from '@/types'; // Import the type
+import { addLogEntry, getAllLogEntries, clearLogEntries } from '@/services/rehearsalLogService';
 
 type OtherControlsProps = {
   value: string; // For AccordionItem
@@ -19,56 +20,78 @@ type OtherControlsProps = {
 export function OtherControls({ value }: OtherControlsProps) {
   const { settings, updateSetting } = useSettings();
 
-  const handleExportLog = () => {
-    // Simulate log entries
-    const sampleLogEntries: RehearsalLogEntry[] = [
-      {
-        timestamp: Date.now() - 50000,
-        event: 'scene_change',
-        details: { sceneId: 'radial_burst', reason: 'manual' },
-      },
-      {
-        timestamp: Date.now() - 45000,
-        event: 'setting_update',
-        details: { settingKey: 'gamma', oldValue: 1.0, newValue: 1.2 },
-      },
-      {
-        timestamp: Date.now() - 30000,
-        event: 'ai_overlay_generated',
-        details: { prompt: settings.aiOverlayPrompt || "default prompt" },
-      },
-      {
-        timestamp: Date.now() - 10000,
-        event: 'scene_change',
-        details: { sceneId: settings.currentSceneId, reason: 'ai_suggestion' },
-      },
-       {
-        timestamp: Date.now(),
-        event: 'panic_mode_toggled',
-        details: { panicModeActive: settings.panicMode },
-      },
-    ];
+  const handlePanicModeToggle = async (checked: boolean) => {
+    updateSetting('panicMode', checked);
+    try {
+      await addLogEntry('panic_mode_toggled', { panicModeActive: checked });
+    } catch (e) {
+      console.warn("Failed to log panic mode toggle:", e);
+    }
+  };
+  
+  const handleExportLog = async () => {
+    // --- PRIVACY & SECURITY NOTE ---
+    // 1. Clearly inform the user what data is being logged locally.
+    // 2. Obtain consent if logging potentially sensitive inputs (e.g., detailed AI prompts).
+    // 3. Avoid logging raw audio/video data or PII unless absolutely necessary and secured.
+    // 4. Consider options for users to clear their local rehearsal log.
+    // 5. The current implementation logs operational data like scene changes and setting values.
+    // --- End of Privacy Note ---
+    try {
+      const logEntries = await getAllLogEntries();
+      if (logEntries.length === 0) {
+        toast({
+          title: "Rehearsal Log is Empty",
+          description: "No events have been logged to IndexedDB yet.",
+        });
+        return;
+      }
 
-    // Convert to CSV string
-    const header = 'timestamp,event_type,details_json\n';
-    const rows = sampleLogEntries.map(entry => 
-      `${new Date(entry.timestamp).toISOString()},${entry.event},"${JSON.stringify(entry.details).replace(/"/g, '""')}"`
-    ).join('\n');
-    const csvString = header + rows;
+      // Convert to CSV string
+      const header = 'timestamp,event_type,details_json\n';
+      const rows = logEntries.map(entry => 
+        `${new Date(entry.timestamp).toISOString()},${entry.event},"${JSON.stringify(entry.details).replace(/"/g, '""')}"`
+      ).join('\n');
+      const csvString = header + rows;
 
-    console.log("--- Sample Rehearsal Log (CSV Format) ---");
-    console.log(csvString);
-    console.log("----------------------------------------");
+      console.log("--- Rehearsal Log (from IndexedDB - CSV Format) ---");
+      console.log(csvString);
+      console.log("----------------------------------------------------");
 
-    toast({ 
-      title: "Export Log (Simulated)", 
-      description: "A sample CSV-formatted log has been printed to the browser console. Full IndexedDB logging & CSV export is a future feature." 
-    });
+      toast({ 
+        title: "Export Log (Simulated)", 
+        description: `Fetched ${logEntries.length} entries from IndexedDB. CSV-formatted log printed to console. Full CSV export is a future feature.` 
+      });
+    } catch (error) {
+      console.error("Error exporting log:", error);
+      toast({
+        title: "Error Exporting Log",
+        description: "Could not fetch log entries. See console for details.",
+        variant: "destructive",
+      });
+    }
   };
   
   const handleLoadCueList = () => {
     console.log("Load JSON cue-list (placeholder)");
     toast({ title: "Load Cue List", description: "JSON cue-list player is a placeholder." });
+  };
+
+  const handleClearLog = async () => {
+    try {
+      await clearLogEntries();
+      toast({
+        title: "Rehearsal Log Cleared",
+        description: "All entries have been removed from IndexedDB.",
+      });
+    } catch (error) {
+      console.error("Error clearing log:", error);
+      toast({
+        title: "Error Clearing Log",
+        description: "Could not clear log entries. See console for details.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -82,11 +105,11 @@ export function OtherControls({ value }: OtherControlsProps) {
         labelHtmlFor="panic-mode-switch"
         switchId="panic-mode-switch"
         checked={settings.panicMode}
-        onCheckedChange={(checked) => updateSetting('panicMode', checked)}
+        onCheckedChange={handlePanicModeToggle}
         tooltipContent={<p>Immediately blacks out the main visualizer output. Useful for emergencies.</p>}
         switchProps={{ 
           className: cn(
-            "data-[state=checked]:bg-destructive", // Ensure this class is applied for red background
+            "data-[state=checked]:bg-destructive",
             settings.panicMode && "animate-destructive-pulse"
           ) 
         }}
@@ -127,10 +150,21 @@ export function OtherControls({ value }: OtherControlsProps) {
             </Button>
           </TooltipTrigger>
           <TooltipContent>
-            <p>Exports a log of events and settings changes during the session. (Simulated: logs sample to console)</p>
+            <p>Exports a log of events and settings changes during the session to the console (from IndexedDB).</p>
           </TooltipContent>
         </Tooltip>
-        <ControlHint>IndexedDB logging & export are future features. Sample log printed to console.</ControlHint>
+        <ControlHint>Log entries are stored in IndexedDB. CSV printed to console.</ControlHint>
+
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button variant="outline" size="sm" className="w-full text-destructive hover:text-destructive" onClick={handleClearLog}>
+              <Trash2 className="mr-2 h-4 w-4" /> Clear Rehearsal Log
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p className="text-destructive">Permanently deletes all entries from the IndexedDB rehearsal log.</p>
+          </TooltipContent>
+        </Tooltip>
       </div>
 
       <div className="mt-4">

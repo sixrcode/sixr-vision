@@ -7,7 +7,6 @@ import { Switch } from '@/components/ui/switch';
 import { useSettings } from '@/providers/SettingsProvider';
 import { ControlPanelSection } from './ControlPanelSection';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
-// Removed ControlHint as it's not used here after review
 
 type VisualControlsProps = {
   value: string; // For AccordionItem
@@ -34,6 +33,7 @@ export function VisualControls({ value }: VisualControlsProps) {
           step={0.05}
           value={[settings.gamma]}
           onValueChange={([val]) => updateSetting('gamma', val)}
+          aria-label={`Gamma: ${settings.gamma.toFixed(2)}`}
         />
       </div>
       <div className="space-y-1">
@@ -52,6 +52,7 @@ export function VisualControls({ value }: VisualControlsProps) {
           step={0.01}
           value={[settings.dither]}
           onValueChange={([val]) => updateSetting('dither', val)}
+          aria-label={`Dither: ${settings.dither.toFixed(2)}`}
         />
       </div>
       <div className="space-y-1">
@@ -70,6 +71,7 @@ export function VisualControls({ value }: VisualControlsProps) {
           step={0.01}
           value={[settings.brightCap]}
           onValueChange={([val]) => updateSetting('brightCap', val)}
+          aria-label={`Brightness Cap: ${settings.brightCap.toFixed(2)}`}
         />
       </div>
       <div className="flex items-center justify-between mt-3">
@@ -85,6 +87,7 @@ export function VisualControls({ value }: VisualControlsProps) {
           id="scene-transition-switch"
           checked={settings.sceneTransitionActive}
           onCheckedChange={(checked) => updateSetting('sceneTransitionActive', checked)}
+          aria-label="Toggle Scene Transitions"
         />
       </div>
       {settings.sceneTransitionActive && (
@@ -104,6 +107,7 @@ export function VisualControls({ value }: VisualControlsProps) {
             step={50}
             value={[settings.sceneTransitionDuration]}
             onValueChange={([val]) => updateSetting('sceneTransitionDuration', val)}
+            aria-label={`Scene Transition Duration: ${settings.sceneTransitionDuration} milliseconds`}
           />
         </div>
       )}

@@ -1,3 +1,4 @@
+
 "use client";
 
 import type { ReactNode } from 'react';
@@ -5,12 +6,13 @@ import { createContext, useContext, useState, useCallback, useMemo } from 'react
 import type { SceneDefinition } from '@/types';
 import { SCENES as BUILT_IN_SCENES } from '@/lib/constants';
 import { useSettings } from './SettingsProvider';
+import { addLogEntry } from '@/services/rehearsalLogService';
 
 type SceneContextType = {
   scenes: SceneDefinition[];
   currentScene: SceneDefinition | undefined;
   registerScene: (scene: SceneDefinition) => void;
-  setCurrentSceneById: (id: string) => void;
+  setCurrentSceneById: (id: string, reason?: string) => void; // Added optional reason
 };
 
 const SceneContext = createContext<SceneContextType | undefined>(undefined);
@@ -34,13 +36,24 @@ export function SceneProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
-  const setCurrentSceneById = useCallback((id: string) => {
-    if (registeredScenes.find(s => s.id === id)) {
+  const setCurrentSceneById = useCallback(async (id: string, reason: string = 'manual_selection') => {
+    const sceneExists = registeredScenes.find(s => s.id === id);
+    if (sceneExists) {
+      const oldSceneId = settings.currentSceneId;
       updateSetting('currentSceneId', id);
+      try {
+        await addLogEntry('scene_change', { 
+          previousSceneId: oldSceneId, 
+          newSceneId: id, 
+          reason: reason 
+        });
+      } catch (e) {
+        console.warn("Failed to log scene change:", e);
+      }
     } else {
       console.warn(`Scene with id "${id}" not found.`);
     }
-  }, [registeredScenes, updateSetting]);
+  }, [registeredScenes, updateSetting, settings.currentSceneId]);
 
   return (
     <SceneContext.Provider value={{ scenes: registeredScenes, currentScene, registerScene, setCurrentSceneById }}>
