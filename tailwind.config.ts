@@ -20,9 +20,9 @@ export default {
   theme: {
   	extend: {
       fontFamily: {
-        sans: ['var(--font-poppins)', 'var(--font-geist-sans)', ...defaultTheme.fontFamily.sans], // Poppins as primary, Geist Sans as fallback
-        mono: ['var(--font-geist-mono)', ...defaultTheme.fontFamily.mono],
-        data70: ['var(--font-data70)', 'var(--font-geist-mono)', 'monospace'], // DATA 70 font
+        sans: ['var(--font-poppins)', /*'var(--font-geist-sans)',*/ ...defaultTheme.fontFamily.sans], // Poppins as primary, Geist Sans as fallback (currently disabled)
+        mono: [/*'var(--font-geist-mono)',*/ ...defaultTheme.fontFamily.mono], // Geist Mono as primary (currently disabled)
+        data70: ['var(--font-data70)', 'monospace'], // DATA 70 font, then system monospace
       },
   		colors: {
   			background: 'hsl(var(--background-hsl))',
@@ -132,5 +132,3 @@ export default {
   },
   plugins: [require("tailwindcss-animate")],
 } satisfies Config;
-
-    

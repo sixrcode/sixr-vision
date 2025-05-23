@@ -1,13 +1,11 @@
 
 import type { Metadata } from 'next';
 import { Poppins } from 'next/font/google';
-import { GeistSans } from 'geist/font/sans';
-import { GeistMono } from 'geist/font/mono';
+// import { GeistSans } from 'geist/font/sans'; // Temporarily disabled due to 403 errors in Firebase Studio
+// import { GeistMono } from 'geist/font/mono'; // Temporarily disabled due to 403 errors in Firebase Studio
 import localFont from 'next/font/local';
 
-// The fonts.css file can be re-imported here if it contains active @font-face rules.
-// It's currently not imported as Torus font loading via next/font/local is (now being re-enabled).
-// import './fonts.css'; // Currently only contains comments
+// import './fonts.css'; // No longer needed for Torus as it's handled by next/font/local
 import './globals.css';
 
 import { Toaster } from '@/components/ui/toaster';
@@ -22,6 +20,11 @@ const poppins = Poppins({
   display: 'swap',
 });
 
+// Fallback if GeistSans loading is disabled (due to 403 errors in Firebase Studio)
+const geistSans = { variable: '' };
+// Fallback if GeistMono loading is disabled (due to 403 errors in Firebase Studio)
+const geistMono = { variable: '' };
+
 // === DATA 70 FONT CONFIGURATION ===
 // IMPORTANT: Ensure the font file 'Data70.ttf' is in 'src/app/fonts/'.
 // Create the 'src/app/fonts/' directory if it doesn't exist.
@@ -29,34 +32,27 @@ const data70Font = localFont({
   src: [
     {
       path: './fonts/Data70.ttf', // Expects Data70.ttf in src/app/fonts/
-      // weight: '400', // Specify weight if not a variable font or if only one weight is used
-      // style: 'normal', // Specify style
     },
   ],
   variable: '--font-data70',
   display: 'swap',
-  fallback: ['var(--font-geist-mono)', 'monospace'], // Fallback if Data70 fails to load
+  fallback: ['monospace'], 
 });
-// const data70Font = { variable: ''}; // Fallback if Data70.ttf is not available
-
+// const data70Font = { variable: ''}; // Use this if Data70.ttf is confirmed unavailable & causing build errors
 
 // === TORUS FONT CONFIGURATION ===
-// Re-enabled to use Fontspring-DEMO-toruspro-variable.ttf
-// IMPORTANT:
-// 1. Ensure the font file 'Fontspring-DEMO-toruspro-variable.ttf' is in 'src/app/fonts/'.
-// 2. Create the 'src/app/fonts/' directory if it doesn't exist.
+// Now using Fontspring-DEMO-toruspro-variable.ttf
+// IMPORTANT: Ensure 'Fontspring-DEMO-toruspro-variable.ttf' is in 'src/app/fonts/'.
 const torusVariationsFont = localFont({
   src: [
     {
       // Path relative to this layout.tsx file
       path: './fonts/Fontspring-DEMO-toruspro-variable.ttf',
-      // weight: '100 900', // Example for variable font - adjust if needed
-      // style: 'normal',   // Adjust if needed
     },
   ],
   variable: '--font-torus-variations',
   display: 'swap',
-  fallback: ['var(--font-geist-mono)', 'monospace'], // Fallback if Torus fails
+  fallback: ['monospace'], // Use system monospace as fallback
 });
 // const torusVariationsFont = { variable: '' }; // Placeholder if Torus font loading is disabled
 
@@ -84,7 +80,13 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className={`${poppins.variable} ${GeistSans.variable} ${GeistMono.variable} ${data70Font.variable} ${torusVariationsFont.variable} overflow-x-hidden`}>
+      <body className={`${poppins.variable} ${geistSans.variable} ${geistMono.variable} ${data70Font.variable} ${torusVariationsFont.variable} overflow-x-hidden`}>
+        <a
+          href="#main-content"
+          className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:p-3 focus:bg-background focus:text-foreground focus:ring-2 focus:ring-ring focus:rounded-md focus:top-2 focus:left-2"
+        >
+          Skip to main content
+        </a>
         <SidebarProvider style={{ "--sidebar-width": CONTROL_PANEL_WIDTH_STRING } as React.CSSProperties}>
           <AppProviders>
             {children}
@@ -95,5 +97,3 @@ export default function RootLayout({
     </html>
   );
 }
-
-    

@@ -35,9 +35,19 @@ const GenerateSceneAmbianceOutputSchema = z.object({
 });
 export type GenerateSceneAmbianceOutput = z.infer<typeof GenerateSceneAmbianceOutputSchema>;
 
+// In-memory cache for this flow
+const generateAmbianceCache = new Map<string, GenerateSceneAmbianceOutput>();
+
 export async function generateSceneAmbiance(input: GenerateSceneAmbianceInput): Promise<GenerateSceneAmbianceOutput> {
   return generateSceneAmbianceFlow(input);
 }
+
+const defaultSafetySettings = [
+  { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
+  { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
+  { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
+  { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
+];
 
 const prompt = ai.definePrompt({
   name: 'generateSceneAmbiancePrompt',
@@ -61,6 +71,9 @@ Consider the scene's nature and combine it with the audio data to describe the a
 - If 'Spectrum Bars' is active with complex audio: "Digital monoliths rise and fall, charting the growth of an intricate soundscape."
 
 Generate the ambiance text, reflecting the "Cosmic Grapevines" theme.`,
+  config: {
+    safetySettings: defaultSafetySettings,
+  }
 });
 
 const generateSceneAmbianceFlow = ai.defineFlow(
@@ -69,12 +82,26 @@ const generateSceneAmbianceFlow = ai.defineFlow(
     inputSchema: GenerateSceneAmbianceInputSchema,
     outputSchema: GenerateSceneAmbianceOutputSchema,
   },
-  async (input) => {
+  async (input: GenerateSceneAmbianceInput): Promise<GenerateSceneAmbianceOutput> => {
+    // Simplified cache key: uses scene ID and name, omits dynamic audioData for basic caching
+    const cacheKey = `sceneId:${input.currentSceneId}_sceneName:${input.currentSceneName}`;
+    if (generateAmbianceCache.has(cacheKey)) {
+      console.log(`[Cache Hit] generateSceneAmbianceFlow: Returning cached ambiance for key: ${cacheKey} (audioData not part of cache key)`);
+      return generateAmbianceCache.get(cacheKey)!;
+    }
+    console.log(`[Cache Miss] generateSceneAmbianceFlow: Generating ambiance for key: ${cacheKey}`);
+    
+    const startTime = performance.now();
     const {output} = await prompt(input);
+    const endTime = performance.now();
+    console.log(`[AI Benchmark] generateSceneAmbianceFlow prompt call took ${(endTime - startTime).toFixed(2)} ms`);
+
     if (!output) {
       throw new Error('AI failed to generate ambiance text.');
     }
+
+    generateAmbianceCache.set(cacheKey, output);
+    console.log(`[Cache Set] generateSceneAmbianceFlow: Cached ambiance for key: ${cacheKey}`);
     return output;
   }
 );
-

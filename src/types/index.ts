@@ -1,65 +1,89 @@
 
-export type LogoAnimationType = 'none' | 'solid' | 'blink' | 'pulse' | 'rainbowCycle'; // Added rainbowCycle
+import type * as THREE from 'three';
+
+export type LogoAnimationType = 'none' | 'solid' | 'blink' | 'pulse' | 'rainbowCycle';
 
 export type LogoAnimationSettings = {
   type: LogoAnimationType;
-  speed: number; // General speed multiplier (e.g., 0.5 to 2)
-  color: string; // For solid color, blink color
-  // Future: brightness, specific palettes, etc.
+  speed: number;
+  color: string;
+};
+
+export type WebGLSceneAssets = {
+  scene: THREE.Scene;
+  camera: THREE.PerspectiveCamera | THREE.OrthographicCamera; // Allow Orthographic for 2D-like planes
+  renderer: THREE.WebGLRenderer;
+  [key: string]: any; // For scene-specific assets like particle systems, materials, video textures
 };
 
 export type SceneDefinition = {
   id: string;
   name: string;
-  meta?: Record<string, any>; // For additional metadata like author, description
-  draw: (
+  meta?: Record<string, any>;
+  rendererType?: '2d' | 'webgl'; // Default to '2d' if not specified
+  // For 2D Canvas scenes
+  draw?: (
     canvasContext: CanvasRenderingContext2D,
     audioData: AudioData,
     settings: Settings,
     webcamFeed?: HTMLVideoElement
   ) => void;
-  thumbnailUrl?: string; // For preset selector
+  // For WebGL scenes
+  initWebGL?: (
+    canvas: HTMLCanvasElement,
+    settings: Settings,
+    webcamElement?: HTMLVideoElement // Optional webcam element for scenes that need it
+  ) => WebGLSceneAssets;
+  drawWebGL?: (params: {
+    renderer: THREE.WebGLRenderer; // Main renderer instance
+    scene: THREE.Scene; // Scene-specific THREE.Scene
+    camera: THREE.PerspectiveCamera | THREE.OrthographicCamera; // Scene-specific THREE.Camera
+    audioData: AudioData;
+    settings: Settings;
+    webGLAssets: any; // Assets returned by initWebGL
+    canvasWidth: number;
+    canvasHeight: number;
+    webcamElement?: HTMLVideoElement; // Pass webcam element to draw loop if needed
+  }) => void;
+  cleanupWebGL?: (webGLAssets: WebGLSceneAssets) => void; // To dispose of scene-specific WebGL resources
+  thumbnailUrl?: string;
   dataAiHint?: string;
 };
 
 export type AudioData = {
-  spectrum: Uint8Array; // FFT data
-  bassEnergy: number; // 0-1
-  midEnergy: number; // 0-1
-  trebleEnergy: number; // 0-1
-  rms: number; // Root Mean Square for overall volume, 0-1
-  bpm: number; // Estimated Beats Per Minute
-  beat: boolean; // True if a beat is detected in the current frame
+  spectrum: Uint8Array;
+  bassEnergy: number;
+  midEnergy: number;
+  trebleEnergy: number;
+  rms: number;
+  bpm: number;
+  beat: boolean;
 };
 
 export type Settings = {
   fftSize: 128 | 256 | 512;
-  gain: number; // 0-2
-  enableAgc: boolean; // Automatic Gain Control
-  gamma: number; // 0-3
-  dither: number; // 0-1
-  brightCap: number; // 0-1, max brightness
-  logoOpacity: number; // 0-1
+  gain: number;
+  enableAgc: boolean;
+  gamma: number;
+  dither: number;
+  brightCap: number;
+  logoOpacity: number;
   showWebcam: boolean;
   mirrorWebcam: boolean;
   currentSceneId: string;
-  panicMode: boolean; // Visualizer black
-  logoBlackout: boolean; // Logo black/hidden
+  panicMode: boolean;
+  logoBlackout: boolean;
   logoAnimationSettings: LogoAnimationSettings;
   lastAISuggestedAssetPrompt?: string;
-  sceneTransitionDuration: number; // milliseconds for crossfade
-  sceneTransitionActive: boolean; // whether crossfade is enabled
-  monitorAudio: boolean; // Play microphone input to speakers
-  selectedAudioInputDeviceId?: string; // Added for microphone selection
-
-  // AI Visual Overlay Mixer Settings
+  sceneTransitionDuration: number;
+  sceneTransitionActive: boolean;
+  monitorAudio: boolean;
+  selectedAudioInputDeviceId?: string;
   enableAiOverlay: boolean;
   aiGeneratedOverlayUri: string | null;
-  aiOverlayOpacity: number; // 0-1
-  aiOverlayBlendMode: CanvasRenderingContext2D['globalCompositeOperation'];
+  aiOverlayOpacity: number;
+  aiOverlayBlendMode: GlobalCompositeOperation;
   aiOverlayPrompt: string;
-  enablePeriodicAiOverlay: boolean;
-  aiOverlayRegenerationInterval: number; // Interval in seconds for periodic regeneration
 };
 
 export type PaletteGenieColor = {
@@ -74,7 +98,7 @@ export type ProceduralAsset = {
 };
 
 export type Cue = {
-  time: number; // in seconds from start of cue list
+  time: number;
   action: 'change_scene' | 'set_setting';
   payload: {
     sceneId?: string;
@@ -89,8 +113,7 @@ export type RehearsalLogEntry = {
   details: Record<string, any>;
 };
 
-// Valid Canvas GlobalCompositeOperation values
-export const VALID_BLEND_MODES: CanvasRenderingContext2D['globalCompositeOperation'][] = [
+export const VALID_BLEND_MODES: GlobalCompositeOperation[] = [
   'source-over', 'source-in', 'source-out', 'source-atop',
   'destination-over', 'destination-in', 'destination-out', 'destination-atop',
   'lighter', 'copy', 'xor', 'multiply', 'screen', 'overlay', 'darken',

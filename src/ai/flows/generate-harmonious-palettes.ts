@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview A harmonious color palette generator AI agent.
@@ -36,11 +37,21 @@ export type GenerateHarmoniousPalettesOutput = z.infer<
   typeof GenerateHarmoniousPalettesOutputSchema
 >;
 
+// In-memory cache for this flow
+const generatePalettesCache = new Map<string, GenerateHarmoniousPalettesOutput>();
+
 export async function generateHarmoniousPalettes(
   input: GenerateHarmoniousPalettesInput
 ): Promise<GenerateHarmoniousPalettesOutput> {
   return generateHarmoniousPalettesFlow(input);
 }
+
+const defaultSafetySettings = [
+  { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
+  { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
+  { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
+  { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
+];
 
 const prompt = ai.definePrompt({
   name: 'generateHarmoniousPalettesPrompt',
@@ -58,6 +69,9 @@ Number of Colors: {{{numColors}}}
 Ensure the generated colors are visually harmonious and work well together.
 Use established color theory principles to create the palette.
 `,
+  config: {
+    safetySettings: defaultSafetySettings,
+  }
 });
 
 const generateHarmoniousPalettesFlow = ai.defineFlow(
@@ -66,8 +80,25 @@ const generateHarmoniousPalettesFlow = ai.defineFlow(
     inputSchema: GenerateHarmoniousPalettesInputSchema,
     outputSchema: GenerateHarmoniousPalettesOutputSchema,
   },
-  async input => {
+  async (input: GenerateHarmoniousPalettesInput): Promise<GenerateHarmoniousPalettesOutput> => {
+    const cacheKey = JSON.stringify(input);
+    if (generatePalettesCache.has(cacheKey)) {
+      console.log(`[Cache Hit] generateHarmoniousPalettesFlow: Returning cached palette for input: ${cacheKey}`);
+      return generatePalettesCache.get(cacheKey)!;
+    }
+
+    console.log(`[Cache Miss] generateHarmoniousPalettesFlow: Generating palette for input: ${cacheKey}`);
+    const startTime = performance.now();
     const {output} = await prompt(input);
-    return output!;
+    const endTime = performance.now();
+    console.log(`[AI Benchmark] generateHarmoniousPalettesFlow prompt call took ${(endTime - startTime).toFixed(2)} ms`);
+    
+    if (!output) {
+        throw new Error('AI failed to generate a palette.');
+    }
+    
+    generatePalettesCache.set(cacheKey, output);
+    console.log(`[Cache Set] generateHarmoniousPalettesFlow: Cached palette for input: ${cacheKey}`);
+    return output;
   }
 );

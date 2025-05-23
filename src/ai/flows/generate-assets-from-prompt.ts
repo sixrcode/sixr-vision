@@ -32,6 +32,9 @@ const GenerateAssetsOutputSchema = z.object({
 });
 export type GenerateAssetsOutput = z.infer<typeof GenerateAssetsOutputSchema>;
 
+// In-memory cache for this flow
+const generateAssetsCache = new Map<string, GenerateAssetsOutput>();
+
 /**
  * Generates procedural assets (texture and mesh preview) based on a text prompt.
  * @param {GenerateAssetsInput} input - The input object containing the text prompt.
@@ -42,6 +45,13 @@ export async function generateAssets(input: GenerateAssetsInput): Promise<Genera
   return generateAssetsFlow(input);
 }
 
+const defaultSafetySettings = [
+  { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
+  { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
+  { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
+  { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
+];
+
 const generateAssetsFlow = ai.defineFlow(
   {
     name: 'generateAssetsFlow',
@@ -49,21 +59,38 @@ const generateAssetsFlow = ai.defineFlow(
     outputSchema: GenerateAssetsOutputSchema,
   },
   async (input: GenerateAssetsInput): Promise<GenerateAssetsOutput> => {
+    const cacheKey = input.prompt;
+    if (generateAssetsCache.has(cacheKey)) {
+      console.log(`[Cache Hit] generateAssetsFlow: Returning cached assets for prompt: ${cacheKey}`);
+      return generateAssetsCache.get(cacheKey)!;
+    }
+
+    console.log(`[Cache Miss] generateAssetsFlow: Generating assets for prompt: ${cacheKey}`);
+
+    let startTime = performance.now();
     const {media: textureMedia} = await ai.generate({
       model: 'googleai/gemini-2.0-flash-exp', 
       prompt: `Generate a seamless tileable texture based on the following artistic prompt: "${input.prompt}". Focus on abstract patterns and material qualities rather than literal depictions unless specified. Output as a square image suitable for texturing.`,
       config: {
-        responseModalities: ['TEXT', 'IMAGE'], 
+        responseModalities: ['TEXT', 'IMAGE'],
+        safetySettings: defaultSafetySettings,
       },
     });
+    let endTime = performance.now();
+    console.log(`[AI Benchmark] generateAssetsFlow (texture) ai.generate call took ${(endTime - startTime).toFixed(2)} ms`);
 
+    startTime = performance.now();
     const {media: meshMedia} = await ai.generate({
       model: 'googleai/gemini-2.0-flash-exp', 
       prompt: `Generate a visual preview of a simple 3D mesh or abstract geometric form inspired by the prompt: "${input.prompt}". This is for a preview image only, not a 3D model file. Output as a square image.`,
       config: {
-        responseModalities: ['TEXT', 'IMAGE'], 
+        responseModalities: ['TEXT', 'IMAGE'],
+        safetySettings: defaultSafetySettings,
       },
     });
+    endTime = performance.now();
+    console.log(`[AI Benchmark] generateAssetsFlow (mesh) ai.generate call took ${(endTime - startTime).toFixed(2)} ms`);
+
 
     if (!textureMedia?.url) {
         throw new Error('Texture generation failed to return a media URL.');
@@ -72,9 +99,13 @@ const generateAssetsFlow = ai.defineFlow(
         throw new Error('Mesh preview generation failed to return a media URL.');
     }
 
-    return {
+    const result: GenerateAssetsOutput = {
       textureDataUri: textureMedia.url,
       meshDataUri: meshMedia.url,
     };
+    
+    generateAssetsCache.set(cacheKey, result);
+    console.log(`[Cache Set] generateAssetsFlow: Cached assets for prompt: ${cacheKey}`);
+    return result;
   }
 );

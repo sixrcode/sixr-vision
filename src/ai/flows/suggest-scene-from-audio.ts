@@ -34,11 +34,21 @@ export type SuggestSceneFromAudioOutput = z.infer<
   typeof SuggestSceneFromAudioOutputSchema
 >;
 
+// In-memory cache for this flow
+const suggestSceneCache = new Map<string, SuggestSceneFromAudioOutput>();
+
 export async function suggestSceneFromAudio(
   input: SuggestSceneFromAudioInput
 ): Promise<SuggestSceneFromAudioOutput> {
   return suggestSceneFromAudioFlow(input);
 }
+
+const defaultSafetySettings = [
+  { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
+  { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
+  { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
+  { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
+];
 
 const prompt = ai.definePrompt({
   name: 'suggestSceneFromAudioPrompt',
@@ -69,6 +79,9 @@ BPM: {{bpm}}
 Suggest a scene ID.
 Explain your reasoning using metaphors related to the "Cosmic Grapevines" theme (growth, connection, seeds, stars, journey).
 Also, provide a 'suggestedAssetPrompt'. This should be a short, creative text prompt (2-5 words) for generating procedural assets (like textures or simple meshes) that would visually complement your chosen scene and the audio's mood, fitting the "Cosmic Grapevines" theme. Examples: "stellar vine sprouts", "galactic seed burst", "cosmic roots", "nebula flowers", "interstellar tendrils".`,
+  config: {
+    safetySettings: defaultSafetySettings,
+  }
 });
 
 const suggestSceneFromAudioFlow = ai.defineFlow(
@@ -77,16 +90,25 @@ const suggestSceneFromAudioFlow = ai.defineFlow(
     inputSchema: SuggestSceneFromAudioInputSchema,
     outputSchema: SuggestSceneFromAudioOutputSchema,
   },
-  async input => {
-    const response = await prompt(input);
-    if (!response.output) {
-        // This case should ideally be caught by Genkit if the output schema is defined 
-        // and the model fails to produce it, or if the API call itself failed.
-        // Adding an explicit check for robustness.
-        console.error('AI prompt for scene suggestion returned no output despite a successful API call.');
+  async (input: SuggestSceneFromAudioInput): Promise<SuggestSceneFromAudioOutput> => {
+    const cacheKey = JSON.stringify(input);
+    if (suggestSceneCache.has(cacheKey)) {
+      console.log(`[Cache Hit] suggestSceneFromAudioFlow: Returning cached scene suggestion for input: ${cacheKey}`);
+      return suggestSceneCache.get(cacheKey)!;
+    }
+    console.log(`[Cache Miss] suggestSceneFromAudioFlow: Generating scene suggestion for input: ${cacheKey}`);
+
+    const startTime = performance.now();
+    const {output} = await prompt(input);
+    const endTime = performance.now();
+    console.log(`[AI Benchmark] suggestSceneFromAudioFlow prompt call took ${(endTime - startTime).toFixed(2)} ms`);
+
+    if (!output) {
         throw new Error('AI failed to suggest a scene (no output returned from model).');
     }
-    return response.output;
+
+    suggestSceneCache.set(cacheKey, output);
+    console.log(`[Cache Set] suggestSceneFromAudioFlow: Cached scene suggestion for input: ${cacheKey}`);
+    return output;
   }
 );
-

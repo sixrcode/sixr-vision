@@ -15,12 +15,12 @@ import { useScene } from '@/providers/SceneProvider';
 import { generateVisualOverlay, type GenerateVisualOverlayInput, type GenerateVisualOverlayOutput } from '@/ai/flows/generate-visual-overlay';
 import { ControlPanelSection } from '../ControlPanelSection';
 import { Layers, Wand2, Loader2 } from 'lucide-react';
-import { VALID_BLEND_MODES, type Settings } from '@/types';
-import { DEFAULT_SETTINGS } from '@/lib/constants';
+import { VALID_BLEND_MODES } from '@/types';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { ControlHint } from '../ControlHint';
 import { LabelledSwitchControl } from '../common/LabelledSwitchControl';
 import { AiSuggestedPromptDisplay } from '../common/AiSuggestedPromptDisplay';
+
 
 type AiVisualOverlayMixerProps = {
   value: string; // For AccordionItem
@@ -34,13 +34,25 @@ export function AiVisualOverlayMixer({ value }: AiVisualOverlayMixerProps) {
 
   const [isLoading, setIsLoading] = useState(false);
   const [localPrompt, setLocalPrompt] = useState(settings.aiOverlayPrompt);
-  const initialGenerationAttempted = useRef(false);
+  const [initialGenerationDone, setInitialGenerationDone] = useState(false);
   
   useEffect(() => {
     setLocalPrompt(settings.aiOverlayPrompt);
   }, [settings.aiOverlayPrompt]);
 
-  const handleGenerateOverlay = useCallback(async (promptToUse: string): Promise<boolean> => {
+  // Effect for initial overlay generation on load
+  useEffect(() => {
+    if (!initialGenerationDone && currentScene && audioData.rms > 0.005 && !settings.aiGeneratedOverlayUri) {
+      console.log("AiVisualOverlayMixer: Attempting initial AI overlay generation.");
+      // Use the default prompt from settings for initial generation
+      handleGenerateOverlay(settings.aiOverlayPrompt, true); // Pass true to auto-enable after generation
+      setInitialGenerationDone(true);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentScene, audioData.rms, initialGenerationDone, settings.aiGeneratedOverlayUri, settings.aiOverlayPrompt]);
+
+
+  const handleGenerateOverlay = async (promptToUse: string = localPrompt, autoEnableAfterSuccess: boolean = false) => {
     if (!currentScene) {
       toast({ title: 'No Scene Active', description: 'Please select a scene first to provide context for the overlay.', variant: 'destructive' });
       return false;
@@ -68,9 +80,8 @@ export function AiVisualOverlayMixer({ value }: AiVisualOverlayMixerProps) {
       const result: GenerateVisualOverlayOutput = await generateVisualOverlay(input);
       updateSetting('aiGeneratedOverlayUri', result.overlayImageDataUri);
       updateSetting('aiOverlayPrompt', promptToUse); 
-      toast({ title: 'AI Overlay Generated', description: 'New visual overlay created!' });
-      
-      if (result.overlayImageDataUri && !settings.enableAiOverlay) {
+      toast({ title: 'AI Overlay Generated', description: 'Visual overlay created!' });
+      if (autoEnableAfterSuccess) {
         updateSetting('enableAiOverlay', true);
       }
       return true;
@@ -79,63 +90,22 @@ export function AiVisualOverlayMixer({ value }: AiVisualOverlayMixerProps) {
       let description = 'Could not generate overlay.';
       if (error instanceof Error) {
         description = error.message;
-        if (error.message.includes("500 Internal Server Error") || error.message.includes("internal error has occurred") || error.message.toLowerCase().includes("internal server error")) {
+        if (error.message.toLowerCase().includes("500 internal server error") || error.message.toLowerCase().includes("internal error has occurred")) {
           description = "AI service encountered an internal error. This is often temporary. Please try again in a few moments, or try a different prompt.";
         } else if (error.message.toLowerCase().includes("rate limit")) {
           description = "AI service rate limit hit. Please wait before trying again or enable periodic regeneration with a longer interval.";
         }
       }
       toast({ title: 'Overlay Generation Failed', description, variant: 'destructive' });
+      updateSetting('aiGeneratedOverlayUri', null); // Clear URI on failure
+      if (autoEnableAfterSuccess) { // If auto-enable was true, turn it off on failure
+         updateSetting('enableAiOverlay', false);
+      }
       return false;
     } finally {
       setIsLoading(false);
     }
-  }, [currentScene, audioData, updateSetting, toast, settings.enableAiOverlay]);
-
-
-  // Initial overlay generation on load
-  useEffect(() => {
-    if (!settings.aiGeneratedOverlayUri && currentScene && !initialGenerationAttempted.current && !isLoading) {
-      console.log("AiVisualOverlayMixer: Attempting initial AI overlay generation on load.");
-      initialGenerationAttempted.current = true; 
-      handleGenerateOverlay(settings.aiOverlayPrompt || DEFAULT_SETTINGS.aiOverlayPrompt);
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentScene, settings.aiGeneratedOverlayUri, isLoading]); // handleGenerateOverlay removed from deps to prevent loop if it changes
-
-
-  // Periodic overlay regeneration
-  useEffect(() => {
-    let intervalId: NodeJS.Timeout | undefined;
-
-    if (settings.enableAiOverlay && settings.enablePeriodicAiOverlay && !isLoading && settings.aiOverlayPrompt) {
-      const regenerationIntervalMs = settings.aiOverlayRegenerationInterval * 1000;
-      console.log(`AiVisualOverlayMixer: Starting periodic regeneration every ${settings.aiOverlayRegenerationInterval}s.`);
-      intervalId = setInterval(() => {
-        if (!isLoading) { 
-          console.log("AiVisualOverlayMixer: Triggering periodic overlay regeneration.");
-          handleGenerateOverlay(settings.aiOverlayPrompt); 
-        }
-      }, regenerationIntervalMs);
-    } else {
-       console.log("AiVisualOverlayMixer: Periodic regeneration conditions not met or stopping.");
-    }
-
-    return () => {
-      if (intervalId) {
-        console.log("AiVisualOverlayMixer: Clearing periodic regeneration interval.");
-        clearInterval(intervalId);
-      }
-    };
-  }, [
-    settings.enableAiOverlay, 
-    settings.enablePeriodicAiOverlay, 
-    settings.aiOverlayPrompt, 
-    settings.aiOverlayRegenerationInterval,
-    handleGenerateOverlay,
-    isLoading
-  ]);
-
+  };
 
   return (
     <ControlPanelSection title="AI: Visual Overlay Mixer" value={value}>
@@ -180,13 +150,13 @@ export function AiVisualOverlayMixer({ value }: AiVisualOverlayMixerProps) {
           />
         </div>
         
-        <Button onClick={() => handleGenerateOverlay(localPrompt)} disabled={isLoading || !currentScene} className="w-full">
+        <Button onClick={() => handleGenerateOverlay(localPrompt, false)} disabled={isLoading || !currentScene} className="w-full">
           {isLoading ? (
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
           ) : (
             <Layers className="mr-2 h-4 w-4" />
           )}
-          {isLoading ? 'Generating...' : (settings.aiGeneratedOverlayUri ? 'Update Overlay' : 'Generate New Overlay')}
+          {isLoading ? 'Generating Overlay...' : 'Generate Overlay'}
         </Button>
         {!currentScene && <ControlHint className="text-destructive text-center">Select a scene first to generate an overlay.</ControlHint>}
 
@@ -204,47 +174,9 @@ export function AiVisualOverlayMixer({ value }: AiVisualOverlayMixerProps) {
           </div>
         )}
 
-        {settings.enableAiOverlay && (
-          <>
-            <LabelledSwitchControl
-              labelContent="Enable Periodic Regeneration"
-              labelHtmlFor="enable-periodic-ai-overlay-switch"
-              switchId="enable-periodic-ai-overlay-switch"
-              checked={settings.enablePeriodicAiOverlay}
-              onCheckedChange={(checked) => updateSetting('enablePeriodicAiOverlay', checked)}
-              tooltipContent={<p>If enabled, the AI overlay will automatically regenerate using the current prompt and audio context at the specified interval.</p>}
-              switchProps={{ disabled: isLoading || !settings.enableAiOverlay }}
-              containerClassName="mt-3 pt-2 border-t border-sidebar-border"
-              switchAriaLabel="Toggle Periodic AI Overlay Regeneration"
-            />
-            {settings.enablePeriodicAiOverlay && (
-              <div className="space-y-1 mt-1">
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Label htmlFor="ai-overlay-regeneration-interval-slider">Regeneration Interval ({settings.aiOverlayRegenerationInterval}s)</Label>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>How often the overlay regenerates (in seconds). Shorter intervals use more AI resources.</p>
-                  </TooltipContent>
-                </Tooltip>
-                <Slider
-                  id="ai-overlay-regeneration-interval-slider"
-                  min={15} 
-                  max={120} 
-                  step={5}
-                  value={[settings.aiOverlayRegenerationInterval]}
-                  onValueChange={([val]) => updateSetting('aiOverlayRegenerationInterval', val)}
-                  disabled={isLoading || !settings.enablePeriodicAiOverlay || !settings.enableAiOverlay}
-                  aria-label={`AI Overlay Regeneration Interval: ${settings.aiOverlayRegenerationInterval} seconds`}
-                />
-              </div>
-            )}
-          </>
-        )}
-
         {settings.enableAiOverlay && settings.aiGeneratedOverlayUri && (
           <>
-            <div className="space-y-1 mt-3 pt-2 border-t border-sidebar-border">
+            <div className="space-y-1">
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Label htmlFor="ai-overlay-opacity-slider">Overlay Opacity ({settings.aiOverlayOpacity.toFixed(2)})</Label>
@@ -295,3 +227,5 @@ export function AiVisualOverlayMixer({ value }: AiVisualOverlayMixerProps) {
     </ControlPanelSection>
   );
 }
+
+    
