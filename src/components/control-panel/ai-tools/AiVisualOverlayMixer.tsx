@@ -15,12 +15,15 @@ import { useScene } from '@/providers/SceneProvider';
 import { generateVisualOverlay, type GenerateVisualOverlayInput, type GenerateVisualOverlayOutput } from '@/ai/flows/generate-visual-overlay';
 import { ControlPanelSection } from '../ControlPanelSection';
 import { Layers, Wand2, Loader2 } from 'lucide-react';
-import { VALID_BLEND_MODES } from '@/types';
+import type { VALID_BLEND_MODES } from '@/types'; // Import the type
+import { VALID_BLEND_MODES as blendModesArray } from '@/types'; // Import the array
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { ControlHint } from '../ControlHint';
 import { LabelledSwitchControl } from '../common/LabelledSwitchControl';
 import { AiSuggestedPromptDisplay } from '../common/AiSuggestedPromptDisplay';
 import { DEFAULT_SETTINGS } from '@/lib/constants';
+import { addLogEntry } from '@/services/rehearsalLogService';
+
 
 type AiVisualOverlayMixerProps = {
   value: string; // For AccordionItem
@@ -72,6 +75,13 @@ export function AiVisualOverlayMixer({ value }: AiVisualOverlayMixerProps) {
         updateSetting('aiOverlayPrompt', promptToUse);
       }
       toast({ title: 'AI Overlay Generated', description: 'Visual overlay created!' });
+      
+      try {
+        await addLogEntry('ai_overlay_generated', { prompt: promptToUse, sceneId: currentScene.id });
+      } catch (e) {
+         console.warn("Failed to log AI overlay generation:", e);
+      }
+      
       // Automatically enable overlay if it wasn't already, after successful generation
       if (!settings.enableAiOverlay) {
         updateSetting('enableAiOverlay', true);
@@ -98,14 +108,13 @@ export function AiVisualOverlayMixer({ value }: AiVisualOverlayMixerProps) {
 
 
   // Initial overlay generation on load
-  useEffect(() => {
+ useEffect(() => {
     if (!settings.aiGeneratedOverlayUri && currentScene && !initialGenerationAttempted.current && !isLoading) {
-      console.log("AiVisualOverlayMixer: Attempting initial AI overlay generation.");
+      console.log("AiVisualOverlayMixer: Attempting initial AI overlay generation with prompt:", settings.aiOverlayPrompt || DEFAULT_SETTINGS.aiOverlayPrompt);
       initialGenerationAttempted.current = true;
-      // Use the default prompt from constants for initial generation
-      handleGenerateOverlay(DEFAULT_SETTINGS.aiOverlayPrompt || "ethereal wisps of light");
+      handleGenerateOverlay(settings.aiOverlayPrompt || DEFAULT_SETTINGS.aiOverlayPrompt);
     }
-  }, [currentScene, settings.aiGeneratedOverlayUri, isLoading, handleGenerateOverlay]);
+  }, [currentScene, settings.aiGeneratedOverlayUri, isLoading, handleGenerateOverlay, settings.aiOverlayPrompt]);
 
   // Periodic regeneration
   useEffect(() => {
@@ -154,7 +163,7 @@ export function AiVisualOverlayMixer({ value }: AiVisualOverlayMixerProps) {
             </TooltipTrigger>
             <TooltipContent>
               <p>Describe the visual style or elements for the AI-generated overlay.</p>
-              <ControlHint>e.g., "{DEFAULT_SETTINGS.aiOverlayPrompt}"</ControlHint>
+              <ControlHint>e.g., "{settings.aiOverlayPrompt || DEFAULT_SETTINGS.aiOverlayPrompt}"</ControlHint>
             </TooltipContent>
           </Tooltip>
           <Input
@@ -242,7 +251,7 @@ export function AiVisualOverlayMixer({ value }: AiVisualOverlayMixerProps) {
                   <SelectValue placeholder="Select blend mode" />
                 </SelectTrigger>
                 <SelectContent>
-                  {VALID_BLEND_MODES.map(mode => (
+                  {blendModesArray.map(mode => ( // Use the imported array
                     <SelectItem key={mode} value={mode}>{mode.charAt(0).toUpperCase() + mode.slice(1)}</SelectItem>
                   ))}
                 </SelectContent>
