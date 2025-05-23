@@ -11,6 +11,7 @@
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 import type { AudioData } from '@/types'; // Assuming AudioData is defined here
+import { defaultSafetySettings } from '../sharedConstants';
 
 // Re-define a Zod schema for the parts of AudioData we need, as we can't directly import the TS type into Zod.
 const AudioDataInputSchema = z.object({
@@ -41,13 +42,6 @@ const generateAmbianceCache = new Map<string, GenerateSceneAmbianceOutput>();
 export async function generateSceneAmbiance(input: GenerateSceneAmbianceInput): Promise<GenerateSceneAmbianceOutput> {
   return generateSceneAmbianceFlow(input);
 }
-
-const defaultSafetySettings = [
-  { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
-  { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
-  { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
-  { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
-];
 
 const prompt = ai.definePrompt({
   name: 'generateSceneAmbiancePrompt',
@@ -83,13 +77,12 @@ const generateSceneAmbianceFlow = ai.defineFlow(
     outputSchema: GenerateSceneAmbianceOutputSchema,
   },
   async (input: GenerateSceneAmbianceInput): Promise<GenerateSceneAmbianceOutput> => {
-    // Simplified cache key: uses scene ID and name, omits dynamic audioData for basic caching
-    const cacheKey = `sceneId:${input.currentSceneId}_sceneName:${input.currentSceneName}`;
+    const cacheKey = JSON.stringify(input);
     if (generateAmbianceCache.has(cacheKey)) {
-      console.log(`[Cache Hit] generateSceneAmbianceFlow: Returning cached ambiance for key: ${cacheKey} (audioData not part of cache key)`);
+      console.log(`[Cache Hit] generateSceneAmbianceFlow: Returning cached ambiance for input: ${cacheKey}`);
       return generateAmbianceCache.get(cacheKey)!;
     }
-    console.log(`[Cache Miss] generateSceneAmbianceFlow: Generating ambiance for key: ${cacheKey}`);
+    console.log(`[Cache Miss] generateSceneAmbianceFlow: Generating ambiance for input: ${cacheKey}`);
     
     const startTime = performance.now();
     const {output} = await prompt(input);
@@ -101,7 +94,7 @@ const generateSceneAmbianceFlow = ai.defineFlow(
     }
 
     generateAmbianceCache.set(cacheKey, output);
-    console.log(`[Cache Set] generateSceneAmbianceFlow: Cached ambiance for key: ${cacheKey}`);
+    console.log(`[Cache Set] generateSceneAmbianceFlow: Cached ambiance for input: ${cacheKey}`);
     return output;
   }
 );
