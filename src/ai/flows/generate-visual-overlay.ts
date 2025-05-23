@@ -100,7 +100,7 @@ const generateVisualOverlayFlow = ai.defineFlow(
       },
     });
     const endTime = performance.now();
-    console.log(`[AI Benchmark] generateVisualOverlay ai.generate call took ${(endTime - startTime).toFixed(2)} ms`);
+    console.log(`[AI Benchmark] generateVisualOverlayFlow ai.generate call took ${(endTime - startTime).toFixed(2)} ms`);
 
     if (!media?.url) {
       throw new Error('Overlay image generation failed to return a media URL.');
@@ -115,3 +115,4 @@ const generateVisualOverlayFlow = ai.defineFlow(
     return result;
   }
 );
+
