@@ -12,6 +12,7 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
+import { defaultSafetySettings, MODEL_NAME_IMAGE_GENERATION } from '../sharedConstants';
 
 const GenerateAssetsInputSchema = z.object({
   prompt: z.string().describe('A text prompt describing the desired texture or mesh.'),
@@ -34,6 +35,7 @@ export type GenerateAssetsOutput = z.infer<typeof GenerateAssetsOutputSchema>;
 
 // In-memory cache for this flow
 const generateAssetsCache = new Map<string, GenerateAssetsOutput>();
+console.log(`[AI Flow Init] generateAssetsFlow uses model: ${MODEL_NAME_IMAGE_GENERATION}`);
 
 /**
  * Generates procedural assets (texture and mesh preview) based on a text prompt.
@@ -44,15 +46,6 @@ const generateAssetsCache = new Map<string, GenerateAssetsOutput>();
 export async function generateAssets(input: GenerateAssetsInput): Promise<GenerateAssetsOutput> {
   return generateAssetsFlow(input);
 }
-
-const defaultSafetySettings = [
-  { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
-  { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
-  { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
-  { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
-];
-
-const MODEL_NAME = 'googleai/gemini-2.0-flash-exp';
 
 const generateAssetsFlow = ai.defineFlow(
   {
@@ -67,15 +60,15 @@ const generateAssetsFlow = ai.defineFlow(
       return generateAssetsCache.get(cacheKey)!;
     }
 
-    console.log(`[Cache Miss] generateAssetsFlow: Generating assets for prompt: "${cacheKey}" using model: ${MODEL_NAME}`);
+    console.log(`[Cache Miss] generateAssetsFlow: Generating assets for prompt: "${cacheKey}" using model: ${MODEL_NAME_IMAGE_GENERATION}`);
 
-    const texturePrompt = `Generate a seamless tileable texture based on the following artistic prompt: "${input.prompt}". Focus on abstract patterns and material qualities rather than literal depictions unless specified. Output as a square image suitable for texturing.`;
-    const meshPrompt = `Generate a visual preview of a simple 3D mesh or abstract geometric form inspired by the prompt: "${input.prompt}". This is for a preview image only, not a 3D model file. Output as a square image.`;
+    const texturePrompt = `Generate a seamless tileable texture based on the following artistic prompt: "${input.prompt}". Focus on abstract patterns and material qualities rather than literal depictions unless specified. Output as a square image suitable for texturing. Consider "Cosmic Grapevines" and Afrofuturist aesthetics.`;
+    const meshPrompt = `Generate a visual preview of a simple 3D mesh or abstract geometric form inspired by the prompt: "${input.prompt}". This is for a preview image only, not a 3D model file. Output as a square image. Consider "Cosmic Grapevines" and Afrofuturist aesthetics.`;
 
     let startTime = performance.now();
     const [textureResult, meshResult] = await Promise.all([
       ai.generate({
-        model: MODEL_NAME, 
+        model: MODEL_NAME_IMAGE_GENERATION,
         prompt: texturePrompt,
         config: {
           responseModalities: ['TEXT', 'IMAGE'],
@@ -83,7 +76,7 @@ const generateAssetsFlow = ai.defineFlow(
         },
       }),
       ai.generate({
-        model: MODEL_NAME, 
+        model: MODEL_NAME_IMAGE_GENERATION,
         prompt: meshPrompt,
         config: {
           responseModalities: ['TEXT', 'IMAGE'],
@@ -92,7 +85,7 @@ const generateAssetsFlow = ai.defineFlow(
       })
     ]);
     let endTime = performance.now();
-    console.log(`[AI Benchmark] generateAssetsFlow (texture & mesh parallel) ai.generate calls took ${(endTime - startTime).toFixed(2)} ms`);
+    console.log(`[AI Benchmark] generateAssetsFlow (texture & mesh parallel) ai.generate calls took ${(endTime - startTime).toFixed(2)} ms for model ${MODEL_NAME_IMAGE_GENERATION}`);
     
     const textureMedia = textureResult.media;
     const meshMedia = meshResult.media;

@@ -10,7 +10,8 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
-import { defaultSafetySettings } from '../sharedConstants';
+import { defaultSafetySettings, MODEL_NAME_IMAGE_GENERATION } from '../sharedConstants';
+import { GENERATE_VISUAL_OVERLAY_PROMPT_TEMPLATE } from '../prompts';
 
 // Re-define a Zod schema for the parts of AudioData we need.
 const AudioContextInputSchema = z.object({
@@ -39,6 +40,8 @@ export type GenerateVisualOverlayOutput = z.infer<typeof GenerateVisualOverlayOu
 
 // In-memory cache for this flow
 const generateOverlayCache = new Map<string, GenerateVisualOverlayOutput>();
+console.log(`[AI Flow Init] generateVisualOverlayFlow uses model: ${MODEL_NAME_IMAGE_GENERATION}`);
+
 
 export async function generateVisualOverlay(input: GenerateVisualOverlayInput): Promise<GenerateVisualOverlayOutput> {
   return generateVisualOverlayFlow(input);
@@ -53,12 +56,12 @@ const generateVisualOverlayFlow = ai.defineFlow(
     outputSchema: GenerateVisualOverlayOutputSchema,
   },
   async (input: GenerateVisualOverlayInput): Promise<GenerateVisualOverlayOutput> => {
-    const cacheKey = JSON.stringify(input);
+    const cacheKey = `${input.prompt}-${input.currentSceneName}-${Math.round(input.audioContext.rms * 10)}-${Math.round(input.audioContext.bpm/10)}`;
     if (generateOverlayCache.has(cacheKey)) {
-      console.log(`[Cache Hit] generateVisualOverlayFlow: Returning cached overlay for input: ${cacheKey}`);
+      console.log(`[Cache Hit] generateVisualOverlayFlow: Returning cached overlay for key: ${cacheKey}`);
       return generateOverlayCache.get(cacheKey)!;
     }
-    console.log(`[Cache Miss] generateVisualOverlayFlow: Generating overlay for input: ${cacheKey}`);
+    console.log(`[Cache Miss] generateVisualOverlayFlow: Generating overlay for key: ${cacheKey} using model: ${MODEL_NAME_IMAGE_GENERATION}`);
 
     let audioDescription = "The audio is";
     if (input.audioContext.rms < 0.2) audioDescription += " calm and quiet";
@@ -71,29 +74,25 @@ const generateVisualOverlayFlow = ai.defineFlow(
     
     audioDescription += ` Bass energy is ${input.audioContext.bassEnergy.toFixed(2)}, mid energy is ${input.audioContext.midEnergy.toFixed(2)}, treble energy is ${input.audioContext.trebleEnergy.toFixed(2)}.`;
 
-    const imageGenerationPrompt = `
-      Create a visually appealing overlay image suitable for an audio visualizer.
-      The current visualizer scene is named "${input.currentSceneName}".
-      ${audioDescription}
-      The user's desired theme for the overlay is: "${input.prompt}".
-      The image should ideally incorporate transparency (e.g., alpha channel in PNG) or be designed in a way that it blends well using modes like 'overlay' or 'screen'.
-      Focus on abstract patterns, light effects, or subtle textures. Avoid solid, opaque backgrounds unless specifically requested.
-      Output as a square PNG image.
-    `;
+    const imageGenerationPrompt = GENERATE_VISUAL_OVERLAY_PROMPT_TEMPLATE
+      .replace('{{currentSceneName}}', input.currentSceneName)
+      .replace('{{audioDescription}}', audioDescription)
+      .replace('{{userPrompt}}', input.prompt);
+
 
     console.log("[AI Flow Debug] Generating AI Visual Overlay with prompt:", imageGenerationPrompt);
     
     const startTime = performance.now();
     const {media} = await ai.generate({
-      model: 'googleai/gemini-2.0-flash-exp',
+      model: MODEL_NAME_IMAGE_GENERATION,
       prompt: imageGenerationPrompt,
       config: {
-        responseModalities: ['TEXT', 'IMAGE'], // Must include IMAGE for media output
+        responseModalities: ['TEXT', 'IMAGE'], 
         safetySettings: defaultSafetySettings,
       },
     });
     const endTime = performance.now();
-    console.log(`[AI Benchmark] generateVisualOverlayFlow ai.generate call took ${(endTime - startTime).toFixed(2)} ms`);
+    console.log(`[AI Benchmark] generateVisualOverlayFlow ai.generate call took ${(endTime - startTime).toFixed(2)} ms for model ${MODEL_NAME_IMAGE_GENERATION}`);
 
     if (!media?.url) {
       throw new Error('Overlay image generation failed to return a media URL.');
@@ -104,9 +103,7 @@ const generateVisualOverlayFlow = ai.defineFlow(
     };
 
     generateOverlayCache.set(cacheKey, result);
-    console.log(`[Cache Set] generateVisualOverlayFlow: Cached overlay for input: ${cacheKey}`);
+    console.log(`[Cache Set] generateVisualOverlayFlow: Cached overlay for key: ${cacheKey}`);
     return result;
   }
 );
-
-

@@ -1,123 +1,88 @@
+
 'use server';
 /**
- * @fileOverview A harmonious color-palette generator AI agent.
+ * @fileOverview An AI agent that generates evocative ambiance text based on audio data and the current scene.
+ *
+ * - generateSceneAmbiance - Main entry point for generating ambiance text.
+ * - GenerateSceneAmbianceInput - Zod schema for the input.
+ * - GenerateSceneAmbianceOutput - Zod schema for the output.
  */
 
-import { ai } from '@/ai/genkit';
-import { z } from 'genkit';
-import { defaultSafetySettings } from '../sharedConstants'; // centralised safety config
+import {ai} from '@/ai/genkit';
+import {z} from 'genkit';
+import { defaultSafetySettings, MODEL_NAME_TEXT_GENERATION } from '../sharedConstants';
+import { GENERATE_SCENE_AMBIANCE_PROMPT } from '../prompts';
 
-/* ────────────────────────────────
-   ▸ Input / Output Schemas
-   ──────────────────────────────── */
-
-const GenerateHarmoniousPalettesInputSchema = z.object({
-  /** The base hue (0-360) around which the palette will be built. */
-  baseColorHue: z.number().int().min(0).max(360),
-  /** Number of colours requested in the resulting palette. */
-  numColors: z.number().int().min(1).max(20),
-});
-export type GenerateHarmoniousPalettesInput = z.infer<
-  typeof GenerateHarmoniousPalettesInputSchema
->;
-
-const GenerateHarmoniousPalettesOutputSchema = z.array(
-  z.object({
-    hue: z.number().min(0).max(360),
-    saturation: z.number().min(0).max(100),
-    brightness: z.number().min(0).max(100),
-  })
-);
-export type GenerateHarmoniousPalettesOutput = z.infer<
-  typeof GenerateHarmoniousPalettesOutputSchema
->;
-
-/* ────────────────────────────────
-   ▸ Local cache (simple Map)
-   ──────────────────────────────── */
-
-const paletteCache = new Map<string, GenerateHarmoniousPalettesOutput>();
-
-/* ────────────────────────────────
-   ▸ Gemini model name (kept close
-      to avoid magic-string reuse)
-   ──────────────────────────────── */
-
-const MODEL_NAME_TEXT = 'googleai/gemini-2.0-flash';
-
-/* ────────────────────────────────
-   ▸ Prompt definition
-   ──────────────────────────────── */
-
-const generateHarmoniousPalettesPrompt = ai.definePrompt({
-  name: 'generateHarmoniousPalettesPrompt',
-  input: { schema: GenerateHarmoniousPalettesInputSchema },
-  output: { schema: GenerateHarmoniousPalettesOutputSchema },
-  prompt: `
-You are a colour-palette generation AI. Given a base hue and a requested
-colour count, output a JSON array of harmonious HSB values.
-
-Base Hue (0-360): {{{baseColorHue}}}
-Number of Colours: {{{numColors}}}
-
-Return an array formatted like:
-[
-  { "hue": 120, "saturation": 80, "brightness": 95 },
-  …
-]
-  `.trim(),
-  config: { safetySettings: defaultSafetySettings },
+// Define a Zod schema for the audio data fields we need for this flow
+const AudioDataInputSchema = z.object({
+  bassEnergy: z.number().describe('Bass-band energy (0-1).'),
+  midEnergy: z.number().describe('Mid-band energy (0-1).'),
+  trebleEnergy: z.number().describe('Treble-band energy (0-1).'),
+  rms: z.number().describe('Overall root mean square volume (0-1).'),
+  bpm: z.number().describe('Estimated beats per minute of the audio.'),
+  beat: z.boolean().describe('Whether a beat is currently detected.'),
 });
 
-/* ────────────────────────────────
-   ▸ Flow definition
-   ──────────────────────────────── */
+const GenerateSceneAmbianceInputSchema = z.object({
+  audioData: AudioDataInputSchema.describe('Current characteristics of the audio input.'),
+  currentSceneId: z.string().describe('The ID of the currently active visualizer scene.'),
+  currentSceneName: z.string().describe('The display name of the currently active visualizer scene (e.g., "Radial Burst").'),
+});
+export type GenerateSceneAmbianceInput = z.infer<typeof GenerateSceneAmbianceInputSchema>;
 
-const generateHarmoniousPalettesFlow = ai.defineFlow(
-  {
-    name: 'generateHarmoniousPalettesFlow',
-    inputSchema: GenerateHarmoniousPalettesInputSchema,
-    outputSchema: GenerateHarmoniousPalettesOutputSchema,
+const GenerateSceneAmbianceOutputSchema = z.object({
+  ambianceText: z.string().describe('A short, evocative text (1-2 sentences, ~30 words) describing the current audiovisual mood, inspired by "Cosmic Grapevines" theme.'),
+});
+export type GenerateSceneAmbianceOutput = z.infer<typeof GenerateSceneAmbianceOutputSchema>;
+
+// In-memory cache for this flow
+const ambianceCache = new Map<string, GenerateSceneAmbianceOutput>();
+
+console.log(`[AI Flow Init] generateSceneAmbianceFlow uses model: ${MODEL_NAME_TEXT_GENERATION}`);
+
+export async function generateSceneAmbiance(
+  input: GenerateSceneAmbianceInput
+): Promise<GenerateSceneAmbianceOutput> {
+  return generateSceneAmbianceFlow(input);
+}
+
+const ambiancePrompt = ai.definePrompt({
+  name: 'generateSceneAmbiancePrompt',
+  input: {schema: GenerateSceneAmbianceInputSchema},
+  output: {schema: GenerateSceneAmbianceOutputSchema},
+  prompt: GENERATE_SCENE_AMBIANCE_PROMPT,
+  config: {
+    model: MODEL_NAME_TEXT_GENERATION,
+    safetySettings: defaultSafetySettings,
   },
-  async (
-    input: GenerateHarmoniousPalettesInput
-  ): Promise<GenerateHarmoniousPalettesOutput> => {
-    const cacheKey = JSON.stringify(input);
+});
 
-    /* 1. Try cache first */
-    if (paletteCache.has(cacheKey)) {
-      console.log(
-        `[Cache HIT] Palette for ${cacheKey} served from memory cache.`
-      );
-      return paletteCache.get(cacheKey)!;
+const generateSceneAmbianceFlow = ai.defineFlow(
+  {
+    name: 'generateSceneAmbianceFlow',
+    inputSchema: GenerateSceneAmbianceInputSchema,
+    outputSchema: GenerateSceneAmbianceOutputSchema,
+  },
+  async (input: GenerateSceneAmbianceInput): Promise<GenerateSceneAmbianceOutput> => {
+    const cacheKey = `${input.currentSceneId}-${input.currentSceneName}-${Math.round(input.audioData.rms*10)}-${Math.round(input.audioData.bpm/10)}`; // Simplified cache key
+
+    if (ambianceCache.has(cacheKey)) {
+      console.log(`[Cache Hit] generateSceneAmbianceFlow: Returning cached ambiance for key: ${cacheKey}`);
+      return ambianceCache.get(cacheKey)!;
     }
+    console.log(`[Cache Miss] generateSceneAmbianceFlow: Generating ambiance for key: "${cacheKey}" using model: ${MODEL_NAME_TEXT_GENERATION}`);
+    
+    const startTime = performance.now();
+    const {output} = await ambiancePrompt(input);
+    const endTime = performance.now();
+    console.log(`[AI Benchmark] generateSceneAmbianceFlow prompt call took ${(endTime - startTime).toFixed(2)} ms for model ${MODEL_NAME_TEXT_GENERATION}`);
 
-    /* 2. Call Gemini via Genkit */
-    console.log(
-      `[Cache MISS] Generating palette (${MODEL_NAME_TEXT}) for ${cacheKey}…`
-    );
-    const t0 = performance.now();
-    const { output } = await generateHarmoniousPalettesPrompt(input);
-    const dt = (performance.now() - t0).toFixed(1);
-
-    if (!output) {
-      throw new Error('AI failed to generate a palette.');
+    if (!output || !output.ambianceText) {
+      throw new Error('AI failed to generate ambiance text.');
     }
-
-    console.log(
-      `[AI] Palette generated in ${dt} ms – caching result under ${cacheKey}.`
-    );
-    paletteCache.set(cacheKey, output);
+    
+    ambianceCache.set(cacheKey, output);
+    console.log(`[Cache Set] generateSceneAmbianceFlow: Cached ambiance for key: ${cacheKey}`);
     return output;
   }
 );
-
-/* ────────────────────────────────
-   ▸ Public helper
-   ──────────────────────────────── */
-
-export async function generateHarmoniousPalettes(
-  input: GenerateHarmoniousPalettesInput
-): Promise<GenerateHarmoniousPalettesOutput> {
-  return generateHarmoniousPalettesFlow(input);
-}
