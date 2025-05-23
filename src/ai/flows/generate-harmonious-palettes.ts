@@ -102,3 +102,4 @@ const generateHarmoniousPalettesFlow = ai.defineFlow(
     return output;
   }
 );
+
