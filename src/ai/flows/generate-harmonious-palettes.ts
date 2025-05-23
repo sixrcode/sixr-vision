@@ -10,13 +10,18 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
+import { HARMONIOUS_PALETTES_PROMPT } from '@/ai/prompts'; // Import the prompt
 
 const GenerateHarmoniousPalettesInputSchema = z.object({
   baseColorHue: z
     .number()
+    .min(0, "Base color hue must be between 0 and 360.")
+    .max(360, "Base color hue must be between 0 and 360.")
     .describe('The base color hue for the palette, between 0 and 360.'),
   numColors: z
     .number()
+    .min(2, "Number of colors must be at least 2.")
+    .max(10, "Number of colors cannot exceed 10.")
     .describe('The number of colors to generate in the palette.'),
 });
 export type GenerateHarmoniousPalettesInput = z.infer<
@@ -37,12 +42,49 @@ export type GenerateHarmoniousPalettesOutput = z.infer<
   typeof GenerateHarmoniousPalettesOutputSchema
 >;
 
-// In-memory cache for this flow
+// LRU Cache Implementation
+const MAX_CACHE_SIZE = 50;
 const generatePalettesCache = new Map<string, GenerateHarmoniousPalettesOutput>();
+const generatePalettesCacheOrder: string[] = [];
+
+function getFromCache(key: string): GenerateHarmoniousPalettesOutput | undefined {
+  if (generatePalettesCache.has(key)) {
+    // Move key to the end of the order array (most recently used)
+    const index = generatePalettesCacheOrder.indexOf(key);
+    if (index > -1) {
+      generatePalettesCacheOrder.splice(index, 1);
+    }
+    generatePalettesCacheOrder.push(key);
+    return generatePalettesCache.get(key);
+  }
+  return undefined;
+}
+
+function setInCache(key: string, value: GenerateHarmoniousPalettesOutput): void {
+  if (generatePalettesCache.size >= MAX_CACHE_SIZE && !generatePalettesCache.has(key)) {
+    // Evict least recently used
+    const lruKey = generatePalettesCacheOrder.shift();
+    if (lruKey) {
+      generatePalettesCache.delete(lruKey);
+      console.log(`[Cache Evict] generateHarmoniousPalettesFlow: Evicted ${lruKey} from cache.`);
+    }
+  }
+  generatePalettesCache.set(key, value);
+  // Remove key if it exists, then add to end (most recently used)
+  const index = generatePalettesCacheOrder.indexOf(key);
+  if (index > -1) {
+    generatePalettesCacheOrder.splice(index, 1);
+  }
+  generatePalettesCacheOrder.push(key);
+}
+
 
 export async function generateHarmoniousPalettes(
   input: GenerateHarmoniousPalettesInput
 ): Promise<GenerateHarmoniousPalettesOutput> {
+  // Input validation will be handled by Zod when the flow is invoked.
+  // Test case consideration: Call with input.numColors < 2 or > 10 to check Zod error.
+  // Test case consideration: Call with input.baseColorHue < 0 or > 360.
   return generateHarmoniousPalettesFlow(input);
 }
 
@@ -53,24 +95,15 @@ const defaultSafetySettings = [
   { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
 ];
 
-const MODEL_NAME_TEXT = 'googleai/gemini-2.0-flash'; // As defined in src/ai/genkit.ts for default text model
+const MODEL_NAME_TEXT = 'googleai/gemini-2.0-flash';
+console.log(`[AI Flow Init] generateHarmoniousPalettesFlow uses model: ${MODEL_NAME_TEXT}`);
 
-const prompt = ai.definePrompt({
+
+const harmoniousPalettePrompt = ai.definePrompt({
   name: 'generateHarmoniousPalettesPrompt',
   input: {schema: GenerateHarmoniousPalettesInputSchema},
   output: {schema: GenerateHarmoniousPalettesOutputSchema},
-  prompt: `You are a color palette generation AI. You will generate a
-harmonious color palette based on the provided base color hue, and the
-number of colors requested. The output should be a JSON array of HSB
-(Hue, Saturation, Brightness) color values. Hue is between 0 and 360,
-saturation and brightness are between 0 and 100.
-
-Base Color Hue: {{{baseColorHue}}}
-Number of Colors: {{{numColors}}}
-
-Ensure the generated colors are visually harmonious and work well together.
-Use established color theory principles to create the palette.
-`,
+  prompt: HARMONIOUS_PALETTES_PROMPT, // Use imported prompt
   config: {
     safetySettings: defaultSafetySettings,
   }
@@ -84,24 +117,28 @@ const generateHarmoniousPalettesFlow = ai.defineFlow(
   },
   async (input: GenerateHarmoniousPalettesInput): Promise<GenerateHarmoniousPalettesOutput> => {
     const cacheKey = JSON.stringify(input);
-    if (generatePalettesCache.has(cacheKey)) {
+    const cachedResult = getFromCache(cacheKey);
+    if (cachedResult) {
       console.log(`[Cache Hit] generateHarmoniousPalettesFlow: Returning cached palette for input: ${cacheKey}`);
-      return generatePalettesCache.get(cacheKey)!;
+      // Test case consideration: Call twice with same input, second call should hit cache.
+      // (Mock ai.generate and assert it's not called on second invocation).
+      return cachedResult;
     }
 
     console.log(`[Cache Miss] generateHarmoniousPalettesFlow: Generating palette for input: ${cacheKey} using model: ${MODEL_NAME_TEXT}`);
     const startTime = performance.now();
-    const {output} = await prompt(input);
+    // The 'harmoniousPalettePrompt' defined above uses HARMONIOUS_PALETTES_PROMPT string
+    const {output} = await harmoniousPalettePrompt(input);
     const endTime = performance.now();
     console.log(`[AI Benchmark] generateHarmoniousPalettesFlow prompt call took ${(endTime - startTime).toFixed(2)} ms`);
     
     if (!output) {
+        // Test case consideration: Mock ai.generate to return undefined/null output.
         throw new Error('AI failed to generate a palette.');
     }
     
-    generatePalettesCache.set(cacheKey, output);
+    setInCache(cacheKey, output);
     console.log(`[Cache Set] generateHarmoniousPalettesFlow: Cached palette for input: ${cacheKey}`);
     return output;
   }
 );
-
