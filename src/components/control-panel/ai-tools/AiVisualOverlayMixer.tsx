@@ -21,7 +21,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { ControlHint } from '../ControlHint';
 import { LabelledSwitchControl } from '../common/LabelledSwitchControl';
 import { AiSuggestedPromptDisplay } from '../common/AiSuggestedPromptDisplay';
-import { DEFAULT_SETTINGS } from '@/lib/constants';
+import { DEFAULT_SETTINGS } from '@/lib/constants'; // Added missing import
 import { addLogEntry } from '@/services/rehearsalLogService';
 
 
@@ -36,12 +36,16 @@ export function AiVisualOverlayMixer({ value }: AiVisualOverlayMixerProps) {
   const { toast } = useToast();
 
   const [isLoading, setIsLoading] = useState(false);
-  const [localPrompt, setLocalPrompt] = useState(settings.aiOverlayPrompt);
+  const [localPrompt, setLocalPrompt] = useState(settings.aiOverlayPrompt || DEFAULT_SETTINGS.aiOverlayPrompt);
   const initialGenerationAttempted = useRef(false);
   const periodicUpdateIntervalId = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
-    setLocalPrompt(settings.aiOverlayPrompt);
+    // Update localPrompt if the global setting changes from elsewhere
+    if (settings.aiOverlayPrompt !== localPrompt) {
+      setLocalPrompt(settings.aiOverlayPrompt || DEFAULT_SETTINGS.aiOverlayPrompt);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [settings.aiOverlayPrompt]);
 
   const handleGenerateOverlay = useCallback(async (promptToUse: string) => {
@@ -107,14 +111,24 @@ export function AiVisualOverlayMixer({ value }: AiVisualOverlayMixerProps) {
   }, [currentScene, audioData, updateSetting, toast, settings.aiOverlayPrompt, settings.enableAiOverlay]);
 
 
-  // Initial overlay generation on load
+ // Effect for initial overlay generation on load
  useEffect(() => {
-    if (!settings.aiGeneratedOverlayUri && currentScene && !initialGenerationAttempted.current && !isLoading) {
-      console.log("AiVisualOverlayMixer: Attempting initial AI overlay generation with prompt:", settings.aiOverlayPrompt || DEFAULT_SETTINGS.aiOverlayPrompt);
+    if (
+      !settings.aiGeneratedOverlayUri &&
+      currentScene &&
+      !initialGenerationAttempted.current &&
+      !isLoading
+    ) {
+      console.log(
+        '[AiVisualOverlayMixer] Attempting initial AI overlay generation. Prompt:',
+        settings.aiOverlayPrompt || DEFAULT_SETTINGS.aiOverlayPrompt
+      );
       initialGenerationAttempted.current = true;
       handleGenerateOverlay(settings.aiOverlayPrompt || DEFAULT_SETTINGS.aiOverlayPrompt);
     }
-  }, [currentScene, settings.aiGeneratedOverlayUri, isLoading, handleGenerateOverlay, settings.aiOverlayPrompt]);
+  // Dependencies: Only run once when currentScene is available and other conditions are met.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentScene, settings.aiGeneratedOverlayUri, isLoading]);
 
   // Periodic regeneration
   useEffect(() => {
@@ -123,9 +137,9 @@ export function AiVisualOverlayMixer({ value }: AiVisualOverlayMixerProps) {
         clearInterval(periodicUpdateIntervalId.current);
       }
       periodicUpdateIntervalId.current = setInterval(() => {
-        if (!isLoading) {
-          console.log(`AiVisualOverlayMixer: Triggering periodic regeneration. Interval: ${settings.aiOverlayRegenerationInterval}s`);
-          handleGenerateOverlay(settings.aiOverlayPrompt);
+        if (!isLoading && currentScene) { // Ensure scene context is available
+          console.log(`[AiVisualOverlayMixer] Triggering periodic regeneration. Interval: ${settings.aiOverlayRegenerationInterval}s`);
+          handleGenerateOverlay(settings.aiOverlayPrompt || DEFAULT_SETTINGS.aiOverlayPrompt);
         }
       }, settings.aiOverlayRegenerationInterval * 1000);
     } else {
@@ -139,7 +153,15 @@ export function AiVisualOverlayMixer({ value }: AiVisualOverlayMixerProps) {
         clearInterval(periodicUpdateIntervalId.current);
       }
     };
-  }, [settings.enableAiOverlay, settings.enablePeriodicAiOverlay, settings.aiOverlayRegenerationInterval, settings.aiOverlayPrompt, isLoading, handleGenerateOverlay]);
+  }, [
+    settings.enableAiOverlay,
+    settings.enablePeriodicAiOverlay,
+    settings.aiOverlayRegenerationInterval,
+    settings.aiOverlayPrompt,
+    isLoading,
+    handleGenerateOverlay,
+    currentScene // Added currentScene dependency
+  ]);
 
 
   return (
@@ -163,7 +185,7 @@ export function AiVisualOverlayMixer({ value }: AiVisualOverlayMixerProps) {
             </TooltipTrigger>
             <TooltipContent>
               <p>Describe the visual style or elements for the AI-generated overlay.</p>
-              <ControlHint>e.g., "{settings.aiOverlayPrompt || DEFAULT_SETTINGS.aiOverlayPrompt}"</ControlHint>
+              <ControlHint>e.g., "{DEFAULT_SETTINGS.aiOverlayPrompt}"</ControlHint>
             </TooltipContent>
           </Tooltip>
           <Input
@@ -178,6 +200,8 @@ export function AiVisualOverlayMixer({ value }: AiVisualOverlayMixerProps) {
             suggestedPrompt={settings.lastAISuggestedAssetPrompt}
             onUsePrompt={(prompt) => {
               setLocalPrompt(prompt);
+              // Optionally trigger generation immediately upon using suggested prompt
+              // handleGenerateOverlay(prompt); 
             }}
             isLoading={isLoading}
             icon={Wand2}

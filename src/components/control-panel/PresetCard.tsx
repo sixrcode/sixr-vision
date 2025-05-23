@@ -16,9 +16,16 @@ type PresetCardProps = {
 
 const PresetCard = React.forwardRef<HTMLDivElement, PresetCardProps>(
   ({ scene, isActive, onClick, onKeyDown, className, ...props }, ref) => {
-    // Style object primarily for border color, reacting to isActive state
-    const cardBorderStyle: React.CSSProperties = {
+    // Inline styles for direct control over background and border colors
+    // to combat potential specificity issues with Tailwind classes on Card component.
+    const cardStyle: React.CSSProperties = {
       borderColor: isActive ? 'hsl(var(--primary-hsl))' : 'hsl(var(--border-hsl))',
+      // Background color will be applied via Tailwind classes for better theme integration
+    };
+
+    // Text color needs to contrast with the card's background
+    const cardTextStyle: React.CSSProperties = {
+      color: isActive ? 'hsl(var(--accent-foreground-hsl))' : 'hsl(var(--card-foreground-hsl))',
     };
 
     return (
@@ -27,8 +34,8 @@ const PresetCard = React.forwardRef<HTMLDivElement, PresetCardProps>(
         className={cn(
           "w-full h-auto shrink-0 cursor-pointer transition-all hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
           isActive
-            ? `border-primary ring-2 ring-primary bg-[hsl(36,98%,63%)]` // SBNF Orange-Yellow (from --accent-hsl)
-            : `bg-[hsl(258,56%,40%)] border-border`, // SBNF Deep Purple (from --card-hsl)
+            ? `border-primary ring-2 ring-primary bg-[hsl(var(--accent-hsl))]` // SBNF Orange-Yellow
+            : `border-border bg-[hsl(var(--card-hsl))]`, // SBNF Deep Purple (Card background)
           className
         )}
         onClick={onClick}
@@ -36,31 +43,21 @@ const PresetCard = React.forwardRef<HTMLDivElement, PresetCardProps>(
         onKeyDown={onKeyDown}
         aria-label={`Activate ${scene.name} preset`}
         aria-pressed={isActive}
-        style={cardBorderStyle} // Apply border color style here
+        style={cardStyle} // Apply border color via style for consistency
         {...props}
       >
-        <CardContent className="p-2 flex flex-col items-center">
-          {scene.thumbnailUrl ? (
-            <Image
-              src={scene.thumbnailUrl}
-              alt={scene.name}
-              width={80}
-              height={60}
-              className="rounded-md object-cover w-full"
-              data-ai-hint={scene.dataAiHint || "abstract visual"}
-            />
-          ) : (
-            // Placeholder div if no thumbnail
-            <div className="w-full h-[60px] flex items-center justify-center rounded-md p-1">
-              <span className={cn(
-                "text-xs text-center break-words",
-                // Explicitly set text color based on active state for maximum contrast
-                isActive ? "text-accent-foreground" : "text-card-foreground" 
-              )}>
-                {scene.name}
-              </span>
-            </div>
-          )}
+        <CardContent className="p-2 flex flex-col items-center justify-center">
+          {/* Main content: Display scene.id (short label) */}
+          <div className="w-full h-[60px] flex items-center justify-center text-center">
+            <span
+              className={cn(
+                "text-xs font-medium break-words line-clamp-2 leading-tight",
+                isActive ? "text-accent-foreground" : "text-card-foreground" // Explicit text colors
+              )}
+            >
+              {scene.displayLabel || scene.id} {/* Use displayLabel, fallback to id */}
+            </span>
+          </div>
         </CardContent>
       </Card>
     );
