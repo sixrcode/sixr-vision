@@ -10,6 +10,7 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
+import { defaultSafetySettings } from '../sharedConstants';
 
 const GenerateHarmoniousPalettesInputSchema = z.object({
   baseColorHue: z
@@ -45,13 +46,6 @@ export async function generateHarmoniousPalettes(
 ): Promise<GenerateHarmoniousPalettesOutput> {
   return generateHarmoniousPalettesFlow(input);
 }
-
-const defaultSafetySettings = [
-  { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
-  { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
-  { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
-  { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
-];
 
 const prompt = ai.definePrompt({
   name: 'generateHarmoniousPalettesPrompt',
