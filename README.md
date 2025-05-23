@@ -16,7 +16,7 @@
     *   [Type-Safe AI Flows](#type-safe-ai-flows)
     *   [Recommendation for Refactoring (Code Architecture)](#recommendation-for-refactoring-code-architecture)
 *   [Visualizer](#visualizer)
-    *   [Rendering Modes (2D Canvas & WebGL)](#rendering-modes-2d-canvas--webgl)
+    *   [WebGL Rendering Pipeline](#webgl-rendering-pipeline)
     *   [Scene Management](#scene-management)
     *   [Audio Responsiveness](#audio-responsiveness)
     *   [Webcam Integration](#webcam-integration)
@@ -59,18 +59,18 @@
 ## Introduction
 Welcome to the Dynamic Audio-Reactive Visualizer! This web-based application generates captivating, real-time visualizations that respond to audio input. It leverages Artificial Intelligence through Google's Genkit framework to dynamically create and suggest scene elements, color palettes, and atmospheric effects, offering a unique and interactive visual experience.
 
-Built with a modern tech stack including Next.js, TypeScript, and Three.js for WebGL rendering, this project aims to explore the synergy between audio, visuals, and AI.
+Built with a modern tech stack including Next.js, TypeScript, and Three.js, this project uses WebGL for all rendering, aiming to explore the synergy between audio, visuals, and AI.
 
 ## Features
 *   **Real-time Audio Visualization:** Visuals dynamically react to music and sound.
-*   **Dual Rendering Modes:** Choose between 2D Canvas for simpler graphics and WebGL (via Three.js) for immersive 3D scenes.
+*   **WebGL-Powered Rendering:** Utilizes WebGL (via Three.js) for immersive and performant 3D scenes.
 *   **AI-Powered Scene Intelligence:** Utilizes Genkit with Google AI models (Gemini 1.5 Flash) for:
     *   Generating visual assets from text prompts.
     *   Creating harmonious color palettes.
     *   Suggesting scene ambiances and elements.
     *   Proposing scenes based on audio analysis.
 *   **Webcam Integration:** Incorporate your live webcam feed into the visualizations.
-*   **AI Image Overlays:** Display AI-generated images as dynamic overlays on scenes with adjustable blend modes and opacity.
+*   **AI Image Overlays:** Display AI-generated images as dynamic overlays on WebGL scenes with adjustable blend modes and opacity.
 *   **Interactive Control Panel:** Easily adjust settings, select scenes, and interact with AI tools.
 *   **Performance Monitoring:** Includes FPS counter and options for performance adjustments.
 *   **Customizable Branding:** Option to add a branding overlay.
@@ -80,7 +80,7 @@ Built with a modern tech stack including Next.js, TypeScript, and Three.js for W
 *   **Styling:** Tailwind CSS
 *   **AI Framework:** Genkit (by Google)
 *   **AI Model:** Google Gemini 1.5 Flash (via `@genkit-ai/googleai`)
-*   **3D Graphics:** Three.js
+*   **3D Graphics:** Three.js (for WebGL rendering)
 *   **State Management:** React Context API (e.g., `SettingsProvider`, `AudioDataProvider`, `SceneProvider`)
 *   **Data Fetching/Caching:** TanStack Query (formerly React Query)
 *   **Linting/Formatting:** ESLint, Prettier (configured in `package.json`)
@@ -141,7 +141,7 @@ This server runs separately (usually on `http://localhost:4000`) and is used for
 *   `src/app/`: Main application pages (Next.js App Router).
 *   `src/components/`: Reusable React components.
     *   `control-panel/`: UI for controlling visualizations and AI tools.
-    *   `visualizer/`: Components for rendering visualizations (2D/WebGL).
+    *   `visualizer/`: Components for rendering WebGL visualizations.
     *   `ui/`: Generic UI elements (buttons, sliders, etc. - likely from a library like shadcn/ui given the file names).
 *   `src/ai/`: AI-related logic, including Genkit flows.
     *   `genkit.ts`: Genkit initialization.
@@ -177,28 +177,33 @@ The project follows a modern frontend architecture, leveraging Next.js conventio
 ## Visualizer
 The core of the application, responsible for rendering the graphics. This section describes the main components related to the visual output.
 
-### Rendering Modes (2D Canvas & WebGL)
-*   The `VisualizerView.tsx` component dynamically switches between 2D Canvas and WebGL rendering.
-*   Individual scenes specify their preferred renderer type (`rendererType: '2d' | 'webgl'`).
-*   **Three.js** is employed for WebGL rendering, allowing for sophisticated 3D graphics and effects.
+### WebGL Rendering Pipeline
+*   The `VisualizerView.tsx` component exclusively uses a **WebGL rendering pipeline via Three.js** for all visual scenes. This approach ensures high-performance graphics and enables sophisticated 3D effects.
+*   The previous dual 2D Canvas / WebGL rendering system has been deprecated to streamline development and focus on the capabilities of WebGL.
 
 ### Scene Management
 *   The `SceneProvider` (React Context) manages the collection of available visual scenes and the currently active scene.
-*   Scenes are modular, with dedicated functions for initialization (`init`, `initWebGL`), drawing (`draw`, `drawWebGL`), and cleanup (`cleanupWebGL` for WebGL contexts).
+*   All scenes are designed as WebGL scenes, with dedicated functions for initialization (`initWebGL`), drawing (`drawWebGL`), and cleanup (`cleanupWebGL`).
 *   Smooth transitions between different scenes are supported.
 
 ### Audio Responsiveness
 *   The `AudioDataProvider` (React Context) processes microphone or audio file input in real-time.
 *   It provides crucial audio data like Root Mean Square (RMS) for volume, beat detection, and frequency spectrum analysis (e.g., bass, mid, treble).
-*   Visualizations use this data to react dynamically, creating a tightly synchronized audio-visual experience.
+*   Visualizations use this data to react dynamically, creating a tightly synchronized audio-visual experience within the WebGL environment.
 
 ### Webcam Integration
 *   The `WebcamFeed.tsx` component facilitates access to the user's webcam.
-*   The live webcam feed can be incorporated as a texture, background, or interactive element within visual scenes.
+*   The live webcam feed can be incorporated as a texture, background, or interactive element within WebGL visual scenes.
 
 ### AI Overlays
-*   Supports displaying AI-generated images as overlays on top of the current visualizer scene (via `settings.aiGeneratedOverlayUri`).
-*   Users can adjust blend modes and opacity for these overlays through the control panel.
+*   Supports displaying AI-generated images as overlays on top of the current WebGL visualizer scene (via `settings.aiGeneratedOverlayUri`).
+*   Users can adjust the **opacity** and **blend mode** for these overlays through the control panel. This feature is fully functional for all WebGL scenes.
+*   **Supported WebGL Blend Modes:**
+    *   `source-over` (Normal blending)
+    *   `multiply`
+    *   `screen`
+    *   `add` (often referred to as "lighter")
+*   Other complex blend modes from the `GlobalCompositeOperation` standard (e.g., `overlay`, `darken`, `lighten`, `color-dodge`, `color-burn`, `hard-light`, `soft-light`, `difference`, `exclusion`, `hue`, `saturation`, `color`, `luminosity`) will currently default to `source-over` (normal blending) in the WebGL renderer. Full support for these modes would require custom GLSL shaders.
 
 ## Configuration
 This section details how to configure the application, including environment variables and application-specific settings accessible through the UI.
@@ -216,7 +221,7 @@ This section details how to configure the application, including environment var
 ### Application Settings
 *   Global application settings are managed via the `SettingsProvider` (React Context) and are configurable through the UI control panel.
 *   These settings encompass parameters for:
-    *   **Visuals:** Active scene, rendering mode (2D/WebGL), specific scene properties.
+    *   **Visuals:** Active scene, specific WebGL scene properties.
     *   **Audio Input:** Microphone sensitivity, beat detection thresholds, FFT smoothing.
     *   **AI Interactions:** Prompts for asset generation, selected AI overlays, blend modes, opacity.
     *   **UI/Branding:** Theme options, visibility of branding elements.
@@ -257,7 +262,7 @@ The application leverages Artificial Intelligence and Machine Learning to enhanc
 This section outlines key performance aspects of the application, potential bottlenecks, and recommendations for optimization, drawing heavily from the project evaluation.
 
 ### Runtime Efficiency
-*   **Rendering Engine:** The visualizer leverages WebGL for rendering, primarily through the **Three.js** library, which is suitable for performant 2D and 3D graphics in the browser.
+*   **Rendering Engine:** The visualizer leverages WebGL for all rendering, primarily through the **Three.js** library, which is suitable for performant 2D and 3D graphics in the browser. The previous 2D canvas rendering path has been removed to focus on WebGL capabilities.
 *   **Asynchronous AI Flows:** AI-driven functionalities (Genkit flows) are designed to be asynchronous and non-blocking, preventing them from freezing the user interface during AI model interactions.
 *   **Accessibility & Page Load:** The application incorporates accessibility features such as a "Skip to main content" link and is designed to avoid blocking JavaScript calls during initial page load, contributing to a smoother startup experience.
 
@@ -267,7 +272,7 @@ This section outlines key performance aspects of the application, potential bott
     *   **Recommendation:** It is **strongly recommended to implement cache eviction policies** (e.g., Least Recently Used - LRU) or set maximum size limits for these in-memory caches to prevent memory exhaustion.
 *   **Management of Generated Assets:**
     *   Visual assets generated for scenes (e.g., textures, 3D meshes) can also accumulate in memory.
-    *   **Recommendation:** Effective cleanup mechanisms for these assets are crucial, especially when users frequently switch between scenes or regenerate elements within a single session. This involves ensuring WebGL resources are properly disposed of when no longer needed.
+    *   **Recommendation:** Effective cleanup mechanisms for these assets are crucial, especially when users frequently switch between scenes or regenerate elements within a single session. This involves ensuring WebGL resources (textures, geometries, materials) are properly disposed of (`dispose()` method in Three.js) when no longer needed.
 
 ### Scalability
 *   **Load Testing:** The project evaluation found no evidence of formal load testing.
@@ -299,7 +304,7 @@ Many features detailed in the blueprint or identified as desirable are not yet i
 *   **Comprehensive Logging:** Advanced client-side logging (e.g., using IndexedDB for FRP logs or detailed interaction logs).
 *   **Undo/Redo Functionality:** Lack of undo/redo capabilities in the control panel for user actions.
 *   **Full Mobile Support:** While the application might be viewable on mobile, dedicated responsive design and performance optimization for mobile devices are not fully realized.
-*   **Style-Transfer Shader:** The "Style-Transfer Shader" is noted as a placeholder in `docs/blueprint.md` and awaits implementation.
+*   **Style-Transfer Shader:** The "Style-Transfer Shader" is noted as a placeholder in `docs/blueprint.md` and awaits implementation. This would likely require custom GLSL shaders.
 *   **Localization (i18n) Support:** The application currently lacks infrastructure for internationalization and localization.
 
 ### Development Tooling & Process Gaps
@@ -309,7 +314,7 @@ Many features detailed in the blueprint or identified as desirable are not yet i
 
 ### Documentation Status
 *   **Initial README:** Prior to this current documentation effort, the `README.md` was minimal.
-*   **Current README Enhancement:** This README has been significantly updated to reflect insights from the project evaluation, providing a more comprehensive overview.
+*   **Current README Enhancement:** This README has been significantly updated to reflect insights from the project evaluation and recent codebase refactoring, providing a more comprehensive overview.
 *   **Further Documentation Needs:**
     *   **Inline Code Comments:** More detailed inline comments explaining complex logic within the codebase would aid maintainability.
     *   **Blueprint Expansion:** The `docs/blueprint.md` could be further detailed or broken down into more specific design documents.
@@ -387,7 +392,7 @@ This section outlines potential risks identified during the project evaluation a
 *   **`dangerouslySetInnerHTML`:** The application uses `dangerouslySetInnerHTML` in the `<head>` for a CSS reset. The evaluation notes that this is with static content, making the direct XSS risk low in this specific instance.
 *   **Recommendations:**
     *   **Content Security Policy (CSP):** Implement a robust CSP to mitigate risks of XSS and other injection attacks.
-    *   **Input Sanitization:** While current text inputs seem primarily for Canvas/WebGL rendering (not direct HTML), any user-generated text that might be rendered directly into the UI in the future should be rigorously sanitized.
+    *   **Input Sanitization:** While current text inputs seem primarily for WebGL rendering (not direct HTML), any user-generated text that might be rendered directly into the UI in the future should be rigorously sanitized.
     *   **CodeQL Scans:** Regularly run CodeQL scans (or similar SAST tools) on the JavaScript/TypeScript codebase to automatically flag potential security issues, including any unsafe uses of `innerHTML` or vulnerabilities in third-party dependencies.
 
 ### Bias & Ethical AI Risks & Mitigations
