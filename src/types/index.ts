@@ -84,8 +84,6 @@ export type Settings = {
   aiOverlayOpacity: number;
   aiOverlayBlendMode: GlobalCompositeOperation;
   aiOverlayPrompt: string;
-  enablePeriodicAiOverlay: boolean;
-  aiOverlayRegenerationInterval: number; // in seconds
 };
 
 export type PaletteGenieColor = {
