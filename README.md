@@ -69,7 +69,7 @@ Built with a modern tech stack including Next.js, TypeScript, and Three.js for W
     *   Creating harmonious color palettes.
     *   Suggesting scene ambiances and elements.
     *   Proposing scenes based on audio analysis.
-*   **Webcam Integration:** Incorporate your live webcam feed into the visualizations.
+*   **Extensive Webcam Integration:** Incorporate your live webcam feed into visualizations in diverse ways across multiple scenes.
 *   **AI Image Overlays:** Display AI-generated images as dynamic overlays on scenes with adjustable blend modes and opacity.
 *   **Interactive Control Panel:** Easily adjust settings, select scenes, and interact with AI tools.
 *   **Performance Monitoring:** Includes FPS counter and options for performance adjustments.
@@ -80,7 +80,7 @@ Built with a modern tech stack including Next.js, TypeScript, and Three.js for W
 *   **Styling:** Tailwind CSS
 *   **AI Framework:** Genkit (by Google)
 *   **AI Model:** Google Gemini 1.5 Flash (via `@genkit-ai/googleai`)
-*   **3D Graphics:** Three.js
+*   **3D Graphics:** Three.js, **@tensorflow-models/body-pix** (for advanced webcam processing)
 *   **State Management:** React Context API (e.g., `SettingsProvider`, `AudioDataProvider`, `SceneProvider`)
 *   **Data Fetching/Caching:** TanStack Query (formerly React Query)
 *   **Linting/Formatting:** ESLint, Prettier (configured in `package.json`)
@@ -147,6 +147,7 @@ This server runs separately (usually on `http://localhost:4000`) and is used for
     *   `genkit.ts`: Genkit initialization.
     *   `flows/`: Specific AI tasks (e.g., `generate-assets-from-prompt.ts`).
 *   `src/lib/`: Utility functions and constants.
+    *   `constants.ts`: Contains scene definitions, including webcam integration logic.
 *   `src/providers/`: React Context providers for global state management.
 *   `src/hooks/`: Custom React hooks.
 *   `public/`: Static assets.
@@ -184,7 +185,7 @@ The core of the application, responsible for rendering the graphics. This sectio
 
 ### Scene Management
 *   The `SceneProvider` (React Context) manages the collection of available visual scenes and the currently active scene.
-*   Scenes are modular, with dedicated functions for initialization (`init`, `initWebGL`), drawing (`draw`, `drawWebGL`), and cleanup (`cleanupWebGL` for WebGL contexts).
+*   Scenes are defined in `src/lib/constants.ts` and are modular, with dedicated functions for initialization (`initWebGL`), drawing (`drawWebGL`), and cleanup (`cleanupWebGL`).
 *   Smooth transitions between different scenes are supported.
 
 ### Audio Responsiveness
@@ -193,8 +194,50 @@ The core of the application, responsible for rendering the graphics. This sectio
 *   Visualizations use this data to react dynamically, creating a tightly synchronized audio-visual experience.
 
 ### Webcam Integration
-*   The `WebcamFeed.tsx` component facilitates access to the user's webcam.
-*   The live webcam feed can be incorporated as a texture, background, or interactive element within visual scenes.
+The `WebcamFeed.tsx` component facilitates access to the user's webcam. The live webcam feed is integrated into various visual scenes, enhancing interactivity and personalization. All webcam features are controlled via the "Show Webcam" toggle in the UI settings.
+
+*   **Mirror Silhouette (Primary Webcam Scene):**
+    *   Uses **BodyPix** (from TensorFlow Models) for real-time person segmentation.
+    *   This allows for a precise silhouette of the user, which is then colored and styled based on audio input.
+    *   Technique: `bodyPix.segmentPerson()` generates a mask, which is drawn to an offscreen canvas and used as a `THREE.CanvasTexture` in a custom shader.
+
+*   **Echoing Shapes:**
+    *   Detects motion by comparing consecutive frames from the webcam feed on a downscaled 2D canvas (`motionCanvas`).
+    *   Shapes are spawned at the locations of detected motion, with their size and lifetime potentially influenced by the amount of motion and audio properties.
+    *   Technique: Frame differencing on a 2D canvas (`motionCtx.getImageData()`).
+
+*   **Frequency Rings:**
+    *   The expanding rings are textured with the live webcam feed.
+    *   This webcam texture is blended (mixed) with the audio-reactive base colors of the rings.
+    *   Technique: `THREE.VideoTexture` is used as a map in a `THREE.ShaderMaterial`, with UV adjustments for aspect ratio.
+
+*   **Neon Pulse Grid:**
+    *   Grid cell colors are influenced by the webcam feed.
+    *   Each cell samples a corresponding pixel from a downscaled representation of the webcam image (`textureSampleCanvas` of size `GRID_SIZE_X` x `GRID_SIZE_Y`).
+    *   The sampled webcam color is then blended with the cell's audio-reactive color.
+    *   Technique: Drawing webcam to a small canvas, `getImageData()`, then blending colors for each cell's `targetColor`.
+
+*   **Spectrum Bars:**
+    *   The colors of the audio spectrum bars are a blend of their original audio-driven colors and colors sampled from the webcam feed.
+    *   Each bar samples its color from a corresponding vertical slice of the webcam image (achieved by drawing the webcam feed to a 1px high canvas, `barSampleCanvas`, with width equal to `numBars`).
+    *   Technique: Drawing webcam to a `numBars` x 1px canvas, `getImageData()`, then blending with audio-reactive HSL colors.
+
+*   **Radial Burst:**
+    *   The colors of newly spawned particles are a 50/50 blend of their audio-driven hues and colors randomly sampled from a downscaled (64x64 `particleSampleCanvas`) version of the webcam feed.
+    *   Technique: Random pixel sampling from `getImageData()` of the sample canvas, blended with audio-driven HSL colors.
+
+*   **Geometric Tunnel:**
+    *   The interior walls of the tunnel segments are textured with the live webcam feed when the webcam is active.
+    *   This webcam texture is tinted by the audio-reactive colors that normally drive the wireframe.
+    *   Technique: Material swapping; `THREE.VideoTexture` is applied to a `MeshBasicMaterial` on the tunnel segments, with `color` property tinted by audio. Texture coordinates (`repeat`, `offset`) are adjusted for mirroring and aspect ratio.
+
+*   **Strobe Light:**
+    *   In addition to audio beats, strobe flashes can now be triggered by sudden significant increases in the overall brightness of the webcam feed.
+    *   Technique: Average brightness is calculated from a downscaled (16x16 `brightnessSampleCanvas`) webcam image each frame. A large delta from the previous frame's brightness triggers the strobe.
+
+*   **Particle Finale:**
+    *   Similar to "Radial Burst," particle colors are a blend of their audio-driven hues and colors randomly sampled from a downscaled (64x64 `finaleSampleCanvas`) webcam feed. This creates a dynamic, colorful explosion influenced by both audio and live video.
+    *   Technique: Random pixel sampling from `getImageData()` of the sample canvas, blended with audio-driven HSL colors for particles.
 
 ### AI Overlays
 *   Supports displaying AI-generated images as overlays on top of the current visualizer scene (via `settings.aiGeneratedOverlayUri`).
@@ -219,6 +262,7 @@ This section details how to configure the application, including environment var
     *   **Visuals:** Active scene, rendering mode (2D/WebGL), specific scene properties.
     *   **Audio Input:** Microphone sensitivity, beat detection thresholds, FFT smoothing.
     *   **AI Interactions:** Prompts for asset generation, selected AI overlays, blend modes, opacity.
+    *   **Webcam:** Toggle webcam visibility (`showWebcam`), mirror webcam (`mirrorWebcam`).
     *   **UI/Branding:** Theme options, visibility of branding elements.
 
 ## AI/ML Integration & Components
@@ -301,6 +345,7 @@ Many features detailed in the blueprint or identified as desirable are not yet i
 *   **Full Mobile Support:** While the application might be viewable on mobile, dedicated responsive design and performance optimization for mobile devices are not fully realized.
 *   **Style-Transfer Shader:** The "Style-Transfer Shader" is noted as a placeholder in `docs/blueprint.md` and awaits implementation.
 *   **Localization (i18n) Support:** The application currently lacks infrastructure for internationalization and localization.
+*   **Advanced Webcam Features:** While many webcam integrations are now present, more advanced features like chroma-keying or depth-sensing (if hardware allows) are future possibilities.
 
 ### Development Tooling & Process Gaps
 *   **Testing Framework:** Absence of formal test suites (unit, integration, and end-to-end tests). The evaluation strongly recommends establishing these to ensure code quality and prevent regressions.
@@ -309,7 +354,7 @@ Many features detailed in the blueprint or identified as desirable are not yet i
 
 ### Documentation Status
 *   **Initial README:** Prior to this current documentation effort, the `README.md` was minimal.
-*   **Current README Enhancement:** This README has been significantly updated to reflect insights from the project evaluation, providing a more comprehensive overview.
+*   **Current README Enhancement:** This README has been significantly updated to reflect insights from the project evaluation and recent feature additions (especially webcam integrations), providing a more comprehensive overview.
 *   **Further Documentation Needs:**
     *   **Inline Code Comments:** More detailed inline comments explaining complex logic within the codebase would aid maintainability.
     *   **Blueprint Expansion:** The `docs/blueprint.md` could be further detailed or broken down into more specific design documents.
