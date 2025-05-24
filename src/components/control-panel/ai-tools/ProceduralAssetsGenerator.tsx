@@ -40,13 +40,13 @@ export function ProceduralAssetsGenerator({ value }: ProceduralAssetsGeneratorPr
       setGeneratedAssets(result);
       toast({
         title: 'Assets Generated',
-        description: 'Texture and mesh created based on your prompt.',
+        description: 'Texture and mesh preview created based on your prompt.',
       });
     } catch (error) {
       console.error('Error generating assets:', error);
       toast({
-        title: 'Error',
-        description: 'Failed to generate assets. See console for details.',
+        title: 'Error Generating Assets',
+        description: error instanceof Error ? error.message : 'Failed to generate assets. See console for details.',
         variant: 'destructive',
       });
     } finally {
@@ -123,12 +123,12 @@ export function ProceduralAssetsGenerator({ value }: ProceduralAssetsGeneratorPr
                 className="rounded border mt-1 object-cover"
                 data-ai-hint="generated mesh"
               />
-              <ControlHint>Note: Mesh preview is shown as an image. Actual mesh data available.</ControlHint>
+              <ControlHint>Note: Mesh preview is shown as an image. Actual 3D mesh data generation is a future feature.</ControlHint>
             </div>
           )}
         </div>
       )}
-      <ControlHint className="mt-2">Style-Transfer Shader: Placeholder</ControlHint>
+       <ControlHint className="mt-2">Style-Transfer Shader (Planned Feature)</ControlHint>
     </ControlPanelSection>
   );
 }

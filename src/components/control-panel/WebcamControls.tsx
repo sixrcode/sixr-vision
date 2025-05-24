@@ -39,8 +39,8 @@ export function WebcamControls({ value }: WebcamControlsProps) {
           switchAriaLabel="Toggle mirror webcam"
         />
       )}
-      <ControlHint className="mt-2">AI Segmentation: Placeholder</ControlHint>
-      <ControlHint>Motion Energy Scalar: Placeholder</ControlHint>
+      <ControlHint className="mt-2">AI Segmentation (Planned Feature)</ControlHint>
+      <ControlHint>Motion Energy Scalar (Planned Feature)</ControlHint>
     </ControlPanelSection>
   );
 }
