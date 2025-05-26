@@ -4,13 +4,12 @@
 import { Button } from '@/components/ui/button';
 import { useSettings } from '@/providers/SettingsProvider';
 import { ControlPanelSection } from './ControlPanelSection';
-import { AlertTriangle, ZapOff, FileJson, Database, Trash2 } from 'lucide-react';
+import { AlertTriangle, ZapOff, Database, Trash2 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import { ControlHint } from './ControlHint';
 import { LabelledSwitchControl } from './common/LabelledSwitchControl';
 import { cn } from '@/lib/utils';
-import type { RehearsalLogEntry } from '@/types'; // Import the type
 import { addLogEntry, getAllLogEntries, clearLogEntries } from '@/services/rehearsalLogService';
 
 type OtherControlsProps = {
@@ -60,7 +59,7 @@ export function OtherControls({ value }: OtherControlsProps) {
 
       toast({ 
         title: "Export Log (Simulated)", 
-        description: `Fetched ${logEntries.length} entries from IndexedDB. CSV-formatted log printed to console. Full CSV export is a future feature.` 
+        description: `Fetched ${logEntries.length} entries from IndexedDB. CSV-formatted log printed to console. Actual CSV file download is a future feature.` 
       });
     } catch (error) {
       console.error("Error exporting log:", error);
@@ -72,11 +71,6 @@ export function OtherControls({ value }: OtherControlsProps) {
     }
   };
   
-  const handleLoadCueList = () => {
-    console.log("Load JSON cue-list (placeholder)");
-    toast({ title: "Load Cue List", description: "JSON cue-list player is a placeholder." });
-  };
-
   const handleClearLog = async () => {
     try {
       await clearLogEntries();
@@ -109,7 +103,7 @@ export function OtherControls({ value }: OtherControlsProps) {
         tooltipContent={<p>Immediately blacks out the main visualizer output. Useful for emergencies.</p>}
         switchProps={{ 
           className: cn(
-            "data-[state=checked]:bg-destructive",
+            "data-[state=checked]:bg-destructive", // Ensured destructive color for checked state
             settings.panicMode && "animate-destructive-pulse"
           ) 
         }}
@@ -133,20 +127,8 @@ export function OtherControls({ value }: OtherControlsProps) {
       <div className="mt-4 space-y-1">
         <Tooltip>
           <TooltipTrigger asChild>
-            <Button variant="outline" size="sm" className="w-full" onClick={handleLoadCueList}>
-              <FileJson className="mr-2 h-4 w-4" /> Load Cue List (JSON)
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>Loads a predefined sequence of scene changes and setting adjustments. (Placeholder)</p>
-          </TooltipContent>
-        </Tooltip>
-        <ControlHint>Cue list player is a placeholder.</ControlHint>
-        
-        <Tooltip>
-          <TooltipTrigger asChild>
             <Button variant="outline" size="sm" className="w-full" onClick={handleExportLog}>
-              <Database className="mr-2 h-4 w-4" /> Export Rehearsal Log (CSV)
+              <Database className="mr-2 h-4 w-4" /> Export Rehearsal Log
             </Button>
           </TooltipTrigger>
           <TooltipContent>
@@ -168,14 +150,15 @@ export function OtherControls({ value }: OtherControlsProps) {
       </div>
 
       <div className="mt-4">
-        <h4 className="text-xs font-semibold text-muted-foreground">Placeholders for Advanced Features:</h4>
+        <h4 className="text-xs font-semibold text-muted-foreground">Future Features (Planned):</h4>
         <ul className="list-disc list-inside text-xs text-muted-foreground pl-2">
           <li>WebSocket / OSC API</li>
           <li>Art-Net Bridge</li>
           <li>Adaptive Watchdog (FPS Monitor)</li>
           <li>Photosensitive Flash Guard</li>
           <li>Real-time Frame-Time Heatmap</li>
-          <li>Ctrl+Z Undo</li>
+          <li>Ctrl+Z Undo Functionality</li>
+          <li>JSON Cue List Player</li>
         </ul>
       </div>
     </ControlPanelSection>
