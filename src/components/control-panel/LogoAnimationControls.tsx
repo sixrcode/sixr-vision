@@ -119,12 +119,11 @@ export function LogoAnimationControls({ value }: LogoAnimationControlsProps) {
             aria-label={`Logo Animation Speed: ${logoAnimationSettings.speed.toFixed(1)}`}
           />
           <ControlHint>
-            {currentAnimType === 'blink' ? 'Higher is faster blinking.' :
-             currentAnimType === 'pulse' ? 'Higher is faster pulsing.' : currentAnimType === 'rainbowCycle' ? 'Higher is faster color cycling.' : ''} {/* escaped ' */}
+            {currentAnimType === 'blink' ? 'Higher is faster blinking.' :currentAnimType === 'pulse' ? 'Higher is faster pulsing.' : currentAnimType === 'rainbowCycle' ? 'Higher is faster color cycling.' : ''}
           </ControlHint>
         </div>
       )}
- <ControlHint className="mt-2">More animations (Chase, Sparkle, etc.) are placeholders.</ControlHint>
+ <ControlHint className="mt-2">{`More animations (Chase, Sparkle, etc.) are placeholders.`}</ControlHint>
     </ControlPanelSection>
   );
 }

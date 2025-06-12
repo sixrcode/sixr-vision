@@ -2,7 +2,6 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import type { AudioData } from '@/types';
 import { useAudioData } from '@/providers/AudioDataProvider';
 import { useSettings } from '@/providers/SettingsProvider';
 import { INITIAL_AUDIO_DATA } from '@/lib/constants';
@@ -116,7 +115,7 @@ export function useAudioAnalysis() {
     if (gainNodeRef.current && audioContextRef.current && audioContextRef.current.destination) {
         try { gainNodeRef.current.disconnect(audioContextRef.current.destination); } catch (e) { console.warn("Error disconnecting gainNode from destination", e); }
     }
- if (sourceNodeRef.current) {
+    if (sourceNodeRef.current) {
         if (gainNodeRef.current) {
             try { sourceNodeRef.current.disconnect(gainNodeRef.current); } catch (e) { console.warn("Error disconnecting sourceNodeRef from gainNodeRef", e); }
         }
@@ -153,7 +152,7 @@ export function useAudioAnalysis() {
           console.log("AudioContext closed.");
         } catch (e) {
           console.error("Error closing audio context in stopAudioAnalysis", e);
- }
+        }
       }
       audioContextRef.current = null;
     }
@@ -324,7 +323,7 @@ export function useAudioAnalysis() {
     for (let i = 0; i < spectrumLength; i++) sumOfSquares += ((spectrum[i] || 0) / 255) ** 2;
     let rmsRaw = spectrumLength > 0 ? Math.sqrt(sumOfSquares / spectrumLength) : 0;
     const rms = currentRmsForCalc + (rmsRaw - currentRmsForCalc) * RMS_SMOOTHING_FACTOR; // This is the smoothed RMS
-    let newBeat = false;
+    const newBeat = false;
     const currentTime = performance.now();
      if (
         (bassEnergy > BEAT_DETECTION_BASS_THRESHOLD && currentTime - currentLastBeatTime > BEAT_REFRACTORY_BASS_MS) ||
@@ -431,7 +430,7 @@ export function useAudioAnalysis() {
     }
      localAnalysisLoopFrameIdRef.current = requestAnimationFrame(analyze);
   }, [calculateEnergy, estimateBPM, setAudioData, currentGlobalAudioData.bpm]); // Removed settingsRef dependencies (gain, enableAgc) to stabilize `analyze`
-
+ 
   // Effect to manage the analysis loop based on initialization state
   useEffect(() => {
     if (isInitializedInternalActual && audioContextRef.current && audioContextRef.current.state === 'running') {

@@ -39,9 +39,11 @@ export function AiPresetChooser({ value }: AiPresetChooserProps) {
   // WHY: Define a consistent handler function for updating settings using Zustand.
   const handleUpdateSetting = <K extends keyof Settings>(key: K, val: Settings[K]) => {
     zustandUpdateSetting(key, val);
-  };
+};
 
-  const [suggestedSceneInfo, setSuggestedSceneInfo] = useState<SuggestSceneFromAudioOutput | null>(null);
+ // Add handleUpdateSetting as a dependency since it's defined outside of the useCallback but used inside.
+
+  const [suggestedSceneInfo, setSuggestedSceneInfo] = useState<SuggestSceneFromAudioOutput | null>(null); // State to store the AI suggested scene information
   const [isLoading, setIsLoading] = useState(false);
   const [autoLoadEnabled, setAutoLoadEnabled] = useState(false);
   const initialLoadAttemptedRef = useRef(false);
@@ -75,9 +77,9 @@ export function AiPresetChooser({ value }: AiPresetChooserProps) {
          toast({ title: 'AI Suggestion Error', description: `AI suggested scene "${result.sceneId}", but it's not available.`, variant: 'destructive' });
       } else if (!isAutoTrigger && !sceneExists) {
         toast({ title: 'AI Suggestion Error', description: `AI suggested scene &quot;${result.sceneId}&quot;, but it's not available. Asset idea: &quot;${result.suggestedAssetPrompt}&quot;`, variant: 'destructive' });
-      } else if (autoLoadEnabled && !isAutoTrigger) {
-      } else if (!isAutoTrigger) {
-        toast({ title: 'AI Suggestion', description: `Suggested scene: ${result.sceneId}. Asset idea: "${result.suggestedAssetPrompt}"` });
+      } else if (!isAutoTrigger) { // If it's not auto triggered, show a regular suggestion toast
+        toast({ title: 'AI Suggestion', description: `Suggested scene: ${result.sceneId}. Asset idea: &quot;${result.suggestedAssetPrompt}&quot;` });
+
       }
 
       if (isAutoTrigger && !initialLoadAttemptedRef.current) {
@@ -137,7 +139,7 @@ export function AiPresetChooser({ value }: AiPresetChooserProps) {
       }
     };
   }, [audioData, autoLoadEnabled, fetchSuggestion, initialLoadAttemptedRef]);
-
+ // Callback function to handle loading the suggested scene manually
   const handleLoadSuggested = () => {
     if (suggestedSceneInfo?.sceneId) {
       if (scenes.find(s => s.id === suggestedSceneInfo.sceneId)) {
@@ -171,7 +173,7 @@ export function AiPresetChooser({ value }: AiPresetChooserProps) {
           <p className="text-sm font-medium">Suggested Scene: <span className="text-primary">{suggestedSceneInfo.sceneId}</span></p>
           <ControlHint className="mt-1">{suggestedSceneInfo.reason}</ControlHint>
           {suggestedSceneInfo.suggestedAssetPrompt && (
-            <ControlHint className="mt-1">Asset idea: <em className="text-primary/90">"{suggestedSceneInfo.suggestedAssetPrompt}"</em> (use in Procedural Assets)</ControlHint>
+            <ControlHint className="mt-1">Asset idea: <em className="text-primary/90">&quot;{suggestedSceneInfo.suggestedAssetPrompt}&quot;</em> (use in Procedural Assets)</ControlHint>
           )}
           {scenes.find(s => s.id === suggestedSceneInfo.sceneId) && !autoLoadEnabled && (
             <Button onClick={handleLoadSuggested} size="sm" className="mt-2 w-full" disabled={isLoading}>

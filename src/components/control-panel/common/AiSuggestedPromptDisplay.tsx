@@ -2,7 +2,7 @@
 "use client";
 
 import { Button } from '@/components/ui/button';
-import { Sparkles, Wand2 } from 'lucide-react'; // Default and alternative icons
+import { Sparkles } from 'lucide-react'; // Default icon
 import { cn } from '@/lib/utils';
 
 type AiSuggestedPromptDisplayProps = {

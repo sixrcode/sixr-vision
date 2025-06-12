@@ -56,7 +56,7 @@ export function AmbianceGenerator({ value }: AmbianceGeneratorProps) {
       setAmbianceText(result.ambianceText);
       toast({
         title: 'Ambiance Text Generated',
-        description: 'AI has described the current vibe!&#x20;',
+ description: "AI has described the current vibe!", // Adjusted for single quote escaping
       });
     } catch (error) {
       console.error('Error generating ambiance text:', error);
@@ -88,7 +88,7 @@ export function AmbianceGenerator({ value }: AmbianceGeneratorProps) {
             <p>Let AI generate a short, evocative text describing the current scene and audio mood.</p>
             {!currentScene && <p className="text-destructive">Select a scene first.</p>}
           </TooltipContent>&#x20;
-        </Tooltip>
+        </Tooltip>&#x20;
         
         {ambianceText && (
           <div className="mt-3 space-y-1">

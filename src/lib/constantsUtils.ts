@@ -21,7 +21,7 @@ export function hslToRgb(h: number, s: number, l: number): [number, number, numb
 }
 
 // Placeholder - actual noise texture generation needed for WebGL scenes
-export function generateNoiseTexture(width: number, height: number): any {
+export function generateNoiseTexture(width: number, height: number): { data: Uint8Array; width: number; height: number; needsUpdate: boolean; dispose: () => void } {
   console.warn("generateNoiseTexture is a placeholder and does not generate a real THREE.DataTexture.");
   // In a real scenario, you'd use THREE.DataTexture here.
   // For now, returning a basic object to avoid breaking scenes expecting an object.

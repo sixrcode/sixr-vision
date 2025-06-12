@@ -15,7 +15,7 @@ export type LogoAnimationSettings = {
 // This allows us to define common properties while also allowing for
 // specific scene asset types to be added via intersection types if needed later,
 // or by keeping this as a base with specific properties added as optional.
-export type SceneSpecificAssets = Record<string, any>;
+export type SceneSpecificAssets = Record<string, unknown>;
 
 // Defines the assets specific to a WebGL scene, managed by VisualizerView
 // and passed to the scene's drawWebGL function.
@@ -36,8 +36,8 @@ export type WebGLSceneAssets = {
   lifetimes?: Float32Array;
   initialLifetimes?: Float32Array; // For particle_finale to store initial lifetime
   PARTICLE_COUNT?: number;
-  lastBeatTime?: number;
-  lastAmbientSpawnTime?: number;
+ lastBeatTime?: number;
+ lastAmbientSpawnTime?: number;
   lastFrameTimeWebGL?: number;
   tempColor?: THREE.Color;
   bgColor?: THREE.Color;
@@ -79,7 +79,7 @@ export type WebGLSceneAssets = {
   circleGeometry?: THREE.CircleGeometry;
   squareGeometry?: THREE.PlaneGeometry;
   triangleGeometry?: THREE.ShapeGeometry;
-  instancedMaterial?: THREE.MeshBasicMaterial; // Shared material if colors are per-instance
+ instancedMaterial?: THREE.Material; // Shared material if colors are per-instance
   circleInstancedMesh?: THREE.InstancedMesh;
   squareInstancedMesh?: THREE.InstancedMesh;
   triangleInstancedMesh?: THREE.InstancedMesh;
@@ -134,7 +134,7 @@ export type WebGLSceneAssets = {
   numBars?: number;
   // barBaseWidth renamed to cellBaseWidth above, can be reused or specific one added
 
-  // For Geometric Tunnel
+ // For Geometric Tunnel
   tunnelSegments?: THREE.Mesh<THREE.TorusGeometry, THREE.MeshBasicMaterial>[];
   NUM_SEGMENTS?: number;
   SEGMENT_SPACING?: number;
@@ -146,13 +146,13 @@ export type WebGLSceneAssets = {
   sceneId?: string; // To ensure assets are for the correct scene during cleanup
 
   // Allow any other scene-specific assets
-  [key: string]: SceneSpecificAssets[keyof SceneSpecificAssets]; // Use the defined type
+ [key: string]: unknown; // Use the defined type
 };
 
 
 export type SceneDefinition = {
   id: string;
-  name: string;
+  name: string; // Name for the scene
   displayLabel?: string; // Added for concise button text
   meta?: Record<string, any>;
   rendererType?: '2d' | 'webgl'; // Default to '2d' if not specified
@@ -243,7 +243,7 @@ export type ProceduralVine = {
 // Valid values for CanvasRenderingContext2D.globalCompositeOperation
 // Source: https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D/globalCompositeOperation
 // Note: GlobalCompositeOperation is a built-in TypeScript type for canvas contexts.
-// This array lists the valid string literals for that type.
+// This array lists the valid string literals for that type, ensuring type safety for blend modes.
 export const VALID_BLEND_MODES: GlobalCompositeOperation[] = [
   'source-over', 'source-in', 'source-out', 'source-atop',
   'destination-over', 'destination-in', 'destination-out', 'destination-atop',

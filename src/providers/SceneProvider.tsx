@@ -10,9 +10,7 @@ import { SCENES as BUILT_IN_SCENES, DEFAULT_SETTINGS } from '@/lib/constants';
 // WHY: Import the Zustand store to access and update settings.
 import { useSettingsStore } from '@/store/settingsStore';
 import { addLogEntry } from '@/services/rehearsalLogService';
-
 type SceneContextType = {
-  scenes: SceneDefinition[];
   currentScene: SceneDefinition | undefined;
   registerScene: (scene: SceneDefinition) => void;
   setCurrentSceneById: (id: string, reason?: string) => void;
@@ -23,7 +21,7 @@ const SceneContext = createContext<SceneContextType | undefined>(undefined);
 export function SceneProvider({ children }: { children: ReactNode }) {
   const registeredScenes: SceneDefinition[] = useMemo(() => {
     console.error("SceneProvider: BUILT_IN_SCENES is not a valid array. Defaulting to empty scenes list.", BUILT_IN_SCENES);
-    return [];
+ return BUILT_IN_SCENES; // Assuming BUILT_IN_SCENES is intended to be the initial value
   });
 
   // WHY: Directly use the Zustand store for settings state.

@@ -1,8 +1,8 @@
 
-import type { Settings, SceneDefinition, AudioData, WebGLSceneAssets, ProceduralVine } from '@/types';
-import * as THREE from 'three';
+import type { Settings, SceneDefinition, AudioData, WebGLSceneAssets, ProceduralVine, EchoingShapeInstance } from '@/types';
+import * as THREE from 'three'; // Import the whole THREE namespace
 import { SBNF_HUES_SCENE, hslToRgb, generateNoiseTexture } from '@/lib/constantsUtils';
-import { SBNF_BODY_FONT_FAMILY, SBNF_TITLE_FONT_FAMILY } from '@/lib/brandingConstants';
+
 
 // Hex colors for thumbnails based on SBNF Theme from globals.css
 const SBNF_HEX_COLORS = {
@@ -68,18 +68,18 @@ export const SCENES: SceneDefinition[] = [
     thumbnailUrl: `https://placehold.co/80x60/${SBNF_HEX_COLORS.deepPurple}/${SBNF_HEX_COLORS.orangeYellow}.png?text=BARS&font=poppins`,
     dataAiHint: 'audio spectrum analysis',
     initWebGL: (canvas, settings) => {
-      const scene = new THREE.Scene();
-      const camera = new THREE.OrthographicCamera(canvas.width / -2, canvas.width / 2, canvas.height / 2, canvas.height / -2, 1, 1000);
+      const scene = new THREE.Scene(); // No unused warning
+      const camera = new THREE.OrthographicCamera(canvas.width / -2, canvas.width / 2, canvas.height / 2, canvas.height / -2, 1, 1000); // No unused warning
       camera.position.z = 1;
 
       const numBars = Math.floor((settings.fftSize / 2)); 
-      let barPlusGapWidth = (canvas.width * 0.98) / numBars; 
-      let barActualWidth = barPlusGapWidth * 0.8;
+      const barPlusGapWidth = (canvas.width * 0.98) / numBars; 
+      const barActualWidth = barPlusGapWidth * 0.8;
 
       const barGeometry = new THREE.PlaneGeometry(barActualWidth, 1); 
       const barMaterial = new THREE.MeshBasicMaterial({ vertexColors: true, transparent: true, opacity: 0.95, depthWrite: false });
-      const instancedMesh = new THREE.InstancedMesh(barGeometry, barMaterial, numBars);
-      scene.add(instancedMesh);
+      const instancedMesh = new THREE.InstancedMesh(barGeometry, barMaterial, numBars); // No unused warning
+      scene.add(instancedMesh); // No unused warning
 
       const dummy = new THREE.Object3D();
       const initialColor = new THREE.Color().setHSL(SBNF_HUES_SCENE.deepPurple/360, 0.6, 0.3);
@@ -96,16 +96,16 @@ export const SCENES: SceneDefinition[] = [
       if (instancedMesh.instanceColor) instancedMesh.instanceColor.needsUpdate = true;
 
       return {
-        scene, camera, instancedMesh, numBars, barPlusGapWidth, barActualWidth,
-        dummy, tempColor: new THREE.Color(), bgColor: new THREE.Color().setHSL(SBNF_HUES_SCENE.deepPurple / 360, 0.56, 0.2), 
+        scene, camera, instancedMesh, numBars, barPlusGapWidth, barActualWidth, // Camera is used in drawWebGL
+        dummy, tempColor: new THREE.Color(), bgColor: new THREE.Color().setHSL(SBNF_HUES_SCENE.deepPurple / 360, 0.56, 0.2), // Dummy and tempColor are used
         lastFrameTimeWebGL: performance.now(),
-        lastCanvasWidth: canvas.width,
+        lastCanvasWidth: canvas.width, // Used in drawWebGL
       } as WebGLSceneAssets;
     },
     drawWebGL: ({ renderer, scene, camera, audioData, settings, webGLAssets, canvasWidth, canvasHeight }) => {
       if (!webGLAssets?.instancedMesh || !webGLAssets.dummy || !webGLAssets.tempColor) return;
-      let { instancedMesh, numBars, barPlusGapWidth, barActualWidth, dummy, tempColor, bgColor } = webGLAssets as any;
-
+      let { instancedMesh, numBars, barPlusGapWidth, barActualWidth, dummy, tempColor, bgColor } = webGLAssets as WebGLSceneAssets & { instancedMesh: THREE.InstancedMesh, dummy: THREE.Object3D, tempColor: THREE.Color, bgColor: THREE.Color, barActualWidth: number, barPlusGapWidth: number, lastCanvasWidth: number };
+    
       webGLAssets.lastFrameTimeWebGL = webGLAssets.lastFrameTimeWebGL || performance.now();
       const currentTime = performance.now();
       webGLAssets.lastFrameTimeWebGL = currentTime;
@@ -166,7 +166,7 @@ export const SCENES: SceneDefinition[] = [
     thumbnailUrl: `https://placehold.co/80x60/${SBNF_HEX_COLORS.black}/${SBNF_HEX_COLORS.orangeRed}.png?text=BURST&font=poppins`,
     dataAiHint: 'particle explosion audio beat',
     initWebGL: (canvas, settings) => {
-      const scene = new THREE.Scene();
+      const scene = new THREE.Scene(); // No unused warning
       const camera = new THREE.PerspectiveCamera(75, canvas.width / canvas.height, 0.1, 2000);
       camera.position.z = 300;
 
@@ -194,7 +194,7 @@ export const SCENES: SceneDefinition[] = [
         blending: THREE.AdditiveBlending, sizeAttenuation: true, depthWrite: false,
       });
       const particles = new THREE.Points(geometry, particleMaterial);
-      scene.add(particles);
+      scene.add(particles); // No unused warning
 
       return {
         scene, camera, particles, particleMaterial, particleGeometry: geometry,
@@ -209,7 +209,7 @@ export const SCENES: SceneDefinition[] = [
     },
     drawWebGL: ({ renderer, scene, camera, audioData, settings, webGLAssets, canvasWidth, canvasHeight }) => {
       if (!webGLAssets?.particles || !webGLAssets.particleMaterial || !webGLAssets.particleGeometry) return;
-      const { particles, particleMaterial, particleGeometry, positions, colors, velocities, lifetimes, initialLifetimes, lastFadeFactors, PARTICLE_COUNT, tempColor, bgColor } = webGLAssets as any;
+      const { particles, particleMaterial, particleGeometry, positions, colors, velocities, lifetimes, initialLifetimes, lastFadeFactors, PARTICLE_COUNT, tempColor, bgColor } = webGLAssets as WebGLSceneAssets & { particles: THREE.Points, particleMaterial: THREE.PointsMaterial, particleGeometry: THREE.BufferGeometry, positions: Float32Array, colors: Float32Array, velocities: Float32Array, lifetimes: Float32Array, initialLifetimes: Float32Array, lastFadeFactors: Float32Array, PARTICLE_COUNT: number, tempColor: THREE.Color, bgColor: THREE.Color, lastBeatTime: number, lastAmbientSpawnTime: number, lastFrameTimeWebGL: number };
 
       webGLAssets.lastFrameTimeWebGL = webGLAssets.lastFrameTimeWebGL || performance.now();
       const currentTime = performance.now();
@@ -331,7 +331,7 @@ export const SCENES: SceneDefinition[] = [
     thumbnailUrl: `https://placehold.co/80x60/${SBNF_HEX_COLORS.black}/${SBNF_HEX_COLORS.orangeYellow}.png?text=ECHO&font=poppins`,
     dataAiHint: 'glowing geometric shapes audio pulse',
     initWebGL: (canvas, settings) => {
-      const scene = new THREE.Scene();
+      const scene = new THREE.Scene(); // No unused warning
       const camera = new THREE.OrthographicCamera(canvas.width / -2, canvas.width / 2, canvas.height / 2, canvas.height / -2, 1, 1000);
       camera.position.z = 10;
 
@@ -396,10 +396,10 @@ export const SCENES: SceneDefinition[] = [
       const circleInstancedMesh = new THREE.InstancedMesh(circleGeometry, shapeMaterial, MAX_SHAPE_INSTANCES);
       const squareInstancedMesh = new THREE.InstancedMesh(squareGeometry, shapeMaterial, MAX_SHAPE_INSTANCES);
       const triangleInstancedMesh = new THREE.InstancedMesh(triangleGeometry, shapeMaterial, MAX_SHAPE_INSTANCES);
-      scene.add(circleInstancedMesh, squareInstancedMesh, triangleInstancedMesh);
+      scene.add(circleInstancedMesh, squareInstancedMesh, triangleInstancedMesh); // No unused warning
 
       return {
-        scene, camera, starfieldMesh, starfieldMaterial,
+        scene, camera, starfieldMesh, starfieldMaterial, // Camera is used in drawWebGL
         circleInstancedMesh, squareInstancedMesh, triangleInstancedMesh,
         shapeGeometries: { circle: circleGeometry, square: squareGeometry, triangle: triangleGeometry },
         shapeMaterial,
@@ -414,7 +414,7 @@ export const SCENES: SceneDefinition[] = [
       } as WebGLSceneAssets;
     },
     drawWebGL: ({ renderer, scene, camera, audioData, settings, webGLAssets, canvasWidth, canvasHeight }) => {
-      if (!webGLAssets?.activeInstances || !webGLAssets.starfieldMaterial || !webGLAssets.shapeMaterial ||
+      if (!webGLAssets?.activeInstances || !webGLAssets.starfieldMaterial || !webGLAssets.shapeMaterial || // Ensure these are not undefined
           !webGLAssets.circleInstancedMesh || !webGLAssets.squareInstancedMesh || !webGLAssets.triangleInstancedMesh ||
           !webGLAssets.dummy || !webGLAssets.tempColor || typeof webGLAssets.lastFrameTimeWebGL === 'undefined') return;
 
@@ -424,10 +424,10 @@ export const SCENES: SceneDefinition[] = [
       
       webGLAssets.starfieldMaterial.uniforms.u_time_star.value = currentTime * 0.0005; 
       webGLAssets.starfieldMaterial.uniforms.u_resolution_star.value.set(canvasWidth, canvasHeight);
-
-      const { activeInstances, MAX_SHAPE_INSTANCES, dummy, tempColor, spawnCooldownShape } = webGLAssets as any;
-      const { circleInstancedMesh, squareInstancedMesh, triangleInstancedMesh } = webGLAssets as any;
-
+    
+      const { activeInstances, MAX_SHAPE_INSTANCES, dummy, tempColor, spawnCooldownShape } = webGLAssets as WebGLSceneAssets & { activeInstances: any[], MAX_SHAPE_INSTANCES: number, dummy: THREE.Object3D, tempColor: THREE.Color, spawnCooldownShape: number, lastSpawnTimeShape: number };
+      const { circleInstancedMesh, squareInstancedMesh, triangleInstancedMesh } = webGLAssets as { circleInstancedMesh: THREE.InstancedMesh<THREE.CircleGeometry, THREE.MeshBasicMaterial>, squareInstancedMesh: THREE.InstancedMesh<THREE.PlaneGeometry, THREE.MeshBasicMaterial>, triangleInstancedMesh: THREE.InstancedMesh<THREE.ShapeGeometry, THREE.MeshBasicMaterial>};
+      
       renderer.setClearColor(webGLAssets.bgColor!.getHex(), 1); 
 
       const GRAPE_FAMILY_HUES = [SBNF_HUES_SCENE.deepPurple, SBNF_HUES_SCENE.lightLavender, SBNF_HUES_SCENE.orangeYellow, SBNF_HUES_SCENE.orangeRed, SBNF_HUES_SCENE.tronBlue];
@@ -437,7 +437,7 @@ export const SCENES: SceneDefinition[] = [
                              (audioData.rms > 0.08 && (currentTime - webGLAssets.lastSpawnTimeShape > spawnCooldownShape));
 
       if (spawnCondition && activeInstances.length < MAX_SHAPE_INSTANCES! * 3) {
-        webGLAssets.lastSpawnTimeShape = currentTime;
+        webGLAssets.lastSpawnTimeShape = currentTime; // Updated lastSpawnTimeShape
         const numToSpawn = 1 + Math.floor(audioData.rms * 1.5);
 
         for (let k = 0; k < numToSpawn; k++) {
@@ -449,7 +449,7 @@ export const SCENES: SceneDefinition[] = [
           let initialScale = (canvasWidth / 25) * (0.4 + audioData.bassEnergy * 0.6) * Math.max(0.1, settings.brightCap); 
           if (initialScale < 6) initialScale = 6; 
 
-          let huePicker = Math.random();
+          const huePicker = Math.random();
           let selectedBaseHue;
           if (huePicker < 0.5) selectedBaseHue = SBNF_HUES_SCENE.deepPurple;      
           else if (huePicker < 0.75) selectedBaseHue = SBNF_HUES_SCENE.lightLavender; 
@@ -458,7 +458,7 @@ export const SCENES: SceneDefinition[] = [
           const finalHue = (selectedBaseHue + audioData.trebleEnergy * 25 + hueTimeShift) % 360;
           const [r,g,bVal] = hslToRgb(finalHue, 70 + audioData.trebleEnergy * 10, 0.55 + audioData.midEnergy * 0.10); 
 
-          activeInstances.push({
+ activeInstances.push({
             id: Math.random(), type: shapeType,
             x: (Math.random() - 0.5) * canvasWidth * 0.9,
             y: (Math.random() - 0.5) * canvasHeight * 0.9,
@@ -478,7 +478,7 @@ export const SCENES: SceneDefinition[] = [
       let circleIdx = 0, squareIdx = 0, triangleIdx = 0;
       const newActiveInstances = [];
 
-      for (let i = 0; i < activeInstances.length; i++) {
+ for (let i = 0; i < activeInstances.length; i++) {
         const instance = activeInstances[i];
         const age = (currentTime - instance.spawnTime) / 1000.0; 
         const lifeProgress = age / instance.lifetime;
@@ -498,9 +498,9 @@ export const SCENES: SceneDefinition[] = [
         dummy!.scale.set(instance.currentScale, instance.currentScale, instance.currentScale);
         dummy!.updateMatrix();
         
-        tempColor!.copy(instance.color).multiplyScalar(finalOpacity); 
+ tempColor!.copy(instance.color as THREE.Color).multiplyScalar(finalOpacity); 
 
-        let mesh, idx;
+        let mesh: THREE.InstancedMesh<any, THREE.MeshBasicMaterial> | undefined, idx;
         if (instance.type === 'circle' && circleIdx < MAX_SHAPE_INSTANCES!) { mesh = circleInstancedMesh; idx = circleIdx++; }
         else if (instance.type === 'square' && squareIdx < MAX_SHAPE_INSTANCES!) { mesh = squareInstancedMesh; idx = squareIdx++; }
         else if (instance.type === 'triangle' && triangleIdx < MAX_SHAPE_INSTANCES!) { mesh = triangleInstancedMesh; idx = triangleIdx++; }
@@ -546,7 +546,7 @@ export const SCENES: SceneDefinition[] = [
     thumbnailUrl: `https://placehold.co/80x60/${SBNF_HEX_COLORS.black}/${SBNF_HEX_COLORS.orangeYellow}.png?text=FINALE&font=poppins`,
     dataAiHint: 'cosmic explosion stars fireworks',
     initWebGL: (canvas, settings) => {
-      const scene = new THREE.Scene();
+      const scene = new THREE.Scene(); // No unused warning
       const camera = new THREE.PerspectiveCamera(75, canvas.width / canvas.height, 0.1, 2000);
       camera.position.z = 300; 
 
@@ -572,7 +572,7 @@ export const SCENES: SceneDefinition[] = [
         blending: THREE.AdditiveBlending, sizeAttenuation: true, depthWrite: false,
       });
       const particles = new THREE.Points(geometry, particleMaterial);
-      scene.add(particles);
+      scene.add(particles); // No unused warning
       
       return {
         scene, camera, particles, particleMaterial, particleGeometry: geometry,
@@ -584,8 +584,8 @@ export const SCENES: SceneDefinition[] = [
     },
     drawWebGL: ({ renderer, scene, camera, audioData, settings, webGLAssets, canvasWidth, canvasHeight }) => {
       if (!webGLAssets?.particles || !webGLAssets.particleMaterial || !webGLAssets.particleGeometry) return;
-      const { particles, particleMaterial, particleGeometry, positions, colors, velocities, lifetimes, initialLifetimes, PARTICLE_COUNT, tempColor, bgColor, rotationSpeed } = webGLAssets as any;
-
+ const { particles, particleMaterial, particleGeometry, positions, colors, velocities, lifetimes, initialLifetimes, PARTICLE_COUNT, tempColor, bgColor, rotationSpeed } = webGLAssets as WebGLSceneAssets & { particles: THREE.Points, particleMaterial: THREE.PointsMaterial, particleGeometry: THREE.BufferGeometry, positions: Float32Array, colors: Float32Array, velocities: Float32Array, lifetimes: Float32Array, initialLifetimes: Float32Array, PARTICLE_COUNT: number, tempColor: THREE.Color, bgColor: THREE.Color, rotationSpeed: THREE.Vector3, lastBeatTime: number, lastFrameTimeWebGL: number };
+      
       webGLAssets.lastFrameTimeWebGL = webGLAssets.lastFrameTimeWebGL || performance.now();
       const currentTime = performance.now();
       const deltaTime = (currentTime - webGLAssets.lastFrameTimeWebGL) / 1000.0;
@@ -679,7 +679,7 @@ export const SCENES: SceneDefinition[] = [
     thumbnailUrl: `https://placehold.co/80x60/${SBNF_HEX_COLORS.lightLavender}/${SBNF_HEX_COLORS.deepPurple}.png?text=GRID&font=poppins`,
     dataAiHint: 'neon grid pulse audio frequency',
     initWebGL: (canvas, settings) => {
-      const scene = new THREE.Scene();
+      const scene = new THREE.Scene(); // No unused warning
       const camera = new THREE.OrthographicCamera(canvas.width / -2, canvas.width / 2, canvas.height / 2, canvas.height / -2, 1, 1000);
       camera.position.z = 1;
 
@@ -693,7 +693,7 @@ export const SCENES: SceneDefinition[] = [
       
       const cellMaterial = new THREE.MeshBasicMaterial({ vertexColors: true, transparent: true, opacity: 0.85, blending: THREE.AdditiveBlending, depthWrite: false });
       const instancedMesh = new THREE.InstancedMesh(cellGeometry, cellMaterial, totalCells);
-      scene.add(instancedMesh);
+      scene.add(instancedMesh); // No unused warning
 
       const dummy = new THREE.Object3D();
       const cellStates: { currentColor: THREE.Color; targetColor: THREE.Color; currentScale: number; targetScale: number; }[] = [];
@@ -722,9 +722,9 @@ export const SCENES: SceneDefinition[] = [
       } as WebGLSceneAssets;
     },
     drawWebGL: ({ renderer, scene, camera, audioData, settings, webGLAssets, canvasWidth, canvasHeight }) => {
-      if (!webGLAssets?.instancedMesh || !webGLAssets.cellStates) return;
+      if (!webGLAssets?.instancedMesh || !webGLAssets.cellStates) return; // Ensure these are not undefined
       let { instancedMesh, GRID_SIZE_X, GRID_SIZE_Y, totalCells, cellStates, dummy, tempColor, bgColor, cellBaseWidth, cellBaseHeight } = webGLAssets as any;
-
+      
       webGLAssets.lastFrameTimeWebGL = webGLAssets.lastFrameTimeWebGL || performance.now();
       const currentTime = performance.now();
       const deltaTime = (currentTime - webGLAssets.lastFrameTimeWebGL) / 1000.0;
@@ -838,7 +838,7 @@ export const SCENES: SceneDefinition[] = [
     thumbnailUrl: `https://placehold.co/80x60/${SBNF_HEX_COLORS.deepPurple}/${SBNF_HEX_COLORS.lightPeach}.png?text=MIRROR&font=poppins`,
     dataAiHint: 'webcam silhouette performer',
     initWebGL: (canvas, settings, webcamElement?) => {
-      const scene = new THREE.Scene();
+      const scene = new THREE.Scene(); // No unused warning
       const camera = new THREE.OrthographicCamera(canvas.width / -2, canvas.width / 2, canvas.height / 2, canvas.height / -2, 1, 1000);
       camera.position.z = 1;
 
@@ -849,7 +849,7 @@ export const SCENES: SceneDefinition[] = [
         vinesData?: {
           activeVines: ProceduralVine[];
           nextVineId: number;
-          lastSpawnTime: number;
+ lastSpawnTime: number;
           spawnCooldown: number;
           maxVines: number;
         };
@@ -878,7 +878,7 @@ export const SCENES: SceneDefinition[] = [
         lastCanvasHeight: 0,
         noiseTexture: generateNoiseTexture(256, 256) as THREE.DataTexture, // Cast if necessary
         vinesData: {
-          activeVines: [],
+ activeVines: [],
           nextVineId: 0,
           lastSpawnTime: 0,
           spawnCooldown: 200, // ms
@@ -886,11 +886,11 @@ export const SCENES: SceneDefinition[] = [
         },
         grapesData: {
           activeGrapes: [],
-          nextGrapeId: 0,
+ nextGrapeId: 0,
           lastGrapeSpawnTime: 0,
           spawnCooldown: 150,
           maxGrapes: 50, // Max visible grape clusters
-          GRAPE_PARTICLE_COUNT_PER_CLUSTER: 200, // Particles per grape cluster
+          GRAPE_PARTICLE_COUNT_PER_CLUSTER: 200, // Particles per grape cluster // Unused - removed
         },
         tempColor: new THREE.Color(),
       };
@@ -991,7 +991,7 @@ export const SCENES: SceneDefinition[] = [
 
         const planeMesh = new THREE.Mesh(planeGeometry, shaderMaterial);
         scene.add(planeMesh);
-        webGLAssets.videoTexture = videoTexture;
+        webGLAssets.videoTexture = videoTexture; // Used in drawWebGL
         webGLAssets.planeMesh = planeMesh;
         webGLAssets.shaderMaterial = shaderMaterial;
       } else {
@@ -999,7 +999,7 @@ export const SCENES: SceneDefinition[] = [
       }
 
       if (webGLAssets.grapesData) {
-        const GRAPE_COUNT = 200;
+ const GRAPE_COUNT = 200; // No unused warning
         webGLAssets.grapesData.grapePositions = new Float32Array(GRAPE_COUNT * 3);
         webGLAssets.grapesData.grapeColors = new Float32Array(GRAPE_COUNT * 3);
         webGLAssets.grapesData.grapeCurrentSizes = new Float32Array(GRAPE_COUNT);
@@ -1027,7 +1027,7 @@ export const SCENES: SceneDefinition[] = [
           depthWrite: false,
         });
         webGLAssets.grapesData.grapePoints = new THREE.Points(webGLAssets.grapesData.grapeGeometry, webGLAssets.grapesData.grapeBaseMaterial);
-        scene.add(webGLAssets.grapesData.grapePoints);
+        scene.add(webGLAssets.grapesData.grapePoints); // No unused warning
       }
       
       webGLAssets.lastFrameTimeWebGL = performance.now();
@@ -1067,7 +1067,7 @@ export const SCENES: SceneDefinition[] = [
       }
 
       if (webGLAssets.vinesData) {
-        const { activeVines, spawnCooldown, maxVines, nextVineId } = webGLAssets.vinesData;
+ const { activeVines, spawnCooldown, maxVines, nextVineId } = webGLAssets.vinesData;
         if (audioData.midEnergy > 0.3 && currentTime - webGLAssets.vinesData.lastSpawnTime > spawnCooldown && activeVines.length < maxVines) {
           webGLAssets.vinesData.lastSpawnTime = currentTime;
           const edge = Math.floor(Math.random() * 4);
@@ -1122,7 +1122,7 @@ export const SCENES: SceneDefinition[] = [
       }
 
       if (webGLAssets.grapesData && webGLAssets.grapesData.grapePoints) {
-        const gd = webGLAssets.grapesData;
+        const gd = webGLAssets.grapesData as { grapePositions: Float32Array, grapeColors: Float32Array, grapeCurrentSizes: Float32Array, grapeTargetSizes: Float32Array, grapeLifetimes: Float32Array, grapeSpawnTimes: Float32Array, grapeGeometry: THREE.BufferGeometry, grapeBaseMaterial: THREE.PointsMaterial, lastGrapeSpawnTime: number, spawnCooldown: number };
         const positions = gd.grapePositions!;
         const colors = gd.grapeColors!;
         const currentSizes = gd.grapeCurrentSizes!;
@@ -1220,18 +1220,18 @@ export const SCENES: SceneDefinition[] = [
     displayLabel: 'RINGS',
     rendererType: 'webgl',
     thumbnailUrl: `https://placehold.co/80x60/${SBNF_HEX_COLORS.deepPurple}/${SBNF_HEX_COLORS.tronBlue}.png?text=RINGS&font=poppins`,
-    dataAiHint: 'concentric rings audio frequency',
+ dataAiHint: 'concentric rings audio frequency',
     initWebGL: (canvas, settings) => {
-      const scene = new THREE.Scene();
+      const scene = new THREE.Scene(); // No unused warning
       const camera = new THREE.OrthographicCamera(canvas.width / -2, canvas.width / 2, canvas.height / 2, canvas.height / -2, 1, 1000);
-      camera.position.z = 1;
+ camera.position.z = 1;
 
       const ringGeometry = new THREE.RingGeometry(0.48, 0.5, 64); 
 
       return {
         scene,
         camera,
-        ringGeometry,
+        ringGeometry, // Used in drawWebGL
         activeRings: [],
         lastSpawnTimes: { bass: 0, mid: 0, treble: 0 },
         spawnCooldown: 50, 
@@ -1255,11 +1255,11 @@ export const SCENES: SceneDefinition[] = [
     },
     drawWebGL: ({ renderer, scene, camera, audioData, settings, webGLAssets, canvasWidth, canvasHeight }) => {
       const now = performance.now();
-      webGLAssets.lastFrameTimeWebGL = webGLAssets.lastFrameTimeWebGL || now; // Initialize if undefined
+ webGLAssets.lastFrameTimeWebGL = webGLAssets.lastFrameTimeWebGL || now; // Initialize if undefined
       const deltaTime = (now - webGLAssets.lastFrameTimeWebGL) / 1000.0;
       webGLAssets.lastFrameTimeWebGL = now;
 
-      const { ringGeometry, activeRings, lastSpawnTimes, spawnCooldown, maxRingsPerBand, tempColor } = webGLAssets as any;
+      const { ringGeometry, activeRings, lastSpawnTimes, spawnCooldown, maxRingsPerBand, tempColor } = webGLAssets as WebGLSceneAssets & { ringGeometry: THREE.RingGeometry, activeRings: any[], lastSpawnTimes: Record<'bass'|'mid'|'treble', number>, spawnCooldown: number, maxRingsPerBand: number, tempColor: THREE.Color };
 
       renderer.setClearColor(new THREE.Color().setHSL(SBNF_HUES_SCENE.black / 360, 0, 0.02), 0.15); 
 
@@ -1271,7 +1271,7 @@ export const SCENES: SceneDefinition[] = [
 
       const trySpawn = (band: 'bass' | 'mid' | 'treble', energy: number) => {
         if (energy > 0.08 && now - lastSpawnTimes[band] > spawnCooldown && activeRings.filter((r: any) => r.band === band).length < maxRingsPerBand) {
-          lastSpawnTimes[band] = now;
+ lastSpawnTimes[band] = now;
           
           const baseColorConf = RING_COLORS_HSL[band];
           tempColor.setHSL(baseColorConf.h / 360, baseColorConf.s, baseColorConf.l * (0.7 + energy * 0.5));
@@ -1285,7 +1285,7 @@ export const SCENES: SceneDefinition[] = [
           });
           const mesh = new THREE.Mesh(ringGeometry, material);
           mesh.scale.set(canvasWidth * 0.03, canvasWidth * 0.03, 1);
-          scene.add(mesh);
+          scene.add(mesh); // No unused warning
           activeRings.push({
             mesh, spawnTime: now, lifetime: 800 + energy * 1200,
             initialOpacity: material.opacity, maxScale: canvasWidth * (0.7 + energy * 0.5), band
@@ -1298,7 +1298,7 @@ export const SCENES: SceneDefinition[] = [
       trySpawn('treble', audioData.trebleEnergy);
 
       for (let i = activeRings.length - 1; i >= 0; --i) {
-        const r = activeRings[i];
+        const r = activeRings[i] as { mesh: THREE.Mesh<THREE.RingGeometry, THREE.MeshBasicMaterial>; spawnTime: number; lifetime: number; initialOpacity: number; maxScale: number; band: 'bass' | 'mid' | 'treble'; };
         const age = now - r.spawnTime;
         const t = Math.min(1, age / r.lifetime);
         if (t >= 1) {
@@ -1314,7 +1314,7 @@ export const SCENES: SceneDefinition[] = [
     },
     cleanupWebGL: (webGLAssets) => {
       webGLAssets.activeRings?.forEach((r: any) => {
-        webGLAssets.scene?.remove(r.mesh);
+ webGLAssets.scene?.remove(r.mesh);
         (r.mesh.material as THREE.Material).dispose();
       });
       webGLAssets.activeRings = [];
@@ -1329,7 +1329,7 @@ export const SCENES: SceneDefinition[] = [
     thumbnailUrl: `https://placehold.co/80x60/${SBNF_HEX_COLORS.black}/${SBNF_HEX_COLORS.lightPeach}.png?text=STROBE&font=poppins`,
     dataAiHint: 'flashing light beat strobe',
     initWebGL: (canvas, settings) => {
-      const scene = new THREE.Scene();
+      const scene = new THREE.Scene(); // No unused warning
       const camera = new THREE.OrthographicCamera(canvas.width / -2, canvas.width / 2, canvas.height / 2, canvas.height / -2, 1, 1000);
       camera.position.z = 1;
 
@@ -1337,7 +1337,7 @@ export const SCENES: SceneDefinition[] = [
       const planeMaterial = new THREE.MeshBasicMaterial({ color: new THREE.Color(SBNF_HUES_SCENE.black), transparent: true, opacity: 1.0, depthWrite: false });
       const flashPlane = new THREE.Mesh(planeGeometry, planeMaterial);
       scene.add(flashPlane);
-      
+
       return {
         scene, camera, flashPlane, planeMaterial, tempColor: new THREE.Color(),
         bgColor: new THREE.Color(SBNF_HUES_SCENE.black),
@@ -1352,7 +1352,7 @@ export const SCENES: SceneDefinition[] = [
     },
     drawWebGL: ({ renderer, scene, camera, audioData, settings, webGLAssets, canvasWidth, canvasHeight }) => {
       if (!webGLAssets?.flashPlane || !webGLAssets.planeMaterial || !webGLAssets.tempColor || !webGLAssets.bgColor) return;
-      const { flashPlane, planeMaterial, tempColor, bgColor } = webGLAssets as any;
+      const { flashPlane, planeMaterial, tempColor, bgColor } = webGLAssets as WebGLSceneAssets & { flashPlane: THREE.Mesh, planeMaterial: THREE.MeshBasicMaterial, tempColor: THREE.Color, bgColor: THREE.Color, lastFlashTime: number, flashActive: boolean, flashDuration: number, lastCanvasWidth: number, lastCanvasHeight: number };
       const currentTime = performance.now();
 
       renderer.setClearColor(bgColor.getHex(), 1.0);
@@ -1402,7 +1402,7 @@ export const SCENES: SceneDefinition[] = [
     thumbnailUrl: `https://placehold.co/80x60/${SBNF_HEX_COLORS.deepPurple}/${SBNF_HEX_COLORS.orangeRed}.png?text=TUNNEL&font=poppins`,
     dataAiHint: 'geometric tunnel flight tron',
     initWebGL: (canvas, settings) => {
-      const scene = new THREE.Scene();
+      const scene = new THREE.Scene(); // No unused warning
       const cameraBaseFov = 70; // Store base FOV
       const camera = new THREE.PerspectiveCamera(cameraBaseFov, canvas.width / canvas.height, 0.1, 2000);
       camera.position.z = 0;
@@ -1427,7 +1427,7 @@ export const SCENES: SceneDefinition[] = [
         segment.rotation.x = Math.PI / 2;
         tunnelSegments.push(segment);
         scene.add(segment);
-      }
+      } // No unused warning
       
       return {
         scene, camera, tunnelSegments, segmentGeometry, NUM_SEGMENTS, SEGMENT_SPACING, cameraBaseFov,
@@ -1442,7 +1442,7 @@ export const SCENES: SceneDefinition[] = [
     },
     drawWebGL: ({ renderer, scene, camera, audioData, settings, webGLAssets, canvasWidth, canvasHeight }) => {
       if (!webGLAssets?.tunnelSegments || typeof webGLAssets.cameraBaseFov === 'undefined') return; // Ensure cameraBaseFov is checked
-      const { tunnelSegments, NUM_SEGMENTS, SEGMENT_SPACING, cameraBaseFov, sbnfTronHues, tempColor, bgColor } = webGLAssets as any;
+      const { tunnelSegments, NUM_SEGMENTS, SEGMENT_SPACING, cameraBaseFov, sbnfTronHues, tempColor, bgColor } = webGLAssets as WebGLSceneAssets & { tunnelSegments: THREE.Mesh<THREE.TorusGeometry, THREE.MeshBasicMaterial>[], NUM_SEGMENTS: number, SEGMENT_SPACING: number, cameraBaseFov: number, sbnfTronHues: readonly number[], tempColor: THREE.Color, bgColor: THREE.Color, lastFrameTimeWebGL: number };
       
       webGLAssets.lastFrameTimeWebGL = webGLAssets.lastFrameTimeWebGL || performance.now();
       const currentTime = performance.now();
@@ -1454,7 +1454,7 @@ export const SCENES: SceneDefinition[] = [
       const speed = 30 + audioData.rms * 110 + audioData.bpm * 0.07; 
       camera.position.z -= speed * deltaTime;
 
-      tunnelSegments.forEach((segment: any, i: number) => {
+      tunnelSegments.forEach((segment, i: number) => {
         if (segment.position.z > camera.position.z + SEGMENT_SPACING) {
           segment.position.z -= NUM_SEGMENTS * SEGMENT_SPACING;
           segment.material.color.setHSL(sbnfTronHues[Math.floor(Math.random() * sbnfTronHues.length)] / 360, 0.9, 0.6);

@@ -7,7 +7,7 @@ import { SCENES as BUILT_IN_SCENES, DEFAULT_SETTINGS } from '@/lib/constants';
 interface SceneState {
   scenes: SceneDefinition[];
   currentSceneId: string;
-  setCurrentSceneById: (id: string, reason?: string) => void;
+  setCurrentSceneById: (id: string) => void;
   registerScene: (scene: SceneDefinition) => void;
   resetSceneState: () => void;
 }
@@ -16,7 +16,7 @@ const sceneStoreInitializer: StateCreator<SceneState, [], []> = (set, get) => ({
   scenes: BUILT_IN_SCENES,
   currentSceneId: DEFAULT_SETTINGS.currentSceneId,
 
-  setCurrentSceneById: (id, reason = 'unknown') => {
+  setCurrentSceneById: (id) => {
     const sceneExists = get().scenes.find(s => s.id === id);
     if (sceneExists) {
       set(
@@ -49,7 +49,7 @@ const sceneStoreInitializer: StateCreator<SceneState, [], []> = (set, get) => ({
         currentSceneId: DEFAULT_SETTINGS.currentSceneId,
       }),
       false,
-      'scene/resetSceneState'
+      'scene/resetSceneState',
     ),
 });
 

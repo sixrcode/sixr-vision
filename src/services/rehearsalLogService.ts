@@ -12,15 +12,15 @@ function getDB(): Promise<IDBDatabase> {
   if (!dbPromise) {
     dbPromise = new Promise((resolve, reject) => {
       if (typeof window === 'undefined' || !window.indexedDB) {
-        console.warn('IndexedDB not supported or not available in this environment.');
+ console.warn('IndexedDB not supported or not available in this environment.');
         // Return a mock DB or handle more gracefully if needed for SSR/testing
         // For now, we'll let operations fail silently if IndexedDB is not there.
         // In a real app, you might have a fallback or disable the feature.
         return reject(new Error('IndexedDB not supported.'));
       }
 
-      const request = indexedDB.open(DB_NAME, DB_VERSION);
-
+      const request: IDBOpenDBRequest = indexedDB.open(DB_NAME, DB_VERSION);
+ 
       request.onerror = () => {
         console.error('IndexedDB error:', request.error);
         reject(request.error);
@@ -48,7 +48,7 @@ export async function addLogEntry(event: string, details: Record<string, any>): 
   try {
     const db = await getDB();
     const transaction = db.transaction(STORE_NAME, 'readwrite');
-    const store = transaction.objectStore(STORE_NAME);
+ const store = transaction.objectStore(STORE_NAME);
     const logEntry: Omit<RehearsalLogEntry, 'id'> = { // ID will be auto-generated
       timestamp: Date.now(),
       event,
@@ -56,7 +56,7 @@ export async function addLogEntry(event: string, details: Record<string, any>): 
     };
     store.add(logEntry);
     
-    return new Promise((resolve, reject) => {
+ return new Promise((resolve, reject) => {
       transaction.oncomplete = () => {
         console.log('Log entry added:', logEntry);
         resolve();
@@ -77,12 +77,12 @@ export async function getAllLogEntries(): Promise<RehearsalLogEntry[]> {
   try {
     const db = await getDB();
     const transaction = db.transaction(STORE_NAME, 'readonly');
-    const store = transaction.objectStore(STORE_NAME);
-    const request = store.getAll();
-
+ const store = transaction.objectStore(STORE_NAME);
+ const getRequest = store.getAll();
+ 
     return new Promise((resolve, reject) => {
-      request.onsuccess = () => {
-        resolve(request.result as RehearsalLogEntry[]);
+      getRequest.onsuccess = () => {
+ resolve(getRequest.result as RehearsalLogEntry[]);
       };
       request.onerror = () => {
         console.error('Error fetching log entries:', request.error);
@@ -100,11 +100,10 @@ export async function clearLogEntries(): Promise<void> {
     const db = await getDB();
     const transaction = db.transaction(STORE_NAME, 'readwrite');
     const store = transaction.objectStore(STORE_NAME);
-    const request = store.clear();
+    store.clear();
 
     return new Promise((resolve, reject) => {
       transaction.oncomplete = () => {
-        console.log('Rehearsal log cleared.');
         resolve();
       };
       transaction.onerror = () => {
