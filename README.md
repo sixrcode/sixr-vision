@@ -21,7 +21,7 @@
 
 ## Technology Stack
 
-* **Frontend:** Next.js (React, TypeScript) for the web interface, with Tailwind CSS and custom fonts (Poppins, Data70, Torus) for styling.  UI components use Radix UI and Geist for consistency, and icons from Lucide React.  Recharts is used for visualizing data like audio waveforms or logs.
+* **Frontend:** Next.js (React, TypeScript) for the web interface. State management is handled primarily by **Zustand**, providing a lean and efficient way to manage global and local component states. Styling uses Tailwind CSS and custom fonts (Poppins, Data70, Torus). UI components leverage Radix UI and Geist for consistency, with icons from Lucide React. Recharts is used for visualizing data like audio waveforms or logs.
 * **Graphics/Audio:**  Uses the Web Audio API (FFT, energy analysis) for audio-reactive inputs, and Three.js/WebGL for 3D effects in some scenes.  (p5.js was part of the initial design for audio capture.)  Webcam input is handled via HTML5 media APIs, with optional ML segmentation.
 * **AI/ML:** Google’s Gemini language model is accessed through the GenKit library (@genkit-ai/googleai) for tasks like scene suggestion and asset generation (e.g. style transfer, color palettes).
 * **Backend / Database:** Firebase is used for authentication and data storage.  The project is structured for Firebase Hosting / Functions (the default starter reads as a “NextJS starter in Firebase Studio”).  Development uses the Firebase emulators for Auth and Firestore (as shown in the Nix config with `services = ["auth", "firestore"]`).

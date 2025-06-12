@@ -4,7 +4,7 @@ import { create, type StateCreator } from 'zustand';
 import type { SceneDefinition } from '@/types/state';
 import { SCENES as BUILT_IN_SCENES, DEFAULT_SETTINGS } from '@/lib/constants';
 
-interface SceneState {
+export interface SceneState {
   scenes: SceneDefinition[];
   currentSceneId: string;
   setCurrentSceneById: (id: string) => void;
@@ -22,8 +22,7 @@ const sceneStoreInitializer: StateCreator<SceneState, [], []> = (set, get) => ({
     if (sceneExists) {
       set(
         () => ({ currentSceneId: id }),
-        false,
-        `scene/setCurrentSceneById/${id}`
+ false
       );
     } else {
       console.warn(`[Zustand SceneStore] Scene with id "${id}" not found. Cannot set.`);
@@ -49,8 +48,7 @@ const sceneStoreInitializer: StateCreator<SceneState, [], []> = (set, get) => ({
         scenes: Array.isArray(BUILT_IN_SCENES) ? BUILT_IN_SCENES : [],
         currentSceneId: DEFAULT_SETTINGS.currentSceneId,
       }),
-      false,
-      'scene/resetSceneState',
+ false
     ),
 });
 
