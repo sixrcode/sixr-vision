@@ -40,6 +40,7 @@ const EFFECTIVE_SILENCE_THRESHOLD_SUM = 15; // Sum of all spectrum bins; if belo
  */
 export function useAudioAnalysis() {
   const { settings } = useSettings();
+  const settingsRef = useRef(settings); // Use a ref to access latest settings in callbacks
 
   useEffect(() => {
     settingsRef.current = settings;
@@ -159,7 +160,7 @@ export function useAudioAnalysis() {
 
     setIsInitialized(false);
     setAudioData(INITIAL_AUDIO_DATA);
-    setError(null);
+    setError(null); 
     previousRmsRef.current = 0;
     lastBeatTimeRef.current = 0;
     beatTimestampsRef.current = [];
@@ -322,7 +323,6 @@ export function useAudioAnalysis() {
     let sumOfSquares = 0;
     for (let i = 0; i < spectrumLength; i++) sumOfSquares += ((spectrum[i] || 0) / 255) ** 2;
     let rmsRaw = spectrumLength > 0 ? Math.sqrt(sumOfSquares / spectrumLength) : 0;
-    const rmsRaw = spectrumLength > 0 ? Math.sqrt(sumOfSquares / spectrumLength) : 0;
     const rms = currentRmsForCalc + (rmsRaw - currentRmsForCalc) * RMS_SMOOTHING_FACTOR;
     let newBeat = false;
     const currentTime = performance.now();
@@ -506,6 +506,7 @@ export function useAudioAnalysis() {
       console.log("useAudioAnalysis hook is UNMOUNTING, calling stopAudioAnalysis for final cleanup.");
       stopAudioAnalysis();
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Empty dependency array ensures this runs only on final unmount
 
   return { 
