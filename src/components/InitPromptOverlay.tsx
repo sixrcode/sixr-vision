@@ -15,45 +15,49 @@ export default function InitPromptOverlay() {
   const updateSetting = useSettingsStore(state => state.updateSetting);
 
   useEffect(() => {
-    // Show the prompt if neither mic nor cam is active/enabled.
-    // The audioError is displayed *within* the prompt if it's relevant.
-    // Delay slightly to allow main app to potentially initialize first and avoid quick flash.
+    // Show the prompt if neither mic nor cam is active/enabled,
+    // OR if there's an audio error (which means mic isn't truly active in a usable way).
     const timer = setTimeout(() => {
-        if (!micActive && !showWebcam) {
+        if ((!micActive && !showWebcam) || (audioError && !micActive)) {
             setIsVisible(true);
         } else {
             setIsVisible(false);
         }
-    }, 750); // Adjusted delay
+    }, 750);
     return () => clearTimeout(timer);
-  }, [micActive, showWebcam]);
+  }, [micActive, showWebcam, audioError]);
 
 
-  // Hide the overlay if mic becomes active or webcam is shown AFTER initial check
+  // Hide the overlay if mic becomes active (and no error) or webcam is shown AFTER initial check
   useEffect(() => {
-    if (micActive || showWebcam) {
+    if ((micActive && !audioError) || showWebcam) {
       setIsVisible(false);
     }
-  }, [micActive, showWebcam]);
+  }, [micActive, showWebcam, audioError]);
 
   const handleEnableMic = async () => {
     await initializeAudio();
-    // Visibility will be handled by the useEffect above if micActive becomes true
+    // Visibility will be handled by the useEffect above
   };
 
   const handleEnableCam = () => {
     updateSetting('showWebcam', true);
-    // Visibility will be handled by the useEffect above if showWebcam becomes true
+    // Visibility will be handled by the useEffect above
   };
 
   const handleEnableBoth = async () => {
-    await initializeAudio();
-    updateSetting('showWebcam', true);
+    const micInitializedSuccessfully = await initializeAudio();
+    if (micInitializedSuccessfully) {
+      updateSetting('showWebcam', true);
+    }
+    // If mic failed, audioError will be set by useAudioAnalysis,
+    // and the UI will reflect this. The webcam won't be enabled in this case.
   };
 
   if (!isVisible) return null;
 
-  const bothEnabled = micActive && !audioError && showWebcam;
+  const micFullyActive = micActive && !audioError;
+  const bothEnabled = micFullyActive && showWebcam;
 
   return (
     <div className={cn(
@@ -88,18 +92,18 @@ export default function InitPromptOverlay() {
               onClick={handleEnableMic}
               className="w-full sm:w-auto flex-1"
               variant="outline"
-              disabled={micActive && !audioError}
-              aria-label="Enable Microphone"
+              disabled={micFullyActive}
+              aria-label={micFullyActive ? "Microphone Enabled" : (audioError ? "Retry Microphone Initialization" : "Enable Microphone")}
             >
               <Mic className="mr-2 h-4 w-4" />
-              {micActive && !audioError ? "Mic Enabled" : (audioError ? "Retry Mic" : "Enable Mic")}
+              {micFullyActive ? "Mic Enabled" : (audioError ? "Retry Mic" : "Enable Mic")}
             </Button>
             <Button
               onClick={handleEnableCam}
               variant="outline"
               className="w-full sm:w-auto flex-1"
               disabled={showWebcam}
-              aria-label="Enable Camera"
+              aria-label={showWebcam ? "Camera Enabled" : "Enable Camera"}
             >
               <Camera className="mr-2 h-4 w-4" />
               {showWebcam ? "Cam Enabled" : "Enable Cam"}

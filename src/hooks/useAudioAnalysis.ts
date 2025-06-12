@@ -32,7 +32,7 @@ const EFFECTIVE_SILENCE_THRESHOLD_SUM = 15; // Sum of all spectrum bins; if belo
  *
  * @exports useAudioAnalysis - The main hook function.
  * @returns {object} An object containing:
- *  - initializeAudio: Function to start audio capture and analysis.
+ *  - initializeAudio: Function to start audio capture and analysis. Returns true on success, false on failure.
  *  - stopAudioAnalysis: Function to stop audio capture and analysis.
  *  - isInitialized: Boolean indicating if the audio pipeline is active.
  *  - error: String containing an error message if initialization failed, otherwise null.
@@ -175,8 +175,9 @@ export function useAudioAnalysis() {
    * Requests microphone permission, sets up AudioContext, AnalyserNode, and GainNode.
    * Starts the audio analysis loop if successful.
    * @async
+   * @returns {Promise<boolean>} True if initialization was successful, false otherwise.
    */
-  const initializeAudio = useCallback(async () => {
+  const initializeAudio = useCallback(async (): Promise<boolean> => {
     console.log("initializeAudio called. Current state - isInitializedInternalActual:", isInitializedInternalRef.current, "AudioContext state:", audioContextRef.current?.state);
     
     if (isInitializedInternalRef.current || audioContextRef.current) {
@@ -268,6 +269,7 @@ export function useAudioAnalysis() {
       setIsInitialized(true);
       setError(null); 
       console.log("Audio initialized successfully. isInitialized set to true.");
+      return true;
 
     } catch (err) {
       console.error("Error initializing audio:", err);
@@ -282,6 +284,7 @@ export function useAudioAnalysis() {
         try { await audioContextRef.current.close(); } catch(e) { console.warn("Error closing audio context during init failure cleanup", e); }
         audioContextRef.current = null;
       }
+      return false;
     }
   }, [setIsInitialized, setError, setAudioInputDevices, stopAudioAnalysis]); // settingsRef is stable
 
