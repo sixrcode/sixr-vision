@@ -15,17 +15,18 @@ export default function InitPromptOverlay() {
   const updateSetting = useSettingsStore(state => state.updateSetting);
 
   useEffect(() => {
-    // Show the prompt if neither mic nor cam is active/enabled, and no critical audio error.
+    // Show the prompt if neither mic nor cam is active/enabled.
+    // The audioError is displayed *within* the prompt if it's relevant.
     // Delay slightly to allow main app to potentially initialize first and avoid quick flash.
     const timer = setTimeout(() => {
-        if (!micActive && !showWebcam && !audioError) {
+        if (!micActive && !showWebcam) {
             setIsVisible(true);
         } else {
             setIsVisible(false);
         }
     }, 750); // Adjusted delay
     return () => clearTimeout(timer);
-  }, [micActive, showWebcam, audioError]);
+  }, [micActive, showWebcam]); // audioError removed from dependencies here
 
 
   // Hide the overlay if mic becomes active or webcam is shown AFTER initial check
