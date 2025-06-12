@@ -1,11 +1,8 @@
 
 "use client";
 
-import { useScene } from '@/providers/SceneProvider';
-// WHY: Context hook is no longer needed for currentSceneId.
-// import { useSettings as useSettingsContextHook } from '@/providers/SettingsProvider';
-// WHY: Import the Zustand store directly for currentSceneId.
-import { useSettingsStore } from '@/store/settingsStore';
+import { useSceneStore } from '@/store/sceneStore'; // MODIFIED: Import Zustand store
+import { useSettingsStore } from '@/store/settingsStore'; // MODIFIED: Import Zustand store
 
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { ControlPanelSection } from './ControlPanelSection';
@@ -17,16 +14,12 @@ type PresetSelectorProps = {
 };
 
 export function PresetSelector({ value }: PresetSelectorProps) {
-  const { scenes, setCurrentSceneById } = useScene();
-
-  // WHY: Feature flag logic is removed. Component now always uses Zustand for currentSceneId.
-  // const useZustand = process.env.NEXT_PUBLIC_USE_ZUSTAND === 'pilot';
-
-  // WHY: Directly select currentSceneId from the Zustand store.
+  // MODIFIED: Use Zustand stores
+  const { scenes, setCurrentSceneById } = useSceneStore(state => ({
+    scenes: state.scenes,
+    setCurrentSceneById: state.setCurrentSceneById,
+  }));
   const currentSceneId = useSettingsStore(state => state.currentSceneId);
-  // const currentSceneId = useZustand
-  //   ? useSettingsStore(state => state.currentSceneId)
-  //   : useSettingsContextHook().settings.currentSceneId;
 
   return (
     <ControlPanelSection title="Presets" value={value}>
@@ -37,7 +30,6 @@ export function PresetSelector({ value }: PresetSelectorProps) {
               <TooltipTrigger asChild>
                 <PresetCard
                   scene={scene}
-                  // WHY: Use currentSceneId from Zustand for isActive check.
                   isActive={currentSceneId === scene.id}
                   onClick={() => setCurrentSceneById(scene.id)}
                   onKeyDown={(e) => {

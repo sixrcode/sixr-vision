@@ -115,7 +115,7 @@ export function AiVisualOverlayMixer({ value }: AiVisualOverlayMixerProps) {
     if (enableAiOverlay && enablePeriodicAiOverlay && aiOverlayRegenerationInterval > 0) {
       handleGenerateOverlay(); 
       periodicIntervalRef.current = setInterval(() => {
-        if (audioData.rms > 0.01 || audioData.bpm > 0){
+        if (audioData.rms > 0.01 || audioData.bpm > 0){ // Check if audio is active
             handleGenerateOverlay();
         }
       }, aiOverlayRegenerationInterval * 1000);
@@ -246,7 +246,9 @@ export function AiVisualOverlayMixer({ value }: AiVisualOverlayMixerProps) {
                     <Input
                         id="ai-overlay-interval-input"
                         type="number"
-                        min={15} max={300} step={5}
+                        min={15}
+                        max={300}
+                        step={5}
                         value={aiOverlayRegenerationInterval}
                         onChange={(e) => updateSetting('aiOverlayRegenerationInterval', Math.max(15, parseInt(e.target.value,10) || 15))}
                         disabled={isLoading || !enablePeriodicAiOverlay}
