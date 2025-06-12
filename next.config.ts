@@ -20,11 +20,13 @@ const nextConfig: NextConfig = {
     ],
   },
   experimental: {
-    allowedDevOrigins: [
-      'https://6000-firebase-studio-1747722195027.cluster-3ch54x2epbcnetrm6ivbqqebjk.cloudworkstations.dev',
-      // You might want to add other local development origins here if needed, e.g., 'http://localhost:9002'
-    ],
+    // allowedDevOrigins was here, but it's not a valid experimental key.
+    // It should be a top-level key.
   },
+  allowedDevOrigins: [
+    'https://6000-firebase-studio-1747722195027.cluster-3ch54x2epbcnetrm6ivbqqebjk.cloudworkstations.dev',
+    // You might want to add other local development origins here if needed, e.g., 'http://localhost:9002'
+  ],
 };
 
 export default nextConfig;
