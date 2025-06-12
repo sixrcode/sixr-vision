@@ -20,10 +20,11 @@ import { useAudioAnalysis } from '@/hooks/useAudioAnalysis';
 import { Mic, MicOff, Camera, CameraOff, Loader2 } from 'lucide-react';
 import { Accordion } from '@/components/ui/accordion';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { useSettings } from '@/providers/SettingsProvider';
+import { useSettingsStore } from '@/store/settingsStore'; // Updated import
 import { toast } from '@/hooks/use-toast';
 import { SBNF_TITLE_FONT_FAMILY, SIXR_S_COLOR, SIXR_I_COLOR, SIXR_X_COLOR, SIXR_R_COLOR } from '@/lib/brandingConstants';
 import { cn } from '@/lib/utils';
+import type { Settings } from '@/types';
 
 /**
  * @fileOverview The main view component for the Control Panel sidebar.
@@ -46,10 +47,14 @@ export function ControlPanelView() {
     audioInputDevices
   } = useAudioAnalysis();
 
-  const { settings, updateSetting } = useSettings();
+  // Use Zustand store
+  const selectedAudioInputDeviceId = useSettingsStore(state => state.selectedAudioInputDeviceId);
+  const showWebcam = useSettingsStore(state => state.showWebcam);
+  const zustandUpdateSetting = useSettingsStore(state => state.updateSetting);
+
   const [isTogglingAudio, setIsTogglingAudio] = useState(false);
   const [isTogglingWebcam, setIsTogglingWebcam] = useState(false);
-  const prevSelectedAudioDeviceIdRef = useRef(settings.selectedAudioInputDeviceId);
+  const prevSelectedAudioDeviceIdRef = useRef(selectedAudioInputDeviceId);
 
   useEffect(() => {
     const hasSeenWelcome = localStorage.getItem('sixrVisionWelcomeSeen');
@@ -67,7 +72,7 @@ export function ControlPanelView() {
   useEffect(() => {
     if (
       isAudioInitialized &&
-      settings.selectedAudioInputDeviceId !== prevSelectedAudioDeviceIdRef.current
+      selectedAudioInputDeviceId !== prevSelectedAudioDeviceIdRef.current
     ) {
       console.log(
         'ControlPanelView: Selected audio device changed while audio is active. Re-initializing audio.'
@@ -80,9 +85,9 @@ export function ControlPanelView() {
       };
       reinitialize();
     }
-    prevSelectedAudioDeviceIdRef.current = settings.selectedAudioInputDeviceId;
+    prevSelectedAudioDeviceIdRef.current = selectedAudioInputDeviceId;
   }, [
-    settings.selectedAudioInputDeviceId,
+    selectedAudioInputDeviceId,
     isAudioInitialized,
     stopAudioAnalysis,
     initializeAudio,
@@ -103,10 +108,10 @@ export function ControlPanelView() {
 
   const handleWebcamToggle = async () => {
     if (isTogglingWebcam) return;
-    const newWebcamState = !settings.showWebcam;
-    console.log("ControlPanelView: Toggling webcam. Current state:", settings.showWebcam, "New state:", newWebcamState);
+    const newWebcamState = !showWebcam;
+    console.log("ControlPanelView: Toggling webcam. Current state:", showWebcam, "New state:", newWebcamState);
     setIsTogglingWebcam(true);
-    updateSetting('showWebcam', newWebcamState);
+    zustandUpdateSetting('showWebcam', newWebcamState);
     // Small delay to allow for any UI updates related to webcam state change, if necessary
     await new Promise(resolve => setTimeout(resolve, 50));
     setIsTogglingWebcam(false);
@@ -162,17 +167,17 @@ export function ControlPanelView() {
                 onClick={handleWebcamToggle}
                 className={cn(
                   "relative h-8 w-8 text-sm after:content-[''] after:absolute after:-inset-2 after:rounded-full after:md:hidden",
-                  settings.showWebcam && "bg-accent"
+                  showWebcam && "bg-accent"
                 )}
                 disabled={isTogglingWebcam}
-                aria-pressed={settings.showWebcam}
-                aria-label={settings.showWebcam ? "Stop Webcam" : "Start Webcam"}
+                aria-pressed={showWebcam}
+                aria-label={showWebcam ? "Stop Webcam" : "Start Webcam"}
               >
-                {isTogglingWebcam ? <Loader2 className="h-5 w-5 animate-spin" /> : settings.showWebcam ? <Camera className="h-5 w-5 text-info" /> : <CameraOff className="h-5 w-5 text-muted-foreground" />}
+                {isTogglingWebcam ? <Loader2 className="h-5 w-5 animate-spin" /> : showWebcam ? <Camera className="h-5 w-5 text-info" /> : <CameraOff className="h-5 w-5 text-muted-foreground" />}
               </Button>
             </TooltipTrigger>
             <TooltipContent>
-              <p>{settings.showWebcam ? 'Stop Webcam' : 'Start Webcam'}</p>
+              <p>{showWebcam ? 'Stop Webcam' : 'Start Webcam'}</p>
             </TooltipContent>
           </Tooltip>
         </div>
