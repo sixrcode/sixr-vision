@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input';
 // WHY: Import the Zustand store directly. The feature flag and context fallback are removed.
 import { useSettingsStore } from '@/store/settingsStore';
-import type { LogoAnimationType, LogoAnimationSettings, Settings } from '@/types';
+import type { LogoAnimationType, LogoAnimationSettings } from '@/types';
 import { ControlPanelSection } from './ControlPanelSection';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import { ControlHint } from './ControlHint';
@@ -48,9 +48,7 @@ export function LogoAnimationControls({ value }: LogoAnimationControlsProps) {
             {/* WHY: Directly read from Zustand store. */}
             <Label htmlFor="logoopacity-slider">Overall Opacity ({logoOpacity.toFixed(2)})</Label>
           </TooltipTrigger>
- <TooltipContent><p>Controls the maximum visibility of all logo and watermark elements.</p>
-            <p>Controls the maximum visibility of all logo and watermark elements.</p>
-          </TooltipContent>
+          <TooltipContent><p>Controls the maximum visibility of all logo and watermark elements.</p></TooltipContent>
         </Tooltip>
         <Slider
           id="logoopacity-slider"
@@ -68,9 +66,7 @@ export function LogoAnimationControls({ value }: LogoAnimationControlsProps) {
           <TooltipTrigger asChild>
             <Label htmlFor="logo-animation-type-select">Animation Type</Label>
           </TooltipTrigger>
- <TooltipContent><p>Selects the style of animation for the logo elements.</p>
-            <p>Selects the style of animation for the logo elements.</p>
-          </TooltipContent>
+          <TooltipContent><p>Selects the style of animation for the logo elements.</p></TooltipContent>
         </Tooltip>
         <Select
           value={logoAnimationSettings.type} // WHY: Directly use Zustand state.
@@ -95,9 +91,7 @@ export function LogoAnimationControls({ value }: LogoAnimationControlsProps) {
             <TooltipTrigger asChild>
               <Label htmlFor="logo-animation-color">Color</Label>
             </TooltipTrigger>
- <TooltipContent><p>Sets the color for &apos;Solid&apos; or &apos;Blink&apos; animations.</p>
-              <p>Sets the color for 'Solid' or 'Blink' animations.</p>
-            </TooltipContent>
+            <TooltipContent><p>Sets the color for &apos;Solid&apos; or &apos;Blink&apos; animations.</p></TooltipContent>
           </Tooltip>
           <Input
             id="logo-animation-color"
@@ -118,9 +112,7 @@ export function LogoAnimationControls({ value }: LogoAnimationControlsProps) {
                 Speed ({logoAnimationSettings.speed.toFixed(1)}) {/* WHY: Directly use Zustand state. */}
               </Label>
             </TooltipTrigger>
- <TooltipContent><p>Adjusts the speed of &apos;Blink&apos;, &apos;Pulse&apos;, or &apos;Rainbow Cycle&apos; animations.</p>
-              <p>Adjusts the speed of 'Blink', 'Pulse', or 'Rainbow Cycle' animations.</p>
-            </TooltipContent>
+            <TooltipContent><p>Adjusts the speed of &apos;Blink&apos;, &apos;Pulse&apos;, or &apos;Rainbow Cycle&apos; animations.</p></TooltipContent>
           </Tooltip>
           <Slider
             id="logo-animation-speed-slider"
@@ -132,12 +124,18 @@ export function LogoAnimationControls({ value }: LogoAnimationControlsProps) {
             aria-label={`Logo Animation Speed: ${logoAnimationSettings.speed.toFixed(1)}`}
           />
           <ControlHint>
- {currentAnimType === &apos;blink&apos; ? &apos;Higher is faster blinking.&apos; : currentAnimType === &apos;pulse&apos; ? &apos;Higher is faster pulsing.&apos; : currentAnimType === &apos;rainbowCycle&apos; ? &apos;Higher is faster color cycling.&apos; : &apos;&apos;}
+            {currentAnimType === 'blink'
+              ? 'Higher is faster blinking.'
+              : currentAnimType === 'pulse'
+                ? 'Higher is faster pulsing.'
+                : currentAnimType === 'rainbowCycle'
+                  ? 'Higher is faster color cycling.'
+                  : ''
+            }
           </ControlHint>
         </div>
       )}
- <ControlHint className="mt-2">{`More animations (Chase, Sparkle, etc.) are placeholders.`}</ControlHint>
+      <ControlHint className="mt-2">More animations (Chase, Sparkle, etc.) are placeholders.</ControlHint>
     </ControlPanelSection>
   );
 }
-

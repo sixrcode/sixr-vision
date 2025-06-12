@@ -9,8 +9,8 @@ import { useToast } from '@/hooks/use-toast';
 import { generateSceneAmbiance, type GenerateSceneAmbianceInput, type GenerateSceneAmbianceOutput } from '@/ai/flows/generate-scene-ambiance';
 import { ControlPanelSection } from '../ControlPanelSection';
 import { MessageSquareText, Loader2 } from 'lucide-react';
-import { useAudioData } from '@/providers/AudioDataProvider';
-import { useScene } from '@/providers/SceneProvider';
+import { useAudioDataStore } from '@/store/audioDataStore';
+import { useSceneStore } from '@/store/sceneStore';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { ControlHint } from '../ControlHint';
 
@@ -22,8 +22,17 @@ export function AmbianceGenerator({ value }: AmbianceGeneratorProps) {
   const [ambianceText, setAmbianceText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
-  const { audioData } = useAudioData();
-  const { currentScene } = useScene();
+  const audioData = useAudioDataStore(state => ({
+    bassEnergy: state.bassEnergy,
+    midEnergy: state.midEnergy,
+    trebleEnergy: state.trebleEnergy,
+    rms: state.rms,
+    bpm: state.bpm,
+    beat: state.beat,
+  }));
+  const currentSceneId = useSceneStore(state => state.currentSceneId);
+  const scenes = useSceneStore(state => state.scenes);
+  const currentScene = scenes.find(s => s.id === currentSceneId);
 
   const handleSubmit = async () => {
     if (!currentScene) {
@@ -38,17 +47,16 @@ export function AmbianceGenerator({ value }: AmbianceGeneratorProps) {
     setIsLoading(true);
     setAmbianceText('');
     try {
-      const serializableAudioData = {
-        bassEnergy: audioData.bassEnergy,
-        midEnergy: audioData.midEnergy,
-        trebleEnergy: audioData.trebleEnergy,
-        rms: audioData.rms,
-        bpm: audioData.bpm,
-        beat: audioData.beat,
-      };
-
+      // serializableAudioData is already correctly using the Zustand-sourced audioData
       const input: GenerateSceneAmbianceInput = {
-        audioData: serializableAudioData,
+        audioData: { // Ensure the structure matches the flow input
+            bassEnergy: audioData.bassEnergy,
+            midEnergy: audioData.midEnergy,
+            trebleEnergy: audioData.trebleEnergy,
+            rms: audioData.rms,
+            bpm: audioData.bpm,
+            beat: audioData.beat,
+        },
         currentSceneId: currentScene.id,
         currentSceneName: currentScene.name,
       };
@@ -56,7 +64,7 @@ export function AmbianceGenerator({ value }: AmbianceGeneratorProps) {
       setAmbianceText(result.ambianceText);
       toast({
         title: 'Ambiance Text Generated',
- description: "AI has described the current vibe!", // Adjusted for single quote escaping
+ description: "AI has described the current vibe!",
       });
     } catch (error) {
       console.error('Error generating ambiance text:', error);
@@ -87,8 +95,8 @@ export function AmbianceGenerator({ value }: AmbianceGeneratorProps) {
           <TooltipContent>
             <p>Let AI generate a short, evocative text describing the current scene and audio mood.</p>
             {!currentScene && <p className="text-destructive">Select a scene first.</p>}
-          </TooltipContent>&#x20;
-        </Tooltip>&#x20;
+          </TooltipContent>
+        </Tooltip>
         
         {ambianceText && (
           <div className="mt-3 space-y-1">

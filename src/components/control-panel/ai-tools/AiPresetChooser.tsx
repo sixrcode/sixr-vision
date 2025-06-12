@@ -4,15 +4,11 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { useAudioData } from '@/providers/AudioDataProvider';
-import { useScene } from '@/providers/SceneProvider';
+import { useAudioDataStore } from '@/store/audioDataStore'; // MODIFIED: Import Zustand store
+import { useSceneStore } from '@/store/sceneStore'; // MODIFIED: Import Zustand store
+import { useSettingsStore } from '@/store/settingsStore'; // MODIFIED: Import Zustand store
 import { suggestSceneFromAudio, type SuggestSceneFromAudioInput, type SuggestSceneFromAudioOutput } from '@/ai/flows/suggest-scene-from-audio';
 import { ControlPanelSection } from '../ControlPanelSection';
-// WHY: Context hook is no longer needed.
-// import { useSettings as useSettingsContextHook } from '@/providers/SettingsProvider';
-// WHY: Import the Zustand store directly.
-import { useSettingsStore } from '@/store/settingsStore';
-
 import { Brain, Loader2 } from 'lucide-react';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import { ControlHint } from '../ControlHint';
@@ -25,29 +21,31 @@ type AiPresetChooserProps = {
 };
 
 export function AiPresetChooser({ value }: AiPresetChooserProps) {
-  const { audioData } = useAudioData();
-  const { setCurrentSceneById, scenes } = useScene();
+  // MODIFIED: Use Zustand stores
+  const audioData = useAudioDataStore(state => ({
+    bassEnergy: state.bassEnergy,
+    midEnergy: state.midEnergy,
+    trebleEnergy: state.trebleEnergy,
+    bpm: state.bpm,
+    rms: state.rms, // Added rms for initial load condition
+  }));
+  const { setCurrentSceneById, scenes } = useSceneStore(state => ({
+    setCurrentSceneById: state.setCurrentSceneById,
+    scenes: state.scenes,
+  }));
+  const updateSetting = useSettingsStore(state => state.updateSetting);
+
   const { toast } = useToast();
 
-  // WHY: Feature flag logic is removed. Component now always uses Zustand.
-  // const useZustand = process.env.NEXT_PUBLIC_USE_ZUSTAND === 'pilot';
-
-  // WHY: Directly get updateSetting from the Zustand store.
-  const zustandUpdateSetting = useSettingsStore(state => state.updateSetting);
-  // const updateSettingFromStore = useZustand ? useSettingsStore(state => state.updateSetting) : useSettingsContextHook().updateSetting;
-
-  // WHY: Define a consistent handler function for updating settings using Zustand.
-  const handleUpdateSetting = <K extends keyof Settings>(key: K, val: Settings[K]) => {
-    zustandUpdateSetting(key, val);
-};
-
- // Add handleUpdateSetting as a dependency since it's defined outside of the useCallback but used inside.
-
-  const [suggestedSceneInfo, setSuggestedSceneInfo] = useState<SuggestSceneFromAudioOutput | null>(null); // State to store the AI suggested scene information
+  const [suggestedSceneInfo, setSuggestedSceneInfo] = useState<SuggestSceneFromAudioOutput | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [autoLoadEnabled, setAutoLoadEnabled] = useState(false);
   const initialLoadAttemptedRef = useRef(false);
   const periodicUpdateIntervalId = useRef<NodeJS.Timeout | null>(null);
+
+  const handleUpdateSetting = <K extends keyof Settings>(key: K, val: Settings[K]) => {
+    updateSetting(key, val);
+  };
 
   const fetchSuggestion = useCallback(async (isAutoTrigger = false) => {
     if (isLoading && !isAutoTrigger) return;
@@ -63,13 +61,12 @@ export function AiPresetChooser({ value }: AiPresetChooserProps) {
       };
       const result = await suggestSceneFromAudio(input);
       setSuggestedSceneInfo(result);
-      // WHY: Update 'lastAISuggestedAssetPrompt' using the Zustand update function.
       handleUpdateSetting('lastAISuggestedAssetPrompt', result.suggestedAssetPrompt);
 
       const sceneExists = scenes.find(s => s.id === result.sceneId);
 
       if (autoLoadEnabled && sceneExists) {
-        setCurrentSceneById(result.sceneId, 'ai_auto_suggestion');
+        setCurrentSceneById(result.sceneId); // Removed 'ai_auto_suggestion' source
         if (!isAutoTrigger) {
           toast({ title: 'AI Scene Loaded', description: `Switched to ${result.sceneId} based on audio analysis.` });
         }
@@ -77,9 +74,8 @@ export function AiPresetChooser({ value }: AiPresetChooserProps) {
          toast({ title: 'AI Suggestion Error', description: `AI suggested scene "${result.sceneId}", but it's not available.`, variant: 'destructive' });
       } else if (!isAutoTrigger && !sceneExists) {
         toast({ title: 'AI Suggestion Error', description: `AI suggested scene &quot;${result.sceneId}&quot;, but it's not available. Asset idea: &quot;${result.suggestedAssetPrompt}&quot;`, variant: 'destructive' });
-      } else if (!isAutoTrigger) { // If it's not auto triggered, show a regular suggestion toast
+      } else if (!isAutoTrigger) {
         toast({ title: 'AI Suggestion', description: `Suggested scene: ${result.sceneId}. Asset idea: &quot;${result.suggestedAssetPrompt}&quot;` });
-
       }
 
       if (isAutoTrigger && !initialLoadAttemptedRef.current) {
@@ -139,11 +135,11 @@ export function AiPresetChooser({ value }: AiPresetChooserProps) {
       }
     };
   }, [audioData, autoLoadEnabled, fetchSuggestion, initialLoadAttemptedRef]);
- // Callback function to handle loading the suggested scene manually
+
   const handleLoadSuggested = () => {
     if (suggestedSceneInfo?.sceneId) {
       if (scenes.find(s => s.id === suggestedSceneInfo.sceneId)) {
-        setCurrentSceneById(suggestedSceneInfo.sceneId, 'manual_ai_suggestion_load');
+        setCurrentSceneById(suggestedSceneInfo.sceneId); // Removed 'manual_ai_suggestion_load' source
         toast({ title: 'Scene Loaded', description: `Switched to ${suggestedSceneInfo.sceneId}.` });
       } else {
         toast({ title: 'Scene Not Found', description: `Suggested scene "${suggestedSceneInfo.sceneId}" is not available.`, variant: 'destructive' });
