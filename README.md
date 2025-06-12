@@ -175,6 +175,8 @@ This version offers the best balance of:
 *   🚦 **Production Safety** (watchdog, accessibility, minimal bundle bloat)
 *   🛠 **Maintainability** (clear state boundaries, CLI-ready presets, AI extension path)
 
+**Note on Initialization Prompts:**
+An `InitPromptOverlay` component is rendered at a high level within the `AppContainer`. This overlay conditionally appears if microphone or camera permissions have not yet been granted, prompting the user to enable them. It interacts with `useAudioAnalysis` (for mic status/initialization) and `useSettingsStore` (for webcam status/enablement) to determine its visibility and to trigger the respective access requests. This ensures users are guided to enable necessary features for the application to function fully.
 
 ## Technology Stack
 
@@ -219,8 +221,17 @@ This version offers the best balance of:
 ## Usage
 
 *   **Access the app:** Open your browser to [http://localhost:9002](http://localhost:9002) (or the configured host/port). You should see the SIXR Vision interface with a visualizer canvas and side control panel.
-*   **Audio input:** Play music on your device or enable microphone input via the mic icon in the control panel header. The visuals will react to the audio. Adjust sliders (gain, AGC, etc.) in the "Audio Engine" section to tune the responsiveness.
-*   **Webcam:** Click the camera icon in the control panel header to enable your webcam. Allow browser permission. Use the **Mirror** toggle in "Webcam Layer" controls to flip the feed. Motion in front of the camera will influence certain scenes (e.g., Mirror Silhouette).
+*   **Audio input / Webcam:**
+    *   The visualizer reacts to audio.
+    *   Play music on your device.
+    *   **Enable Microphone:** Click the <kbd>Mic</kbd> icon in the Control Panel header. Allow browser permission when prompted.
+        *   **Audio Source:** Select your desired input device from the "Audio Engine" section.
+        *   **Gain/AGC:** Adjust sensitivity with "Manual Gain" or enable "Automatic Gain Control (AGC)".
+        *   **Monitor Audio:** (Caution: Potential feedback!) Play microphone input through speakers.
+    *   **Enable Webcam:** Click the <kbd>Camera</kbd> icon. Allow permission. Used by scenes like "Mirror Silhouette".
+        *   **Mirror Toggle:** Flip the webcam feed horizontally in "Webcam Layer" controls.
+
+    ⚠️ **On first load, or if permissions haven't been granted, a prompt will appear asking for microphone and (optional) camera access. These are required to unlock the full visual and interactive experience. Click "Enable Mic" or "Enable Cam" on the prompt to grant access or retry if permissions were previously blocked.**
 *   **Presets:** Click on scene thumbnails or press number keys **1–9** to load built-in scenes (see "Visualizer Presets In-Depth" for descriptions). Scenes cross-fade automatically if "Enable Scene Transitions" is active. Press **P** to blackout (panic mode), and **L** to toggle the SIXR logo blackout.
 *   **AI tools:** Explore the "AI: ..." sections in the control panel. Use the Palette Genie, Procedural Assets generator, or let the AI suggest scenes. These may require a valid `GOOGLE_API_KEY`. For example, try the SBNF-themed prompt "Cosmic Grapevines" for procedural assets.
 *   **Remote control:** (Planned Feature) The app will listen for WebSocket/OSC commands. You'll be able to send commands like `{"route":"/preset","value":"radial_burst"}` to change scenes remotely. (An Art-Net lighting console will be able to send/receive as well.)
