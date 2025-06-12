@@ -13,7 +13,7 @@ import { useSettings } from '@/providers/SettingsProvider';
 import { useAudioData } from '@/providers/AudioDataProvider';
 import { useScene } from '@/providers/SceneProvider';
 import { generateVisualOverlay, type GenerateVisualOverlayInput, type GenerateVisualOverlayOutput } from '@/ai/flows/generate-visual-overlay';
-import { Layers, Wand2, Loader2 } from 'lucide-react';
+import { Layers, Loader2 } from 'lucide-react';
 import type { VALID_BLEND_MODES } from '@/types'; // Import the type
 import { VALID_BLEND_MODES as blendModesArray } from '@/types'; // Import the array
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
@@ -23,7 +23,6 @@ import { AiSuggestedPromptDisplay } from '../common/AiSuggestedPromptDisplay';
 import { DEFAULT_SETTINGS } from '@/lib/constants'; // Added missing import
 import { addLogEntry } from '@/services/rehearsalLogService';
 import { ControlPanelSection } from '../ControlPanelSection'; // Added import
-
 
 type AiVisualOverlayMixerProps = {
   value: string; // For AccordionItem
@@ -95,9 +94,9 @@ export function AiVisualOverlayMixer({ value }: AiVisualOverlayMixerProps) {
       console.error('Error generating AI overlay:', error);
       let description = 'Could not generate overlay.';
       if (error instanceof Error) {
-        description = error.message;
-         if (error.message.toLowerCase().includes("500 internal server error") || error.message.toLowerCase().includes("internal error has occurred")) {
-          description = "AI service encountered an internal error. This is often temporary. Please try again in a few moments, or try a different prompt.";
+        description = error.message; // Keep original message as fallback
+         if (error.message.toLowerCase().includes('500 internal server error') || error.message.toLowerCase().includes('internal error has occurred')) {
+          description = 'AI service encountered an internal error. This is often temporary. Please try again in a few moments, or try a different prompt.';
         } else if (error.message.toLowerCase().includes("rate limit")) {
           description = "AI service rate limit hit. Please wait before trying again or enable periodic regeneration with a longer interval.";
         }
@@ -156,7 +155,7 @@ export function AiVisualOverlayMixer({ value }: AiVisualOverlayMixerProps) {
   }, [
     settings.enableAiOverlay,
     settings.enablePeriodicAiOverlay,
-    settings.aiOverlayRegenerationInterval,
+    settings.aiOverlayRegenerationInterval, // Included missing dependency
     settings.aiOverlayPrompt,
     isLoading,
     handleGenerateOverlay,
@@ -199,7 +198,7 @@ export function AiVisualOverlayMixer({ value }: AiVisualOverlayMixerProps) {
           <AiSuggestedPromptDisplay
             suggestedPrompt={settings.lastAISuggestedAssetPrompt}
             onUsePrompt={(prompt) => {
-              setLocalPrompt(prompt);
+              setLocalPrompt(prompt); // Apply suggested prompt to local state
               // Optionally trigger generation immediately upon using suggested prompt
               // handleGenerateOverlay(prompt); 
             }}
@@ -228,7 +227,7 @@ export function AiVisualOverlayMixer({ value }: AiVisualOverlayMixerProps) {
               alt="AI Generated Overlay"
               width={100}
               height={100}
-              className="rounded border object-cover border-border"
+              className="rounded border object-cover border-border" // Added border for clarity
               data-ai-hint="generated overlay"
             />
           </div>

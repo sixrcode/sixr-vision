@@ -2,7 +2,7 @@
 "use client";
 
 import type { ReactNode } from 'react';
-import { createContext, useContext, useState, useCallback, useMemo } from 'react';
+import { createContext, useContext, useCallback, useMemo } from 'react';
 import type { SceneDefinition, Settings } from '@/types';
 import { SCENES as BUILT_IN_SCENES, DEFAULT_SETTINGS } from '@/lib/constants';
 // WHY: Remove useSettings import as it's being replaced by Zustand store access.
@@ -21,10 +21,7 @@ type SceneContextType = {
 const SceneContext = createContext<SceneContextType | undefined>(undefined);
 
 export function SceneProvider({ children }: { children: ReactNode }) {
-  const [registeredScenes, setRegisteredScenes] = useState<SceneDefinition[]>(() => {
-    if (Array.isArray(BUILT_IN_SCENES)) {
-      return BUILT_IN_SCENES;
-    }
+  const registeredScenes: SceneDefinition[] = useMemo(() => {
     console.error("SceneProvider: BUILT_IN_SCENES is not a valid array. Defaulting to empty scenes list.", BUILT_IN_SCENES);
     return [];
   });

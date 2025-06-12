@@ -1,8 +1,8 @@
 
 "use client";
 
-import { useState, useEffect, useCallback, useRef, type SyntheticEvent } from 'react';
-import type { AudioData, Settings } from '@/types';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import type { AudioData } from '@/types';
 import { useAudioData } from '@/providers/AudioDataProvider';
 import { useSettings } from '@/providers/SettingsProvider';
 import { INITIAL_AUDIO_DATA } from '@/lib/constants';
@@ -116,15 +116,15 @@ export function useAudioAnalysis() {
     if (gainNodeRef.current && audioContextRef.current && audioContextRef.current.destination) {
         try { gainNodeRef.current.disconnect(audioContextRef.current.destination); } catch (e) { console.warn("Error disconnecting gainNode from destination", e); }
     }
-    if (sourceNodeRef.current) {
+ if (sourceNodeRef.current) {
         if (gainNodeRef.current) {
             try { sourceNodeRef.current.disconnect(gainNodeRef.current); } catch (e) { console.warn("Error disconnecting sourceNodeRef from gainNodeRef", e); }
         }
         if(analyserRef.current && gainNodeRef.current === null) {
-            try { sourceNodeRef.current.disconnect(analyserRef.current); } catch(e) {console.warn("Error disconnecting sourceNodeRef from analyserRef", e);}
+ try { sourceNodeRef.current.disconnect(analyserRef.current); } catch(e) {console.warn("Error disconnecting sourceNodeRef from analyserRef", e);}
         }
         sourceNodeRef.current.disconnect();
-        sourceNodeRef.current = null;
+ sourceNodeRef.current = null;
     }
     if (gainNodeRef.current) {
         if(analyserRef.current) {
@@ -153,7 +153,7 @@ export function useAudioAnalysis() {
           console.log("AudioContext closed.");
         } catch (e) {
           console.error("Error closing audio context in stopAudioAnalysis", e);
-        }
+ }
       }
       audioContextRef.current = null;
     }
@@ -323,7 +323,7 @@ export function useAudioAnalysis() {
     let sumOfSquares = 0;
     for (let i = 0; i < spectrumLength; i++) sumOfSquares += ((spectrum[i] || 0) / 255) ** 2;
     let rmsRaw = spectrumLength > 0 ? Math.sqrt(sumOfSquares / spectrumLength) : 0;
-    const rms = currentRmsForCalc + (rmsRaw - currentRmsForCalc) * RMS_SMOOTHING_FACTOR;
+    const rms = currentRmsForCalc + (rmsRaw - currentRmsForCalc) * RMS_SMOOTHING_FACTOR; // This is the smoothed RMS
     let newBeat = false;
     const currentTime = performance.now();
      if (

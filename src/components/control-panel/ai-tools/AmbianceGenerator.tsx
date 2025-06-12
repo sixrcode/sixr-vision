@@ -56,7 +56,7 @@ export function AmbianceGenerator({ value }: AmbianceGeneratorProps) {
       setAmbianceText(result.ambianceText);
       toast({
         title: 'Ambiance Text Generated',
-        description: 'AI has described the current vibe!',
+        description: 'AI has described the current vibe!&#x20;',
       });
     } catch (error) {
       console.error('Error generating ambiance text:', error);

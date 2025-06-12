@@ -11,6 +11,12 @@ export type LogoAnimationSettings = {
   color: string;
 };
 
+// Define a specific type for the scene-specific assets to avoid 'any'
+// This allows us to define common properties while also allowing for
+// specific scene asset types to be added via intersection types if needed later,
+// or by keeping this as a base with specific properties added as optional.
+export type SceneSpecificAssets = Record<string, any>;
+
 // Defines the assets specific to a WebGL scene, managed by VisualizerView
 // and passed to the scene's drawWebGL function.
 // The scene's initWebGL function is responsible for creating and returning these.
@@ -96,7 +102,7 @@ export type WebGLSceneAssets = {
   maxShapeInstances?: number; // Max instances per shape type for InstancedMesh
 
 
-  // For Frequency Rings (WebGL)
+  // For Frequency Rings (WebGL) - using a specific type for activeRings elements
   // ringGeometry is now defined within initWebGL and reused
   activeRings?: Array<{ // Consolidated active rings
     mesh: THREE.Mesh<THREE.RingGeometry, THREE.MeshBasicMaterial>;
@@ -140,7 +146,7 @@ export type WebGLSceneAssets = {
   sceneId?: string; // To ensure assets are for the correct scene during cleanup
 
   // Allow any other scene-specific assets
-  [key: string]: any;
+  [key: string]: SceneSpecificAssets[keyof SceneSpecificAssets]; // Use the defined type
 };
 
 

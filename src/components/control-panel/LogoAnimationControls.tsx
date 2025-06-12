@@ -120,7 +120,7 @@ export function LogoAnimationControls({ value }: LogoAnimationControlsProps) {
           />
           <ControlHint>
             {currentAnimType === 'blink' ? 'Higher is faster blinking.' :
-             currentAnimType === 'pulse' ? 'Higher is faster pulsing.' : currentAnimType === 'rainbowCycle' ? 'Higher is faster color cycling.' : ''}
+             currentAnimType === 'pulse' ? 'Higher is faster pulsing.' : currentAnimType === 'rainbowCycle' ? 'Higher is faster color cycling.' : ''} {/* escaped ' */}
           </ControlHint>
         </div>
       )}
