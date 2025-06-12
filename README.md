@@ -1,19 +1,23 @@
+
 # SIXR Vision
 
 **Project Overview:** SIXR Vision is an **audio-reactive** XR storytelling application developed by the SIXR Lab, which empowers inclusive XR experiences by and for BIPOC, women, and LGBTQ+ creators.  The app generates real-time visualizations driven by live music and AI, suitable for live performances and immersive events.  In its metadata the project is described as an “Audio-Reactive Visualizer with AI Features, themed for SBNF 2025”, reflecting its role in the Seattle BIPOC festival (Cosmic Grapevines theme).  SIXR Vision combines live audio analysis, webcam input, and AI-based creativity tools to let users craft dynamic, music-synchronized graphics and environments that highlight diverse narratives.
 
-## Features
+## Core Features:
 
-* **Audio-Reactive Visualization:**  Audio input (via Web Audio / FFT analysis) feeds into geometry, color, and particle effects, creating visuals that pulse and morph with the music. Users can adjust gain, AGC, and FFT size (128/256/512) to tune sensitivity and resolution.
-* **AI-Powered Scene Selection:**  The app integrates Google’s Gemini AI (via the GenKit library) to analyze the music’s bass, mid, and treble energy and BPM.  It then **recommends or auto-loads** the most fitting visual scene for the track. This smart preset chooser makes it easy to find on-theme visuals without manual guesswork.
-* **Interactive Camera Layer:**  Users can enable a live camera feed with mirror toggling and motion sensitivity.  Optionally, an AI segmentation model can isolate performers from the background for crisp visual effects.  This lets the performer become part of the scene (for example, glowing silhouettes or particle effects keyed to human motion).
-* **Built-in Scenes & Branding:**  A registry of built-in scenes (e.g. Spectrum Bars, Radial Burst, Mirror Silhouette, Particle Finale, and an optional Spline Hero) are provided.  The system cross-fades between scenes by BPM or manual cues.  Custom SIXR branding (logo shimmer, rotating watermark, and beat-flash outline) is overlaid on the visuals for a cohesive event look.
-* **AI Creative Kit:**  Users can generate color palettes and textures with AI.  The *Palette Genie* tool produces harmonious HSB color sets, and a style-transfer shader can apply artistic textures.  Even procedural assets (3D meshes or images) can be generated from text prompts or audio cues, enabling rapid creative exploration.
-* **User Interface:**  A responsive control panel (built with React/Next.js) offers sliders for audio gain, brightness, gamma, and more.  Preset thumbnails let users preview scenes.  Keyboard shortcuts (1-9 for presets, **P** to panic/blackout, **L** to toggle logo blackout, *Ctrl+Z* to undo) and a JSON-based cue list player provide quick control.
-* **Remote Control API:**  A WebSocket/OSC interface mirrors the UI commands (`/preset`, `/gain`, `/panic`, etc.). This lets external devices (tablets, lighting consoles, etc.) trigger changes in the show.
-* **Lighting Integration (Art-Net):**  Audio signals are sent to stage lighting via Art-Net DMX.  For example, the music beat controls DMX channel 1 and audio RMS (overall level) controls channel 2. Lighting consoles can also send return signals to flip scenes.
-* **Performance Watchdog:**  A built-in monitor tracks rendering frame rate.  If performance drops below \~50 FPS for 2 seconds, the system automatically halves the FFT resolution and silences heavy shaders. This adaptive mechanism keeps visuals smooth under load.
-* **Safety & Logging:**  The app includes photosensitive-flash protection (to avoid harmful high-frequency flashes).  It also logs rehearsal data in IndexedDB (exportable to CSV) and can overlay a real-time frame-time heatmap for performance debugging.
+- Audio-Reactive Pipeline: p5.AudioIn → Gain / AGC → FFT (128 ∣ 256 ∣ 512) Spectrum vectors feed geometry, colour shifts, and particle emitters.
+- AI Preset Chooser: Gemini inspects bass / mid / treble energy + BPM and recommends—or auto-loads—the most fitting scene.
+- Interactive Cam Layer: Lazy `getUserMedia`, mirror toggle, motion-energy scalar; optional AI segmentation for crisp performer cut-outs.
+- SIXR Branding Stack: • Boot-logo shimmer • 15 % rotating watermark (SIXR + partners) • Centre “S I X R” type—stroke & glow track RMS • Beat-flash logo outline.
+- Preset Registry: Scenes registered via `registerScene(id,meta,drawFn)`; built-ins: Spectrum Bars, Radial Burst, Mirror Silhouette, Particle Finale, optional Spline Hero. Morphing engine cross-fades by BPM or operator cue.
+- AI Creative Kit: Palette Genie (harmonious HSB sets) · optional Style-Transfer shader · Procedural Assets (textures / meshes from prompt or audio).
+- Svelte Panel: Sliders (FFT bins, Gain/AGC, Gamma, Dither, Bright-Cap, Logo-Opacity) · Preset thumbnails · Hotkeys 1-5, P panic-black, L logo-black, Ctrl Z undo · JSON cue-list player.
+- WebSocket / OSC API: Same commands as panel (`/preset`, `/gain`, `/panic`)—tablet or lighting desk can run the show.
+- Art-Net Bridge: Beat envelope → DMX ch-1, RMS → ch-2; consoles can flip scenes via return channel.
+- Adaptive Watchdog: ML predictor + live FPS monitor; if < 50 fps for 2 s, halves FFT bins & mutes heavy shaders.
+- QA & Safety: Photosensitive-flash guard (> 3 Hz / > 20 cd Δ)
+- QA & Safety: IndexedDB rehearsal log (CSV export)
+- QA & Safety: Real-time frame-time heat-map overlay
 
 ## Technology Stack
 
@@ -22,6 +26,16 @@
 * **AI/ML:** Google’s Gemini language model is accessed through the GenKit library (@genkit-ai/googleai) for tasks like scene suggestion and asset generation (e.g. style transfer, color palettes).
 * **Backend / Database:** Firebase is used for authentication and data storage.  The project is structured for Firebase Hosting / Functions (the default starter reads as a “NextJS starter in Firebase Studio”).  Development uses the Firebase emulators for Auth and Firestore (as shown in the Nix config with `services = ["auth", "firestore"]`).
 * **Development:** The codebase uses a Nix development environment (Node.js 20 and related packages).  Development scripts (via `npm run dev`) start the Next.js server.  GitHub Actions or the Firebase CLI can be used for deployment.
+
+## Style Guidelines:
+
+- Buttons · active sliders · focus rings
+- Hover states · progress bars
+- Canvas & panel backdrop
+- Typeface — Inter / Poppins (sans-serif)
+- Icons — minimalist geometric line set
+- Layout — split-screen: full-bleed visualizer + 320 px control panel
+- Motion — 200 ms ease-out fades & slides; spring easing on slider thumbs
 
 ## Installation
 
