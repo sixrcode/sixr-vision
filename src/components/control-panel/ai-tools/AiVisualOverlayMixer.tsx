@@ -159,7 +159,7 @@ export function AiVisualOverlayMixer({ value }: AiVisualOverlayMixerProps) {
     handleGenerateOverlay,
     currentScene // Added currentScene dependency
 
-  ]);
+  ],);
   return (
     <ControlPanelSection title="AI: Visual Overlay Mixer" value={value}>
       <div className="space-y-3">

@@ -13,11 +13,12 @@ interface SceneState {
 }
 
 const sceneStoreInitializer: StateCreator<SceneState, [], []> = (set, get) => ({
-  scenes: BUILT_IN_SCENES,
+  scenes: Array.isArray(BUILT_IN_SCENES) ? BUILT_IN_SCENES : [], // Ensure scenes is always an array
   currentSceneId: DEFAULT_SETTINGS.currentSceneId,
 
   setCurrentSceneById: (id) => {
-    const sceneExists = get().scenes.find(s => s.id === id);
+    const currentScenes = get().scenes; // scenes is now guaranteed to be an array
+    const sceneExists = currentScenes.find(s => s.id === id);
     if (sceneExists) {
       set(
         () => ({ currentSceneId: id }),
@@ -45,7 +46,7 @@ const sceneStoreInitializer: StateCreator<SceneState, [], []> = (set, get) => ({
   resetSceneState: () =>
     set(
       () => ({
-        scenes: BUILT_IN_SCENES,
+        scenes: Array.isArray(BUILT_IN_SCENES) ? BUILT_IN_SCENES : [], // Also here
         currentSceneId: DEFAULT_SETTINGS.currentSceneId,
       }),
       false,

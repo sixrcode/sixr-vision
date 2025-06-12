@@ -22,9 +22,12 @@ const SceneContext = createContext<SceneContextType | undefined>(undefined);
 
 export function SceneProvider({ children }: { children: ReactNode }) {
   const registeredScenes: SceneDefinition[] = useMemo(() => {
-    console.error("SceneProvider: BUILT_IN_SCENES is not a valid array. Defaulting to empty scenes list.", BUILT_IN_SCENES);
- return BUILT_IN_SCENES; // Assuming BUILT_IN_SCENES is intended to be the initial value
-  });
+    if (!Array.isArray(BUILT_IN_SCENES)) {
+      console.error("SceneProvider: BUILT_IN_SCENES was not a valid array during initialization. Defaulting to an empty scene list. This might indicate an import issue or an SSR problem with constants.ts.");
+      return []; // Graceful fallback
+    }
+    return BUILT_IN_SCENES;
+  }, []); // Empty dependency array, as BUILT_IN_SCENES is a constant import.
 
   // WHY: Directly use the Zustand store for settings state.
   const currentSceneIdFromStore = useSettingsStore(state => state.currentSceneId);
@@ -88,9 +91,9 @@ export function SceneProvider({ children }: { children: ReactNode }) {
 export function useScene(): SceneContextType {
   const context = useContext(SceneContext);
   if (context === undefined) {
-    console.error("useScene must be used within a SceneProvider. Context is undefined.");
+    console.error("useScene must be used within a SceneProvider. Context is undefined. Falling back to default with empty scenes.");
     return {
-        scenes: [],
+        scenes: [], // Reflect that scenes could be empty
         currentScene: undefined,
         registerScene: () => console.error("Default registerScene called - SceneProvider context issue."),
         setCurrentSceneById: () => console.error("Default setCurrentSceneById called - SceneProvider context issue."),
