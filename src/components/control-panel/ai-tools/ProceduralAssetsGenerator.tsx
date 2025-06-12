@@ -62,7 +62,7 @@ export function ProceduralAssetsGenerator({ value }: ProceduralAssetsGeneratorPr
             <Label htmlFor="asset-prompt-input">Prompt</Label>
           </TooltipTrigger>
           <TooltipContent>
-            <p>Describe the texture or mesh you want the AI to generate. e.g., 'glowing alien crystal', 'rusty metal plate'.</p>
+            <p>Describe the texture or mesh you want the AI to generate. e.g., &apos;glowing alien crystal&apos;, &apos;rusty metal plate&apos;.</p>
           </TooltipContent>
         </Tooltip>
         <Input

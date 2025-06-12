@@ -65,7 +65,7 @@ const generateAssetsFlow = ai.defineFlow(
     const texturePrompt = `Generate a seamless tileable texture based on the following artistic prompt: "${input.prompt}". Focus on abstract patterns and material qualities rather than literal depictions unless specified. Output as a square image suitable for texturing. Consider "Cosmic Grapevines" and Afrofuturist aesthetics.`;
     const meshPrompt = `Generate a visual preview of a simple 3D mesh or abstract geometric form inspired by the prompt: "${input.prompt}". This is for a preview image only, not a 3D model file. Output as a square image. Consider "Cosmic Grapevines" and Afrofuturist aesthetics.`;
 
-    let startTime = performance.now();
+    const startTime = performance.now();
     const [textureResult, meshResult] = await Promise.all([
       ai.generate({
         model: MODEL_NAME_IMAGE_GENERATION,
@@ -84,7 +84,7 @@ const generateAssetsFlow = ai.defineFlow(
         },
       })
     ]);
-    let endTime = performance.now();
+    const endTime = performance.now();
     console.log(`[AI Benchmark] generateAssetsFlow (texture & mesh parallel) ai.generate calls took ${(endTime - startTime).toFixed(2)} ms for model ${MODEL_NAME_IMAGE_GENERATION}`);
     
     const textureMedia = textureResult.media;

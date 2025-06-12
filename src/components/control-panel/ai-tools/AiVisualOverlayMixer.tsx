@@ -13,7 +13,6 @@ import { useSettings } from '@/providers/SettingsProvider';
 import { useAudioData } from '@/providers/AudioDataProvider';
 import { useScene } from '@/providers/SceneProvider';
 import { generateVisualOverlay, type GenerateVisualOverlayInput, type GenerateVisualOverlayOutput } from '@/ai/flows/generate-visual-overlay';
-import { ControlPanelSection } from '../ControlPanelSection';
 import { Layers, Wand2, Loader2 } from 'lucide-react';
 import type { VALID_BLEND_MODES } from '@/types'; // Import the type
 import { VALID_BLEND_MODES as blendModesArray } from '@/types'; // Import the array

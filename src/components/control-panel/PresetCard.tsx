@@ -1,8 +1,7 @@
 
 "use client";
 
-import * as React from 'react';
-import Image from 'next/image';
+import * as React from "react";
 import { Card, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import type { SceneDefinition } from '@/types';
@@ -21,11 +20,6 @@ const PresetCard = React.forwardRef<HTMLDivElement, PresetCardProps>(
     const cardStyle: React.CSSProperties = {
       borderColor: isActive ? 'hsl(var(--primary-hsl))' : 'hsl(var(--border-hsl))',
       // Background color will be applied via Tailwind classes for better theme integration
-    };
-
-    // Text color needs to contrast with the card's background
-    const cardTextStyle: React.CSSProperties = {
-      color: isActive ? 'hsl(var(--accent-foreground-hsl))' : 'hsl(var(--card-foreground-hsl))',
     };
 
     return (

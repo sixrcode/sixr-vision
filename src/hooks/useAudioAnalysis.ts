@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, type SyntheticEvent } from 'react';
 import type { AudioData, Settings } from '@/types';
 import { useAudioData } from '@/providers/AudioDataProvider';
 import { useSettings } from '@/providers/SettingsProvider';
@@ -40,7 +40,6 @@ const EFFECTIVE_SILENCE_THRESHOLD_SUM = 15; // Sum of all spectrum bins; if belo
  */
 export function useAudioAnalysis() {
   const { settings } = useSettings();
-  const settingsRef = useRef(settings);
 
   useEffect(() => {
     settingsRef.current = settings;
@@ -200,7 +199,7 @@ export function useAudioAnalysis() {
         console.log("No audio input devices found.");
       }
       
-      const audioConstraints: MediaTrackConstraints = {};
+      const audioConstraints: MediaTrackConstraints = { };
       if (settingsRef.current.selectedAudioInputDeviceId && audioInputs.some(d => d.deviceId === settingsRef.current.selectedAudioInputDeviceId)) {
         audioConstraints.deviceId = { exact: settingsRef.current.selectedAudioInputDeviceId };
         console.log("Attempting to use selected deviceId:", settingsRef.current.selectedAudioInputDeviceId);
@@ -223,7 +222,7 @@ export function useAudioAnalysis() {
         throw new Error("No audio tracks available in the microphone stream.");
       }
 
-      const newAudioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const newAudioContext = new (window.AudioContext || (window as { webkitAudioContext: typeof AudioContext; }).webkitAudioContext)();
       audioContextRef.current = newAudioContext;
       console.log("AudioContext created. State:", newAudioContext.state);
 
@@ -280,7 +279,7 @@ export function useAudioAnalysis() {
         audioContextRef.current = null;
       }
     }
-  }, [stopAudioAnalysis, setIsInitialized, setError, setAudioInputDevices]); // settingsRef is stable (ref)
+  }, [setIsInitialized, setError, setAudioInputDevices, stopAudioAnalysis]); // settingsRef is stable (ref)
 
 
   /**
@@ -323,8 +322,8 @@ export function useAudioAnalysis() {
     let sumOfSquares = 0;
     for (let i = 0; i < spectrumLength; i++) sumOfSquares += ((spectrum[i] || 0) / 255) ** 2;
     let rmsRaw = spectrumLength > 0 ? Math.sqrt(sumOfSquares / spectrumLength) : 0;
-    let rms = currentRmsForCalc + (rmsRaw - currentRmsForCalc) * RMS_SMOOTHING_FACTOR;
-
+    const rmsRaw = spectrumLength > 0 ? Math.sqrt(sumOfSquares / spectrumLength) : 0;
+    const rms = currentRmsForCalc + (rmsRaw - currentRmsForCalc) * RMS_SMOOTHING_FACTOR;
     let newBeat = false;
     const currentTime = performance.now();
      if (
@@ -430,7 +429,7 @@ export function useAudioAnalysis() {
             gainNodeRef.current.gain.setTargetAtTime(1.0, audioContextRef.current.currentTime, AGC_RELEASE_TIME_CONSTANT * 2 ); 
         }
     }
-    localAnalysisLoopFrameIdRef.current = requestAnimationFrame(analyze);
+     localAnalysisLoopFrameIdRef.current = requestAnimationFrame(analyze);
   }, [calculateEnergy, estimateBPM, setAudioData, currentGlobalAudioData.bpm]); // Removed settingsRef dependencies (gain, enableAgc) to stabilize `analyze`
 
   // Effect to manage the analysis loop based on initialization state
@@ -455,7 +454,7 @@ export function useAudioAnalysis() {
             localAnalysisLoopFrameIdRef.current = null;
         }
     };
-  }, [isInitializedInternalActual, analyze]);
+  }, [isInitializedInternalActual, analyze, stopAudioAnalysis]);
 
   // Effect to update gain based on manual settings (only if AGC is off)
   useEffect(() => {

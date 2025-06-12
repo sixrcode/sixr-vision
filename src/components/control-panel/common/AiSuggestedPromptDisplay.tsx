@@ -1,7 +1,6 @@
 
 "use client";
 
-import type { ReactNode } from 'react';
 import { Button } from '@/components/ui/button';
 import { Sparkles, Wand2 } from 'lucide-react'; // Default and alternative icons
 import { cn } from '@/lib/utils';

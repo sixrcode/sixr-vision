@@ -3,13 +3,12 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { useAudioData } from '@/providers/AudioDataProvider';
 import { useScene } from '@/providers/SceneProvider';
-import { useSettings } from '@/providers/SettingsProvider';
 import { suggestSceneFromAudio, type SuggestSceneFromAudioInput, type SuggestSceneFromAudioOutput } from '@/ai/flows/suggest-scene-from-audio';
 import { ControlPanelSection } from '../ControlPanelSection';
+import { useSettings } from '@/providers/SettingsProvider';
 import { Brain, Loader2 } from 'lucide-react';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import { ControlHint } from '../ControlHint';
@@ -23,7 +22,7 @@ type AiPresetChooserProps = {
 export function AiPresetChooser({ value }: AiPresetChooserProps) {
   const { audioData } = useAudioData();
   const { setCurrentSceneById, scenes } = useScene();
-  const { settings, updateSetting } = useSettings();
+  const { updateSetting } = useSettings();
   const [suggestedSceneInfo, setSuggestedSceneInfo] = useState<SuggestSceneFromAudioOutput | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
@@ -56,10 +55,9 @@ export function AiPresetChooser({ value }: AiPresetChooserProps) {
         }
       } else if (autoLoadEnabled && !sceneExists && !isAutoTrigger) {
          toast({ title: 'AI Suggestion Error', description: `AI suggested scene "${result.sceneId}", but it's not available.`, variant: 'destructive' });
-      } else if (autoLoadEnabled && !isAutoTrigger) {
-         toast({ title: 'AI Suggestion', description: `Suggested ${result.sceneId}, but auto-load conditions not met.` });
       } else if (!isAutoTrigger && !sceneExists) {
-        toast({ title: 'AI Suggestion Error', description: `AI suggested scene "${result.sceneId}", but it's not available. Asset idea: "${result.suggestedAssetPrompt}"`, variant: 'destructive' });
+        toast({ title: 'AI Suggestion Error', description: `AI suggested scene &quot;${result.sceneId}&quot;, but it's not available. Asset idea: &quot;${result.suggestedAssetPrompt}&quot;`, variant: 'destructive' });
+      } else if (autoLoadEnabled && !isAutoTrigger) { // Manual trigger when auto-load is on but didn't load (e.g. no scene found)
       } else if (!isAutoTrigger) {
         toast({ title: 'AI Suggestion', description: `Suggested scene: ${result.sceneId}. Asset idea: "${result.suggestedAssetPrompt}"` });
       }

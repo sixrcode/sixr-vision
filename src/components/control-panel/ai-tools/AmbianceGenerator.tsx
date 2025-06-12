@@ -87,7 +87,7 @@ export function AmbianceGenerator({ value }: AmbianceGeneratorProps) {
           <TooltipContent>
             <p>Let AI generate a short, evocative text describing the current scene and audio mood.</p>
             {!currentScene && <p className="text-destructive">Select a scene first.</p>}
-          </TooltipContent>
+          </TooltipContent>&#x20;
         </Tooltip>
         
         {ambianceText && (

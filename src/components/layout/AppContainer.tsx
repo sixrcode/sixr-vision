@@ -3,7 +3,7 @@
 
 import type { ReactNode } from 'react';
 import { useHotkeys } from '@/hooks/useHotkeys';
-import { Sidebar, SidebarInset, SidebarTrigger, useSidebar } from '@/components/ui/sidebar';
+import { Sidebar, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
