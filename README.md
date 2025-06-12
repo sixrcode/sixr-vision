@@ -83,73 +83,102 @@ Here's a closer look at the visual experiences offered by the built-in presets:
 
 ## Application Architecture Overview
 
-The application's architecture is centered around Next.js and React, with state management handled by **Zustand**. The following diagram illustrates the high-level component and data flow:
+✅ **Finalized Initialization Flow — Post-Zustand, Production-Ready**
 
-```mermaid
-flowchart TD
-    %% Top-level hierarchy
-    A[Next.js<br/>RootLayout] --> B[AppProviders<br/>(injects Zustand stores)]
-
-    %% Providers fan-out
-    subgraph Stores
-        direction LR
-        S1[[useSettingsStore]]
-        S2[[useAudioDataStore]]
-        S3[[useSceneStore]]
-    end
-    B --> S1 & S2 & S3
-
-    %% Layout container
-    B --> C[AppContainer]
-
-    %% Container splits UI
-    C --> V[VisualizerView<br/>(Canvas & Loop)]
-    C --> P[ControlPanelView<br/>(UI & Toggles)]
-
-    %% Visualizer internals
-    V --> BO[BrandingOverlay]
-    V --> WF[WebcamFeed<br/>(optional)]
-
-    %% Control-panel internals
-    subgraph "Control Panel"
-        direction TB
-        AC[AudioControls]
-        VC[VisualControls]
-        PS[PresetSelector]
-        AI[Ai Preset Chooser]
-        WC[WebcamControls]
-    end
-    P --> AC & VC & PS & AI & WC
-
-    %% Data flows (selectors) — dashed for reads
-    V -. reads .-> S1 & S2 & S3
-    AC -.-> S1 & S2
-    VC -.-> S1
-    PS -.-> S3
-    AI -.-> S3
-    WC -.-> S1
-
-    %% User interaction triggers
-    U[User Interaction] -->|start audio| S2
-    U -->|toggle webcam| S1
-    U -->|adjust slider| S1
-    U -->|choose preset| S3
-
-    %% Styling
-    classDef store fill:#eef,stroke:#66f,stroke-width:1px;
-    class S1,S2,S3 store;
+### 1. 🧠 Application Shell
+```bash
+📦 /src/app/layout.tsx
 ```
+Loads global styles (fonts, canvas backdrop)
 
-**Key Points:**
+Wraps children with:
+*   `<Toaster />` (UI notifications)
+*   `<SidebarProvider />` (UI layout toggles)
+*   `<AppProviders />` ← top-level logic injection
 
-*   `AppProviders` initializes the Zustand stores, making them accessible throughout the application.
-*   `AppContainer` structures the main layout, splitting the UI into `VisualizerView` (for the graphics) and `ControlPanelView` (for user controls).
-*   Components read data from and dispatch actions to the Zustand stores (`useSettingsStore`, `useAudioDataStore`, `useSceneStore`) as needed.
-*   User interactions in the `ControlPanelView` trigger updates in the stores, which in turn drive changes in the `VisualizerView`.
+### 2. ⚙️ AppProviders (Core Logic Injectors)
+```tsx
+<AppProviders>
+  • Zustand Slices:
+    🔧 useSettingsStore
+    🎛️ useAudioDataStore
+    🎞️ useSceneStore
+</AppProviders>
+```
+*   Zustand replaces React Context, enabling selector-based reads.
+*   Adds devtools middleware + optional hydration fallback.
+
+### 3. 🧱 AppContainer (Visual Layout Split)
+```tsx
+<AppContainer>
+  ├─ VisualizerView
+  └─ ControlPanelView
+</AppContainer>
+```
+*   Layout grid: fullscreen canvas + ~320px right-side panel.
+
+### 4. 🖼 VisualizerView (Reactive Canvas System)
+Contains:
+*   `BrandingOverlay` (text shimmer, logo flash)
+*   `WebcamFeed` (lazy-loaded, motion-reactive layer)
+
+Reads from:
+*   `useSettingsStore` → visual options
+*   `useAudioDataStore` → FFT, BPM
+*   `useSceneStore` → current `drawFn()`
+
+### 5. 🎛 ControlPanelView (UI State Hub)
+Contains submodules:
+```r
+• AudioControls       🎚  ← gain, AGC, RMS
+• VisualControls      🌈  ← gamma, dither, brightCap
+• PresetSelector      🎬  ← thumbnails + crossfade
+• AiPresetChooser     🤖  ← Gemini-recommended preset
+• WebcamControls      📷  ← mirror toggle, AI segmentation
+```
+Each uses:
+*   Zustand selectors to minimize re-renders.
+*   Presets trigger `useSceneStore.setCurrentSceneById(id)`.
+
+### 6. 🎤 User Interaction Flow
+| Action            | Triggers                             |
+|-------------------|--------------------------------------|
+| 🎙️ Click mic icon  | `initializeAudio()` → `setAudioData()` in store |
+| 📷 Toggle camera  | `updateSetting("showWebcam")`        |
+| 🎛 Drag sliders   | `updateSetting(key, value)`          |
+| 🎞 Choose preset  | `setCurrentSceneById(id)`            |
+
+### 7. 🧠 AI + Safety Layer
+*   Gemini (via GenKit) powers AI Preset Chooser & color palettes.
+*   Adaptive Watchdog monitors FPS → disables expensive shaders (planned).
+*   IndexedDB Logger tracks settings/scene/BPM → CSV export.
+*   Flash Guard: avoids unsafe strobe behavior (>3Hz, >20cd) (planned).
+
+### 8. 🔁 Data Sync & Extensibility
+*   `registerScene(id, meta, drawFn)` enables modular presets (currently uses static list, dynamic registration is a placeholder).
+*   WebSocket/OSC/ArtNet controllers interface with `/preset`, `/gain`, `/panic` (planned).
+*   Ready for: multiplayer session sync, mobile OSC panels, or Firebase-cued scenes (future considerations).
+
+### 🧠 Summary
+| Layer        | Role                          | Optimized By                     |
+|--------------|-------------------------------|----------------------------------|
+| AppProviders | State injection               | Zustand slices w/ selectors      |
+| AppContainer | Layout + presentation         | Grid layout + separation         |
+| Visualizer   | Audio-reactive visuals        | FFT, webcam, preset morphing     |
+| ControlPanel | Scene + setting manipulation  | Modular sliders + AI tools       |
+| User Actions | State transitions             | Zustand actions (update, set)    |
+| Logging/QA   | Rehearsal & safety tracking | IndexedDB + flash guard (planned)|
+
+This version offers the best balance of:
+*   🧩 **Modularity** (new scenes, stores, or UI modules are pluggable)
+*   🎯 **Performance** (selective state reads, FPS safety net)
+*   🚦 **Production Safety** (watchdog, accessibility, minimal bundle bloat)
+*   🛠 **Maintainability** (clear state boundaries, CLI-ready presets, AI extension path)
+
 
 ## Technology Stack
 
-* **Frontend:** Next.js (React, TypeScript) for the web interface. State management is handled primarily by **Zustand**, providing a lean and efficient way to manage global and local component states. Styling uses Tailwind CSS and custom fonts (primarily Poppins, with system fallbacks; thematic fonts like Data70 for titles). UI components leverage ShadCN UI (built on Radix UI primitives) for consistency, with icons from Lucide React. Recharts is used for visualizing data like audio waveforms or logs.
+* **Frontend:** Next.js (React, TypeScript) for the web interface. State management is handled primarily by **Zustand**, providing a lean and efficient way to manage global and local component states. Styling uses Tailwind CSS and custom fonts (primarily Poppins, with system fallbacks; thematic fonts like Data70 for titles). UI components leverage **ShadCN UI** (built on Radix UI primitives) for consistency, with icons from Lucide React. Recharts is used for visualizing data like audio waveforms or logs.
 * **Graphics/Audio:** Uses the Web Audio API (FFT, energy analysis) for audio-reactive inputs, and Three.js/WebGL for 3D effects in all scenes. Webcam input is handled via HTML5 media APIs, with optional ML segmentation (planned).
 * **AI/ML:** Google’s Gemini language model is accessed through the GenKit library (@genkit-ai/googleai) for tasks like scene suggestion and asset generation (e.g., style transfer (planned), color palettes, procedural asset image previews).
 * **Backend / Database:** Firebase is used for authentication (planned) and data storage (e.g., IndexedDB for client-side rehearsal logs). The project is structured for Firebase Hosting / Functions. Development can use Firebase emulators for Auth and Firestore if backend features are added.
@@ -167,40 +196,35 @@ flowchart TD
 
 ## Installation
 
-1. **Clone the repository:**
-
-   ```bash
-   git clone https://github.com/sixrcode/sixr-vision.git
-   cd sixr-vision
-   ```
-2. **Install dependencies:**
-
-   ```bash
-   npm install
-   ```
-3. **Environment setup:**
-
-   * Copy `.env.example` or create a `.env.local` file.
-   * Add your `GOOGLE_API_KEY="YOUR_KEY_HERE"` to this file. This is **required** for AI features.
-   * Add any other Firebase config variables (API keys, project ID, etc.) if you integrate Firebase backend services.
-   * (If using Nix: run `nix develop` to enter the environment with Node.js v20.)
-4. **Start development server:**
-
-   ```bash
-   npm run dev
-   ```
-
-   This runs the app (by default on `localhost:9002`). Ensure any required services (like Firestore emulator or a Firebase project) are running if you've configured them.
+1.  **Clone the repository:**
+    ```bash
+    git clone https://github.com/sixrcode/sixr-vision.git
+    cd sixr-vision
+    ```
+2.  **Install dependencies:**
+    ```bash
+    npm install
+    ```
+3.  **Environment setup:**
+    *   Copy `.env.example` or create a `.env.local` file.
+    *   Add your `GOOGLE_API_KEY="YOUR_KEY_HERE"` to this file. This is **required** for AI features.
+    *   Add any other Firebase config variables (API keys, project ID, etc.) if you integrate Firebase backend services.
+    *   (If using Nix: run `nix develop` to enter the environment with Node.js v20.)
+4.  **Start development server:**
+    ```bash
+    npm run dev
+    ```
+    This runs the app (by default on `localhost:9002`). Ensure any required services (like Firestore emulator or a Firebase project) are running if you've configured them.
 
 ## Usage
 
-* **Access the app:** Open your browser to [http://localhost:9002](http://localhost:9002) (or the configured host/port). You should see the SIXR Vision interface with a visualizer canvas and side control panel.
-* **Audio input:** Play music on your device or enable microphone input via the mic icon in the control panel header. The visuals will react to the audio. Adjust sliders (gain, AGC, etc.) in the "Audio Engine" section to tune the responsiveness.
-* **Webcam:** Click the camera icon in the control panel header to enable your webcam. Allow browser permission. Use the **Mirror** toggle in "Webcam Layer" controls to flip the feed. Motion in front of the camera will influence certain scenes (e.g., Mirror Silhouette).
-* **Presets:** Click on scene thumbnails or press number keys **1–9** to load built-in scenes (see "Visualizer Presets In-Depth" for descriptions). Scenes cross-fade automatically if "Enable Scene Transitions" is active. Press **P** to blackout (panic mode), and **L** to toggle the SIXR logo blackout.
-* **AI tools:** Explore the "AI: ..." sections in the control panel. Use the Palette Genie, Procedural Assets generator, or let the AI suggest scenes. These may require a valid `GOOGLE_API_KEY`. For example, try the SBNF-themed prompt "Cosmic Grapevines" for procedural assets.
-* **Remote control:** (Planned Feature) The app will listen for WebSocket/OSC commands. You'll be able to send commands like `{"route":"/preset","value":"radial_burst"}` to change scenes remotely. (An Art-Net lighting console will be able to send/receive as well.)
-* **Performance monitoring:** (Planned Feature) If you experience frame drops, an on-screen FPS display or heatmap will be available. A watchdog will attempt to self-adjust settings to recover smoothness. Use the IndexedDB logs (downloadable CSV from "System & Safety") to review performance over time.
+*   **Access the app:** Open your browser to [http://localhost:9002](http://localhost:9002) (or the configured host/port). You should see the SIXR Vision interface with a visualizer canvas and side control panel.
+*   **Audio input:** Play music on your device or enable microphone input via the mic icon in the control panel header. The visuals will react to the audio. Adjust sliders (gain, AGC, etc.) in the "Audio Engine" section to tune the responsiveness.
+*   **Webcam:** Click the camera icon in the control panel header to enable your webcam. Allow browser permission. Use the **Mirror** toggle in "Webcam Layer" controls to flip the feed. Motion in front of the camera will influence certain scenes (e.g., Mirror Silhouette).
+*   **Presets:** Click on scene thumbnails or press number keys **1–9** to load built-in scenes (see "Visualizer Presets In-Depth" for descriptions). Scenes cross-fade automatically if "Enable Scene Transitions" is active. Press **P** to blackout (panic mode), and **L** to toggle the SIXR logo blackout.
+*   **AI tools:** Explore the "AI: ..." sections in the control panel. Use the Palette Genie, Procedural Assets generator, or let the AI suggest scenes. These may require a valid `GOOGLE_API_KEY`. For example, try the SBNF-themed prompt "Cosmic Grapevines" for procedural assets.
+*   **Remote control:** (Planned Feature) The app will listen for WebSocket/OSC commands. You'll be able to send commands like `{"route":"/preset","value":"radial_burst"}` to change scenes remotely. (An Art-Net lighting console will be able to send/receive as well.)
+*   **Performance monitoring:** (Planned Feature) If you experience frame drops, an on-screen FPS display or heatmap will be available. A watchdog will attempt to self-adjust settings to recover smoothness. Use the IndexedDB logs (downloadable CSV from "System & Safety") to review performance over time.
 
 ## Contributing & Community
 
