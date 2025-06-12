@@ -22,6 +22,7 @@ import { LabelledSwitchControl } from '../common/LabelledSwitchControl';
 import { AiSuggestedPromptDisplay } from '../common/AiSuggestedPromptDisplay';
 import { DEFAULT_SETTINGS } from '@/lib/constants'; // Added missing import
 import { addLogEntry } from '@/services/rehearsalLogService';
+import { ControlPanelSection } from '../ControlPanelSection'; // Added import
 
 
 type AiVisualOverlayMixerProps = {
