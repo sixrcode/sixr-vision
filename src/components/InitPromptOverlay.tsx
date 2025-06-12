@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { useAudioAnalysis } from '@/hooks/useAudioAnalysis' // For mic status and initialization
 import { useSettingsStore } from '@/store/settingsStore'    // For webcam status and enabling
 import { Button } from '@/components/ui/button'              // For consistent button styling
-import { Mic, Camera, Info } from 'lucide-react'           // Icons
+import { Mic, Camera, Info, CheckCircle2 } from 'lucide-react' // Icons, added CheckCircle2
 import { cn } from '@/lib/utils'
 
 export default function InitPromptOverlay() {
@@ -26,7 +26,7 @@ export default function InitPromptOverlay() {
         }
     }, 750); // Adjusted delay
     return () => clearTimeout(timer);
-  }, [micActive, showWebcam]); // audioError removed from dependencies here
+  }, [micActive, showWebcam]);
 
 
   // Hide the overlay if mic becomes active or webcam is shown AFTER initial check
@@ -46,7 +46,14 @@ export default function InitPromptOverlay() {
     // Visibility will be handled by the useEffect above if showWebcam becomes true
   };
 
+  const handleEnableBoth = async () => {
+    await initializeAudio();
+    updateSetting('showWebcam', true);
+  };
+
   if (!isVisible) return null;
+
+  const bothEnabled = micActive && !audioError && showWebcam;
 
   return (
     <div className={cn(
@@ -66,26 +73,38 @@ export default function InitPromptOverlay() {
         <p className="text-sm text-muted-foreground mb-6">
           For the full SIXR Vision experience, please grant access to your microphone for audio-reactive visuals and (optionally) your camera for interactive scenes.
         </p>
-        <div className="flex flex-col sm:flex-row gap-3 justify-center">
+        <div className="flex flex-col gap-3 justify-center">
           <Button
-            onClick={handleEnableMic}
-            className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-primary-foreground"
-            disabled={micActive && !audioError}
-            aria-label="Enable Microphone"
+            onClick={handleEnableBoth}
+            className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
+            disabled={bothEnabled}
+            aria-label="Enable Microphone and Camera"
           >
-            <Mic className="mr-2 h-4 w-4" />
-            {micActive && !audioError ? "Mic Enabled" : (audioError ? "Retry Mic" : "Enable Mic")}
+            <CheckCircle2 className="mr-2 h-4 w-4" />
+            {bothEnabled ? "Mic & Cam Enabled" : "Enable Both"}
           </Button>
-          <Button
-            onClick={handleEnableCam}
-            variant="outline"
-            className="w-full sm:w-auto"
-            disabled={showWebcam}
-            aria-label="Enable Camera"
-          >
-            <Camera className="mr-2 h-4 w-4" />
-            {showWebcam ? "Cam Enabled" : "Enable Cam"}
-          </Button>
+          <div className="flex flex-col sm:flex-row gap-3">
+            <Button
+              onClick={handleEnableMic}
+              className="w-full sm:w-auto flex-1"
+              variant="outline"
+              disabled={micActive && !audioError}
+              aria-label="Enable Microphone"
+            >
+              <Mic className="mr-2 h-4 w-4" />
+              {micActive && !audioError ? "Mic Enabled" : (audioError ? "Retry Mic" : "Enable Mic")}
+            </Button>
+            <Button
+              onClick={handleEnableCam}
+              variant="outline"
+              className="w-full sm:w-auto flex-1"
+              disabled={showWebcam}
+              aria-label="Enable Camera"
+            >
+              <Camera className="mr-2 h-4 w-4" />
+              {showWebcam ? "Cam Enabled" : "Enable Cam"}
+            </Button>
+          </div>
         </div>
         {audioError && !micActive && (
             <p className="text-xs text-destructive mt-4">
