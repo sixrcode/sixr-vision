@@ -1,9 +1,9 @@
 
 "use client";
 
-// WHY: Import the original useSettings hook is no longer needed.
-// import { useSettings as useSettingsContextHook } from '@/providers/SettingsProvider';
-// WHY: Import the Zustand store directly.
+// WHY: Import the original useSettings hook for fallback.
+import { useSettings as useSettingsContextHook } from '@/providers/SettingsProvider';
+// WHY: Import the Zustand store for conditional usage.
 import { useSettingsStore } from '@/store/settingsStore';
 // WHY: Ensure component imports are absolute.
 import { ControlPanelSection } from '@/components/control-panel/ControlPanelSection';
@@ -16,26 +16,29 @@ type WebcamControlsProps = {
 };
 
 export function WebcamControls({ value }: WebcamControlsProps) {
-  // WHY: Feature flag logic is removed. Component now always uses Zustand.
-  // const useZustand = process.env.NEXT_PUBLIC_USE_ZUSTAND === 'pilot';
+  // WHY: Feature flag to determine data source.
+  const useZustand = process.env.NEXT_PUBLIC_USE_ZUSTAND === 'bundle-a';
 
-  // WHY: Directly select settings from the Zustand store.
-  const showWebcam = useSettingsStore(state => state.showWebcam);
-  const mirrorWebcam = useSettingsStore(state => state.mirrorWebcam);
+  // Zustand state and actions
+  const showWebcamFromStore = useSettingsStore(state => state.showWebcam);
+  const mirrorWebcamFromStore = useSettingsStore(state => state.mirrorWebcam);
   const zustandUpdateSetting = useSettingsStore(state => state.updateSetting);
 
-  // WHY: Remove fallback to context settings.
-  // const { settings: contextSettings, updateSetting: contextUpdateSetting } = useSettingsContextHook();
-  // const showWebcam = useZustand ? showWebcamFromStore! : contextSettings.showWebcam;
-  // const mirrorWebcam = useZustand ? mirrorWebcamFromStore! : contextSettings.mirrorWebcam;
-  // const updateSettingToUse = useZustand ? zustandUpdateSetting! : contextUpdateSetting;
+  // Context state and actions (fallback)
+  const { settings: contextSettings, updateSetting: contextUpdateSetting } = useSettingsContextHook();
 
+  // Determine current values based on feature flag
+  const showWebcam = useZustand ? showWebcamFromStore : contextSettings.showWebcam;
+  const mirrorWebcam = useZustand ? mirrorWebcamFromStore : contextSettings.mirrorWebcam;
 
-  // WHY: Define a consistent handler function for updating settings using Zustand.
+  // Determine update function based on feature flag
   const handleUpdateSetting = <K extends keyof Settings>(key: K, val: Settings[K]) => {
-    zustandUpdateSetting(key, val);
+    if (useZustand) {
+      zustandUpdateSetting(key, val);
+    } else {
+      contextUpdateSetting(key, val);
+    }
   };
-
 
   return (
     <ControlPanelSection title="Webcam Layer" value={value}>
@@ -43,9 +46,7 @@ export function WebcamControls({ value }: WebcamControlsProps) {
         labelContent="Show Webcam"
         labelHtmlFor="show-webcam-switch"
         switchId="show-webcam-switch"
-        // WHY: Read 'showWebcam' directly from Zustand store.
         checked={showWebcam}
-        // WHY: Update 'showWebcam' using the Zustand update function.
         onCheckedChange={(checked) => handleUpdateSetting('showWebcam', checked)}
         tooltipContent={<>
           <p>Toggles the webcam feed visibility in compatible scenes.</p>
@@ -53,15 +54,12 @@ export function WebcamControls({ value }: WebcamControlsProps) {
         </>}
         switchAriaLabel="Toggle show webcam"
       />
-      {/* WHY: Conditional rendering based on 'showWebcam' from Zustand. */}
       {showWebcam && (
         <LabelledSwitchControl
           labelContent="Mirror Webcam"
           labelHtmlFor="mirror-webcam-switch"
           switchId="mirror-webcam-switch"
-          // WHY: Read 'mirrorWebcam' directly from Zustand store.
           checked={mirrorWebcam}
-          // WHY: Update 'mirrorWebcam' using the Zustand update function.
           onCheckedChange={(checked) => handleUpdateSetting('mirrorWebcam', checked)}
           tooltipContent={<p>Flips the webcam image horizontally.</p>}
           containerClassName="mt-3"

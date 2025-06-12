@@ -1,6 +1,6 @@
 
 import { create, type StateCreator } from 'zustand';
-import { devtools } from 'zustand/middleware';
+// import { devtools } from 'zustand/middleware'; // Temporarily remove devtools
 import type { Settings, LogoAnimationSettings } from '@/types/state';
 import { DEFAULT_SETTINGS } from '@/lib/constants';
 
@@ -46,10 +46,15 @@ const settingsStoreInitializer: StateCreator<SettingsState, [], []> = (set) => (
     ),
 });
 
-const createSettingsStore =
+// Temporarily use the initializer directly without devtools for SSR diagnostics
+export const useSettingsStore = create<SettingsState>(settingsStoreInitializer);
+
+/*
+// Original conditional logic for devtools:
+const storeCreatorLogic =
   typeof window !== 'undefined' && process.env.NODE_ENV === 'development'
     ? devtools(settingsStoreInitializer, { name: 'SIXRVisionSettingsStore', store: 'settings' })
     : settingsStoreInitializer;
 
-export const useSettingsStore = create<SettingsState>(createSettingsStore);
-
+export const useSettingsStore = create<SettingsState>(storeCreatorLogic);
+*/

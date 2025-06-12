@@ -5,8 +5,11 @@ import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
-import { useSettings } from '@/providers/SettingsProvider';
-import type { LogoAnimationType } from '@/types';
+// WHY: Import the original useSettings hook for fallback.
+import { useSettings as useSettingsContextHook } from '@/providers/SettingsProvider';
+// WHY: Import the Zustand store for conditional usage.
+import { useSettingsStore } from '@/store/settingsStore';
+import type { LogoAnimationType, Settings, LogoAnimationSettings } from '@/types';
 import { ControlPanelSection } from './ControlPanelSection';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import { ControlHint } from './ControlHint';
@@ -16,16 +19,43 @@ type LogoAnimationControlsProps = {
 };
 
 export function LogoAnimationControls({ value }: LogoAnimationControlsProps) {
-  const { settings, updateSetting } = useSettings();
-  const { logoAnimationSettings, logoOpacity } = settings;
+  // WHY: Feature flag to determine data source.
+  const useZustand = process.env.NEXT_PUBLIC_USE_ZUSTAND === 'bundle-a';
 
-  const handleAnimationSettingChange = <K extends keyof typeof logoAnimationSettings>(
-    key: K,
-    val: (typeof logoAnimationSettings)[K]
-  ) => {
-    updateSetting('logoAnimationSettings', { ...logoAnimationSettings, [key]: val });
+  // Zustand state and actions
+  const logoOpacityFromStore = useSettingsStore(state => state.logoOpacity);
+  const logoAnimationSettingsFromStore = useSettingsStore(state => state.logoAnimationSettings);
+  const zustandUpdateSetting = useSettingsStore(state => state.updateSetting);
+  const zustandUpdateLogoAnimationSetting = useSettingsStore(state => state.updateLogoAnimationSetting);
+
+  // Context state and actions (fallback)
+  const { settings: contextSettings, updateSetting: contextUpdateSetting } = useSettingsContextHook();
+
+  // Determine current values based on feature flag
+  const logoOpacity = useZustand ? logoOpacityFromStore : contextSettings.logoOpacity;
+  const logoAnimationSettings = useZustand ? logoAnimationSettingsFromStore : contextSettings.logoAnimationSettings;
+
+  const handleOpacityChange = (val: number) => {
+    if (useZustand) {
+      zustandUpdateSetting('logoOpacity', val);
+    } else {
+      contextUpdateSetting('logoOpacity', val);
+    }
   };
 
+  const handleAnimationSettingChange = <K extends keyof LogoAnimationSettings>(
+    key: K,
+    val: LogoAnimationSettings[K]
+  ) => {
+    if (useZustand) {
+      zustandUpdateLogoAnimationSetting(key, val);
+    } else {
+      // Context doesn't have a dedicated logo animation setting updater,
+      // so we update the whole logoAnimationSettings object.
+      contextUpdateSetting('logoAnimationSettings', { ...logoAnimationSettings, [key]: val });
+    }
+  };
+  
   const currentAnimType = logoAnimationSettings.type;
 
   return (
@@ -45,7 +75,7 @@ export function LogoAnimationControls({ value }: LogoAnimationControlsProps) {
           max={1}
           step={0.01}
           value={[logoOpacity]}
-          onValueChange={([val]) => updateSetting('logoOpacity', val)}
+          onValueChange={([val]) => handleOpacityChange(val)}
           aria-label={`Overall Logo Opacity: ${logoOpacity.toFixed(2)}`}
         />
       </div>

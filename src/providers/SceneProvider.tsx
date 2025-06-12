@@ -11,12 +11,14 @@ import { SCENES as BUILT_IN_SCENES, DEFAULT_SETTINGS } from '@/lib/constants';
 import { useSettingsStore } from '@/store/settingsStore';
 import { addLogEntry } from '@/services/rehearsalLogService';
 type SceneContextType = {
+ scenes: SceneDefinition[];
   currentScene: SceneDefinition | undefined;
   registerScene: (scene: SceneDefinition) => void;
   setCurrentSceneById: (id: string, reason?: string) => void;
 };
 
 const SceneContext = createContext<SceneContextType | undefined>(undefined);
+
 
 export function SceneProvider({ children }: { children: ReactNode }) {
   const registeredScenes: SceneDefinition[] = useMemo(() => {
@@ -62,7 +64,8 @@ export function SceneProvider({ children }: { children: ReactNode }) {
     console.warn(`Dynamic scene registration for "${sceneToRegister.id}" is a placeholder. Scene not added to active list.`);
     // setRegisteredScenes(prevScenes => {
     //   if (!prevScenes.find(s => s.id === sceneToRegister.id)) {
-    //     return [...prevScenes, sceneToRegister];
+    //     // NOTE: Directly modifying state like this in a non-hook context is generally discouraged.
+    //     // A proper state management solution (like Zustand) is preferred.
     //   }
     //   return prevScenes;
     // });
