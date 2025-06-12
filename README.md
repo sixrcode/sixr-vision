@@ -1,7 +1,37 @@
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](https://opensource.org/licenses/MIT)
+[![Build Status](https://img.shields.io/badge/build-passing-brightgreen?style=flat-square)](#)
+<!-- TODO: Replace with actual demo GIF when available -->
+[![Demo GIF](https://img.shields.io/badge/Demo-GIF_Placeholder-lightgrey?style=flat-square)](#)
+
 # SIXR Vision
 
-**Project Overview:** SIXR Vision is an **audio-reactive** XR storytelling application developed by the SIXR Lab, which empowers inclusive XR experiences by and for BIPOC, women, and LGBTQ+ creators.  The app generates real-time visualizations driven by live music and AI, suitable for live performances and immersive events.  In its metadata the project is described as an “Audio-Reactive Visualizer with AI Features, themed for SBNF 2025”, reflecting its role in the Seattle BIPOC festival (Cosmic Grapevines theme).  SIXR Vision combines live audio analysis, webcam input, and AI-based creativity tools to let users craft dynamic, music-synchronized graphics and environments that highlight diverse narratives.
+**SIXR Vision is an innovative audio-reactive XR storytelling application from SIXR Lab, designed to empower diverse creators. It generates dynamic, music-synchronized visualizations using live audio, webcam input, and AI, perfect for immersive events like SBNF 2025. Explore a suite of creative tools and visual presets to bring unique narratives to life.**
+
+## Table of Contents
+
+- [Project Overview](#project-overview)
+- [Core Features](#core-features)
+- [Visualizer Presets In-Depth](#visualizer-presets-in-depth)
+  - [Spectrum Bars (`spectrum_bars`)](#1-spectrum-bars-spectrum_bars)
+  - [Radial Burst (`radial_burst`)](#2-radial-burst-radial_burst)
+  - [Echoing Shapes (`echoing_shapes`)](#3-echoing-shapes-echoing_shapes)
+  - [Particle Finale (`particle_finale`)](#4-particle-finale-particle_finale)
+  - [Neon Pulse Grid (`neon_pulse_grid`)](#5-neon-pulse-grid-neon_pulse_grid)
+  - [Mirror Silhouette (`mirror_silhouette`)](#6-mirror-silhouette-mirror_silhouette)
+  - [Frequency Rings (`frequency_rings`)](#7-frequency-rings-frequency_rings)
+  - [Strobe Light (`strobe_light`)](#8-strobe-light-strobe_light)
+  - [Geometric Tunnel (`geometric_tunnel`)](#9-geometric-tunnel-geometric_tunnel)
+- [Technology Stack](#technology-stack)
+- [Style Guidelines](#style-guidelines)
+- [Installation](#installation)
+- [Usage](#usage)
+- [Contributing & Community](#contributing--community)
+- [License](#license)
+
+## Project Overview
+
+SIXR Vision is an **audio-reactive** XR storytelling application developed by the SIXR Lab, which empowers inclusive XR experiences by and for BIPOC, women, and LGBTQ+ creators. The app generates real-time visualizations driven by live music and AI, suitable for live performances and immersive events. In its metadata the project is described as an “Audio-Reactive Visualizer with AI Features, themed for SBNF 2025”, reflecting its role in the Seattle BIPOC festival (Cosmic Grapevines theme). SIXR Vision combines live audio analysis, webcam input, and AI-based creativity tools to let users craft dynamic, music-synchronized graphics and environments that highlight diverse narratives.
 
 ## Core Features:
 
