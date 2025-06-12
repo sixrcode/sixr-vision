@@ -2,9 +2,10 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { useAudioData } from '@/providers/AudioDataProvider';
-import { useSettings } from '@/providers/SettingsProvider';
+import { useAudioDataStore } from '@/store/audioDataStore'; // MODIFIED: Import Zustand store
+import { useSettingsStore } from '@/store/settingsStore'; // MODIFIED: Import Zustand store
 import { INITIAL_AUDIO_DATA } from '@/lib/constants';
+import type { Settings, AudioData } from '@/types'; // Ensure AudioData is imported
 
 // Beat Detection Parameters
 const BEAT_DETECTION_BASS_THRESHOLD = 0.05;
@@ -38,14 +39,16 @@ const EFFECTIVE_SILENCE_THRESHOLD_SUM = 15; // Sum of all spectrum bins; if belo
  *  - audioInputDevices: An array of MediaDeviceInfo objects for available audio input devices.
  */
 export function useAudioAnalysis() {
-  const { settings } = useSettings();
-  const settingsRef = useRef(settings); // Use a ref to access latest settings in callbacks
+  // MODIFIED: Get settings and audio data from Zustand stores
+  const settings = useSettingsStore(state => state); // Get all settings for settingsRef
+  const settingsRef = useRef(settings);
 
   useEffect(() => {
     settingsRef.current = settings;
   }, [settings]);
 
-  const { audioData: currentGlobalAudioData, setAudioData } = useAudioData();
+  const setAudioData = useAudioDataStore(state => state.setAudioData);
+  const currentGlobalAudioData = useAudioDataStore(state => state); // For bpm access
 
   const [isInitializedInternalActual, setIsInitializedInternalActual] = useState(false);
   const [errorInternalActual, setErrorInternalActual] = useState<string | null>(null);
@@ -69,7 +72,7 @@ export function useAudioAnalysis() {
   const setIsInitialized = useCallback((val: boolean) => {
     console.log(`setIsInitialized called with: ${val}. Previous isInitialized: ${isInitializedInternalRef.current}`);
     setIsInitializedInternalActual(val);
-  }, []); // Dependency array is empty as setIsInitializedInternalActual is stable from useState
+  }, []); 
 
   /**
    * Updates the internal 'error' state and logs the change.
@@ -78,7 +81,7 @@ export function useAudioAnalysis() {
   const setError = useCallback((val: string | null) => {
     console.log(`setError called with: ${val}. Previous error: ${errorInternalRef.current}`);
     setErrorInternalActual(val);
-  }, []); // Dependency array is empty as setErrorInternalActual is stable from useState
+  }, []); 
 
 
   const audioContextRef = useRef<AudioContext | null>(null);
@@ -200,6 +203,7 @@ export function useAudioAnalysis() {
       }
       
       const audioConstraints: MediaTrackConstraints = { };
+      // Use settingsRef.current to access the latest settings from Zustand
       if (settingsRef.current.selectedAudioInputDeviceId && audioInputs.some(d => d.deviceId === settingsRef.current.selectedAudioInputDeviceId)) {
         audioConstraints.deviceId = { exact: settingsRef.current.selectedAudioInputDeviceId };
         console.log("Attempting to use selected deviceId:", settingsRef.current.selectedAudioInputDeviceId);
@@ -279,7 +283,7 @@ export function useAudioAnalysis() {
         audioContextRef.current = null;
       }
     }
-  }, [setIsInitialized, setError, setAudioInputDevices, stopAudioAnalysis]); // settingsRef is stable (ref)
+  }, [setIsInitialized, setError, setAudioInputDevices, stopAudioAnalysis]); // settingsRef is stable
 
 
   /**
@@ -291,39 +295,39 @@ export function useAudioAnalysis() {
    * @returns {object} An object containing bassEnergy, midEnergy, trebleEnergy, rms, and newBeat (boolean).
    */
   const calculateEnergy = useCallback((
-    spectrum: Uint8Array,
+    spectrumData: Uint8Array, // Renamed to avoid conflict
     currentRmsForCalc: number,
     currentLastBeatTime: number,
     currentPreviousRms: number
   ): Pick<AudioData, 'bassEnergy' | 'midEnergy' | 'trebleEnergy' | 'rms'> & { newBeat: boolean } => {
-    if (!audioContextRef.current || !spectrum || spectrum.length === 0) {
+    if (!audioContextRef.current || !spectrumData || spectrumData.length === 0) {
         return { bassEnergy: 0, midEnergy: 0, trebleEnergy: 0, rms: 0, newBeat: false };
     }
     const nyquist = audioContextRef.current.sampleRate / 2;
     const bassEndFreq = 250;
     const midEndFreq = 4000;
-    const spectrumLength = spectrum.length;
+    const spectrumLength = spectrumData.length;
 
     const bassBins = Math.floor((bassEndFreq / nyquist) * spectrumLength);
     const midBins = Math.floor((midEndFreq / nyquist) * spectrumLength);
 
     let bassSum = 0;
-    for (let i = 0; i < bassBins; i++) bassSum += spectrum[i] || 0;
+    for (let i = 0; i < bassBins; i++) bassSum += spectrumData[i] || 0;
     const bassEnergy = bassBins > 0 ? (bassSum / bassBins) / 255 : 0;
 
     let midSum = 0;
-    for (let i = bassBins; i < midBins; i++) midSum += spectrum[i] || 0;
+    for (let i = bassBins; i < midBins; i++) midSum += spectrumData[i] || 0;
     const midEnergy = (midBins - bassBins) > 0 ? (midSum / (midBins - bassBins)) / 255 : 0;
 
     let trebleSum = 0;
-    for (let i = midBins; i < spectrumLength; i++) trebleSum += spectrum[i] || 0;
+    for (let i = midBins; i < spectrumLength; i++) trebleSum += spectrumData[i] || 0;
     const trebleEnergy = (spectrumLength - midBins) > 0 ? (trebleSum / (spectrumLength - midBins)) / 255 : 0;
 
     let sumOfSquares = 0;
-    for (let i = 0; i < spectrumLength; i++) sumOfSquares += ((spectrum[i] || 0) / 255) ** 2;
+    for (let i = 0; i < spectrumLength; i++) sumOfSquares += ((spectrumData[i] || 0) / 255) ** 2;
     let rmsRaw = spectrumLength > 0 ? Math.sqrt(sumOfSquares / spectrumLength) : 0;
     const rms = currentRmsForCalc + (rmsRaw - currentRmsForCalc) * RMS_SMOOTHING_FACTOR; // This is the smoothed RMS
-    const newBeat = false;
+    let newBeat = false; // Corrected declaration
     const currentTime = performance.now();
      if (
         (bassEnergy > BEAT_DETECTION_BASS_THRESHOLD && currentTime - currentLastBeatTime > BEAT_REFRACTORY_BASS_MS) ||
@@ -332,7 +336,7 @@ export function useAudioAnalysis() {
       newBeat = true;
     }
     return { bassEnergy, midEnergy, trebleEnergy, rms, newBeat };
-  }, []); // Depends only on audioContextRef (stable)
+  }, []); 
 
   /**
    * Estimates Beats Per Minute (BPM) from a series of beat timestamps.
@@ -353,7 +357,7 @@ export function useAudioAnalysis() {
     const bpm = 60000 / medianInterval;
     const smoothedBpm = Math.round(currentBpm * 0.8 + bpm * 0.2);
     return smoothedBpm > 0 ? smoothedBpm : 120;
-  }, []); // No dependencies that change frequently
+  }, []); 
 
   /**
    * The main audio analysis loop, running on each animation frame.
@@ -373,12 +377,12 @@ export function useAudioAnalysis() {
     analyserRef.current.getByteFrequencyData(currentSpectrum);
     const spectrumSum = currentSpectrum.reduce((a, b) => a + b, 0);
     
-    console.log(
-        '[RAW Audio Data] Sum:', spectrumSum,
-        'Bins (first 5):', Array.from(currentSpectrum.slice(0,5)),
-        'Manual Gain Setting:', settingsRef.current.gain,
-        'Actual GainNode Value:', gainNodeRef.current?.gain.value.toFixed(3)
-    );
+    // console.log(
+    //     '[RAW Audio Data] Sum:', spectrumSum,
+    //     'Bins (first 5):', Array.from(currentSpectrum.slice(0,5)),
+    //     'Manual Gain Setting:', settingsRef.current.gain,
+    //     'Actual GainNode Value:', gainNodeRef.current?.gain.value.toFixed(3)
+    // );
 
     let energyAndRmsResult: Pick<AudioData, 'bassEnergy' | 'midEnergy' | 'trebleEnergy' | 'rms'> & { newBeat: boolean };
     let calculatedBpm = currentGlobalAudioData.bpm; 
@@ -429,7 +433,7 @@ export function useAudioAnalysis() {
         }
     }
      localAnalysisLoopFrameIdRef.current = requestAnimationFrame(analyze);
-  }, [calculateEnergy, estimateBPM, setAudioData, currentGlobalAudioData.bpm]); // Removed settingsRef dependencies (gain, enableAgc) to stabilize `analyze`
+  }, [calculateEnergy, estimateBPM, setAudioData, currentGlobalAudioData.bpm]); 
  
   // Effect to manage the analysis loop based on initialization state
   useEffect(() => {
@@ -462,7 +466,7 @@ export function useAudioAnalysis() {
         gainNodeRef.current.gain.setTargetAtTime(settingsRef.current.gain, audioContextRef.current.currentTime, 0.05);
       }
     }
-  }, [isInitializedInternalActual, settings.gain, settings.enableAgc]); // Keep settings.enableAgc here as it's crucial for this effect's logic
+  }, [isInitializedInternalActual, settings.gain, settings.enableAgc]);
 
   // Effect to update FFT size
   useEffect(() => {
@@ -506,7 +510,7 @@ export function useAudioAnalysis() {
       stopAudioAnalysis();
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Empty dependency array ensures this runs only on final unmount
+  }, []); 
 
   return { 
     initializeAudio, 

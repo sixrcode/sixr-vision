@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { useSettings as useSettingsContextHook } from '@/providers/SettingsProvider';
 // WHY: Import the Zustand store for conditional usage.
 import { useSettingsStore } from '@/store/settingsStore';
-import type { LogoAnimationType, Settings, LogoAnimationSettings } from '@/types';
+import type { LogoAnimationType, LogoAnimationSettings } from '@/types';
 import { ControlPanelSection } from './ControlPanelSection';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import { ControlHint } from './ControlHint';
@@ -65,7 +65,7 @@ export function LogoAnimationControls({ value }: LogoAnimationControlsProps) {
           <TooltipTrigger asChild>
             <Label htmlFor="logoopacity-slider">Overall Opacity ({logoOpacity.toFixed(2)})</Label>
           </TooltipTrigger>
- <TooltipContent>
+ <TooltipContent><p>Controls the maximum visibility of all logo and watermark elements.</p>
             <p>Controls the maximum visibility of all logo and watermark elements.</p>
           </TooltipContent>
         </Tooltip>
@@ -85,7 +85,7 @@ export function LogoAnimationControls({ value }: LogoAnimationControlsProps) {
           <TooltipTrigger asChild>
             <Label htmlFor="logo-animation-type-select">Animation Type</Label>
           </TooltipTrigger>
- <TooltipContent>
+ <TooltipContent><p>Selects the style of animation for the logo elements.</p>
             <p>Selects the style of animation for the logo elements.</p>
           </TooltipContent>
         </Tooltip>
@@ -112,7 +112,7 @@ export function LogoAnimationControls({ value }: LogoAnimationControlsProps) {
             <TooltipTrigger asChild>
               <Label htmlFor="logo-animation-color">Color</Label>
             </TooltipTrigger>
- <TooltipContent>
+ <TooltipContent><p>Sets the color for &apos;Solid&apos; or &apos;Blink&apos; animations.</p>
               <p>Sets the color for 'Solid' or 'Blink' animations.</p>
             </TooltipContent>
           </Tooltip>
@@ -135,7 +135,7 @@ export function LogoAnimationControls({ value }: LogoAnimationControlsProps) {
                 Speed ({logoAnimationSettings.speed.toFixed(1)})
               </Label>
             </TooltipTrigger>
- <TooltipContent>
+ <TooltipContent><p>Adjusts the speed of &apos;Blink&apos;, &apos;Pulse&apos;, or &apos;Rainbow Cycle&apos; animations.</p>
               <p>Adjusts the speed of 'Blink', 'Pulse', or 'Rainbow Cycle' animations.</p>
             </TooltipContent>
           </Tooltip>
@@ -149,7 +149,7 @@ export function LogoAnimationControls({ value }: LogoAnimationControlsProps) {
             aria-label={`Logo Animation Speed: ${logoAnimationSettings.speed.toFixed(1)}`}
           />
           <ControlHint>
- {currentAnimType === 'blink' ? 'Higher is faster blinking.' : currentAnimType === 'pulse' ? 'Higher is faster pulsing.' : currentAnimType === 'rainbowCycle' ? 'Higher is faster color cycling.' : ''}
+ {currentAnimType === &apos;blink&apos; ? &apos;Higher is faster blinking.&apos; : currentAnimType === &apos;pulse&apos; ? &apos;Higher is faster pulsing.&apos; : currentAnimType === &apos;rainbowCycle&apos; ? &apos;Higher is faster color cycling.&apos; : &apos;&apos;}
           </ControlHint>
         </div>
       )}

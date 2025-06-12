@@ -20,11 +20,11 @@ import { useAudioAnalysis } from '@/hooks/useAudioAnalysis';
 import { Mic, MicOff, Camera, CameraOff, Loader2 } from 'lucide-react';
 import { Accordion } from '@/components/ui/accordion';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { useSettingsStore } from '@/store/settingsStore'; // Updated import
+// import { useSettings } from '@/providers/SettingsProvider'; // Correctly removed
+import { useSettingsStore } from '@/store/settingsStore'; // Added
 import { toast } from '@/hooks/use-toast';
 import { SBNF_TITLE_FONT_FAMILY, SIXR_S_COLOR, SIXR_I_COLOR, SIXR_X_COLOR, SIXR_R_COLOR } from '@/lib/brandingConstants';
 import { cn } from '@/lib/utils';
-import type { Settings } from '@/types';
 
 /**
  * @fileOverview The main view component for the Control Panel sidebar.
@@ -47,7 +47,7 @@ export function ControlPanelView() {
     audioInputDevices
   } = useAudioAnalysis();
 
-  // Use Zustand store
+  // Use Zustand store for relevant settings
   const selectedAudioInputDeviceId = useSettingsStore(state => state.selectedAudioInputDeviceId);
   const showWebcam = useSettingsStore(state => state.showWebcam);
   const zustandUpdateSetting = useSettingsStore(state => state.updateSetting);
@@ -68,7 +68,6 @@ export function ControlPanelView() {
     }
   }, []);
   
-  // Effect to handle re-initialization if selected audio device changes while audio is active
   useEffect(() => {
     if (
       isAudioInitialized &&
@@ -80,7 +79,7 @@ export function ControlPanelView() {
       const reinitialize = async () => {
         setIsTogglingAudio(true);
         await stopAudioAnalysis();
-        await initializeAudio(); // This will use the new deviceId from settings
+        await initializeAudio(); 
         setIsTogglingAudio(false);
       };
       reinitialize();
@@ -111,8 +110,7 @@ export function ControlPanelView() {
     const newWebcamState = !showWebcam;
     console.log("ControlPanelView: Toggling webcam. Current state:", showWebcam, "New state:", newWebcamState);
     setIsTogglingWebcam(true);
-    zustandUpdateSetting('showWebcam', newWebcamState);
-    // Small delay to allow for any UI updates related to webcam state change, if necessary
+    zustandUpdateSetting('showWebcam', newWebcamState); 
     await new Promise(resolve => setTimeout(resolve, 50));
     setIsTogglingWebcam(false);
     console.log("ControlPanelView: Webcam toggle finished. New showWebcam setting:", newWebcamState);
@@ -230,4 +228,3 @@ export function ControlPanelView() {
     </div>
   );
 }
-

@@ -2,23 +2,26 @@
 "use client";
 
 import { SixrLogo } from '@/components/icons/SixrLogo';
-import { useSettings } from '@/providers/SettingsProvider';
-import { useAudioData } from '@/providers/AudioDataProvider';
+import { useSettingsStore } from '@/store/settingsStore'; // MODIFIED: Import Zustand store
+import { useAudioDataStore } from '@/store/audioDataStore'; // MODIFIED: Import Zustand store
 import { useEffect, useState, useRef } from 'react';
 import { cn } from '@/lib/utils';
 import { SIXR_S_COLOR, SIXR_I_COLOR, SIXR_X_COLOR, SIXR_R_COLOR, TORUS_FONT_FAMILY } from '@/lib/brandingConstants';
 
 
 export function BrandingOverlay() {
-  const { settings } = useSettings();
-  const { audioData } = useAudioData();
+  // MODIFIED: Use Zustand store selectors
+  const logoOpacity = useSettingsStore(state => state.logoOpacity);
+  const logoAnimationSettings = useSettingsStore(state => state.logoAnimationSettings);
+  const logoBlackout = useSettingsStore(state => state.logoBlackout);
+  const audioData = useAudioDataStore(state => state); // Get all audio data
+
   const [bootShimmer, setBootShimmer] = useState(true);
   const [showMainBranding, setShowMainBranding] = useState(false);
   const [blinkOn, setBlinkOn] = useState(true);
   const [rainbowHue, setRainbowHue] = useState(0);
   const animationFrameRef = useRef<number | null>(null);
 
-  const { logoOpacity, logoAnimationSettings } = settings;
   const { type: animType, speed: animSpeed, color: animColor } = logoAnimationSettings;
 
   useEffect(() => {
@@ -64,7 +67,7 @@ export function BrandingOverlay() {
   }, [animType, animSpeed]);
 
 
-  if (settings.logoBlackout) {
+  if (logoBlackout) { // MODIFIED: Read directly from Zustand state
     return null;
   }
 

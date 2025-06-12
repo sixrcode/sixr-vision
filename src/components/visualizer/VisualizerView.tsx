@@ -1,3 +1,4 @@
+
 /* eslint-disable react-hooks/exhaustive-deps */
 "use client";
 
@@ -5,9 +6,10 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 
 import type { WebGLSceneAssets } from "@/types";
-import { useSettings } from "@/providers/SettingsProvider";
-import { useAudioData } from "@/providers/AudioDataProvider";
-import { useScene } from "@/providers/SceneProvider";
+import { useSettingsStore } from "@/store/settingsStore"; // MODIFIED: Import Zustand store
+import { useAudioDataStore } from "@/store/audioDataStore"; // MODIFIED: Import Zustand store
+// useScene (context hook) is no longer needed for scene definitions
+import { SCENES as allScenesConstant } from '@/lib/constants'; // MODIFIED: Import SCENES directly
 
 import { BrandingOverlay } from "./BrandingOverlay";
 import { WebcamFeed } from "./WebcamFeed";
@@ -23,11 +25,12 @@ import { WebcamFeed } from "./WebcamFeed";
 export function VisualizerView() {
   /* ─────────────────────────── Refs & State ────────────────────────── */
   const canvasRef        = useRef<HTMLCanvasElement>(null);
-  const overlayCanvasRef = useRef<HTMLCanvasElement>(null);
+  const overlayCanvasRef = useRef<HTMLCanvasElement>(null); // Note: overlayCanvasRef is not currently used for drawing
 
-  const { settings }   = useSettings();
-  const { audioData }  = useAudioData();
-  const { scenes }     = useScene();
+  // MODIFIED: Use Zustand stores
+  const settings = useSettingsStore(state => state); // Get all settings
+  const audioData = useAudioDataStore(state => state); // Get all audio data
+  const scenes = allScenesConstant; // Scenes are now from the constant
 
   const animationIdRef          = useRef<number | null>(null);
   const webGLRendererRef        = useRef<THREE.WebGLRenderer | null>(null);
@@ -88,6 +91,7 @@ export function VisualizerView() {
       webGLRendererRef.current.setSize(canvas.width, canvas.height);
 
       try {
+        // Pass all settings to initWebGL
         const assets = newScene.initWebGL(canvas, settings, webcamEl);
         currentAssetsRef.current       = assets;
         previousAssetsCleanup.current  = assets;
@@ -102,7 +106,7 @@ export function VisualizerView() {
     }
 
     lastSceneIdRef.current = settings.currentSceneId;
-  }, [settings.currentSceneId, scenes, settings, webcamEl]);
+  }, [settings.currentSceneId, scenes, settings, webcamEl]); // settings object is now a dependency
 
   /* ───────────────────────────── AI Overlay ─────────────────────────── */
   useEffect(() => {
@@ -170,21 +174,21 @@ export function VisualizerView() {
         return;
       }
 
-      const { scene, camera } = currentAssetsRef.current || {};
-      if (scene && camera) {
+      const { scene: currentThreeScene, camera: currentThreeCamera } = currentAssetsRef.current || {}; // Renamed to avoid conflict
+      if (currentThreeScene && currentThreeCamera) {
         sceneDef.drawWebGL({
           renderer:    webGLRendererRef.current,
-          scene,
-          camera,
+          scene: currentThreeScene, // Use renamed variable
+          camera: currentThreeCamera, // Use renamed variable
           audioData,
-          settings,
-          webGLAssets: currentAssetsRef.current,
+          settings, // Pass all settings
+          webGLAssets: currentAssetsRef.current!, // Assert not null as we checked scene and camera
           canvasWidth: canvas.width,
           canvasHeight: canvas.height,
           webcamElement: webcamEl,
         });
 
-        webGLRendererRef.current.render(scene, camera);
+        webGLRendererRef.current.render(currentThreeScene, currentThreeCamera);
 
         /* AI overlay */
         if (settings.enableAiOverlay && aiTex) {
@@ -207,7 +211,7 @@ export function VisualizerView() {
       console.error("Visualizer draw error", err);
       setFatalError(err instanceof Error ? err.message : String(err));
     }
-  }, [scenes, settings, audioData, webcamEl, aiTex, tickFps]);
+  }, [scenes, settings, audioData, webcamEl, aiTex, tickFps]); // settings and audioData are now direct dependencies
 
   useEffect(() => {
     animationIdRef.current = requestAnimationFrame(draw);

@@ -2,20 +2,30 @@
 "use client";
 
 import { useEffect, useCallback } from 'react';
-import { useSettings } from '@/providers/SettingsProvider';
-import { useScene } from '@/providers/SceneProvider';
+import { useSettingsStore } from '@/store/settingsStore'; // MODIFIED: Import Zustand store
+import { useSceneStore } from '@/store/sceneStore'; // MODIFIED: Import Zustand store
+import { SCENES as allScenesConstant } from '@/lib/constants'; // MODIFIED: Import SCENES directly
+import type { Settings } from '@/types';
 
 type HotkeyMap = {
   [key: string]: (event: KeyboardEvent) => void;
 };
 
 export function useHotkeys() {
-  const { updateSetting, settings } = useSettings();
-  const { scenes, setCurrentSceneById } = useScene();
+  // MODIFIED: Use Zustand store actions and selectors
+  const updateSetting = useSettingsStore(state => state.updateSetting);
+  const panicMode = useSettingsStore(state => state.panicMode);
+  const logoBlackout = useSettingsStore(state => state.logoBlackout);
+  
+  const scenes = allScenesConstant; // Scenes are static
+  const setCurrentSceneById = useSceneStore(state => state.setCurrentSceneById);
 
   const handleHotkey = useCallback((event: KeyboardEvent) => {
     const key = event.key.toLowerCase();
     const isCtrlOrMeta = event.ctrlKey || event.metaKey;
+
+    // Create settings object from Zustand state for convenience in callbacks
+    const currentSettings = { panicMode, logoBlackout };
 
     const hotkeyActions: HotkeyMap = {
       '1': () => scenes[0] && setCurrentSceneById(scenes[0].id),
@@ -27,8 +37,8 @@ export function useHotkeys() {
       '7': () => scenes[6] && setCurrentSceneById(scenes[6].id),
       '8': () => scenes[7] && setCurrentSceneById(scenes[7].id),
       '9': () => scenes[8] && setCurrentSceneById(scenes[8].id),
-      'p': () => updateSetting('panicMode', !settings.panicMode),
-      'l': () => updateSetting('logoBlackout', !settings.logoBlackout),
+      'p': () => updateSetting('panicMode', !currentSettings.panicMode),
+      'l': () => updateSetting('logoBlackout', !currentSettings.logoBlackout),
       // 'z' with Ctrl/Meta for undo - placeholder for now
       // 'z': () => {
       //   if (isCtrlOrMeta) {
@@ -53,7 +63,7 @@ export function useHotkeys() {
       event.preventDefault();
       hotkeyActions[key](event);
     }
-  }, [scenes, setCurrentSceneById, updateSetting, settings]);
+  }, [scenes, setCurrentSceneById, updateSetting, panicMode, logoBlackout]); // MODIFIED: Dependencies
 
   useEffect(() => {
     window.addEventListener('keydown', handleHotkey);

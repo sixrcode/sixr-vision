@@ -12,12 +12,12 @@ import { ControlPanelSection } from '../ControlPanelSection';
 // import { useSettings as useSettingsContextHook } from '@/providers/SettingsProvider';
 // WHY: Import the Zustand store directly.
 import { useSettingsStore } from '@/store/settingsStore';
-import type { Settings } from '@/types'; 
 
 import { Brain, Loader2 } from 'lucide-react';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import { ControlHint } from '../ControlHint';
 import { LabelledSwitchControl } from '../common/LabelledSwitchControl';
+import type { Settings } from '@/types';
 
 
 type AiPresetChooserProps = {

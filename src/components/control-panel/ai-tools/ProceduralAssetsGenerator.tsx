@@ -11,7 +11,7 @@ import { generateAssets, type GenerateAssetsInput, type GenerateAssetsOutput } f
 import type { ProceduralAsset } from '@/types';
 import { ControlPanelSection } from '../ControlPanelSection';
 import { ImageIcon, Cuboid, Sparkles, Loader2 } from 'lucide-react';
-import { useSettings } from '@/providers/SettingsProvider';
+import { useSettingsStore } from '@/store/settingsStore'; // MODIFIED: Import Zustand store
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import { ControlHint } from '../ControlHint';
 import { AiSuggestedPromptDisplay } from '../common/AiSuggestedPromptDisplay';
@@ -25,7 +25,8 @@ export function ProceduralAssetsGenerator({ value }: ProceduralAssetsGeneratorPr
   const [generatedAssets, setGeneratedAssets] = useState<ProceduralAsset | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
-  const { settings } = useSettings();
+  // MODIFIED: Use Zustand store selector
+  const lastAISuggestedAssetPrompt = useSettingsStore(state => state.lastAISuggestedAssetPrompt);
 
   const handleSubmit = async () => {
     if (!prompt.trim()) {
@@ -75,7 +76,7 @@ export function ProceduralAssetsGenerator({ value }: ProceduralAssetsGeneratorPr
       </div>
 
       <AiSuggestedPromptDisplay
-        suggestedPrompt={settings.lastAISuggestedAssetPrompt}
+        suggestedPrompt={lastAISuggestedAssetPrompt} // MODIFIED: Use state from Zustand
         onUsePrompt={setPrompt}
         isLoading={isLoading}
         // Uses default icon (Sparkles) and labelText ("AI suggestion:")

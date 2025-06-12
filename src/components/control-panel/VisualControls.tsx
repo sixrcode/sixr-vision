@@ -8,10 +8,11 @@ import { Switch } from '@/components/ui/switch';
 // import { useSettings as useSettingsContextHook } from '@/providers/SettingsProvider';
 // WHY: Import the Zustand store directly.
 import { useSettingsStore } from '@/store/settingsStore';
-import type { Settings } from '@/types'; 
 
 import { ControlPanelSection } from './ControlPanelSection';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
+import type { Settings } from '@/types';
+
 
 type VisualControlsProps = {
   value: string; // For AccordionItem

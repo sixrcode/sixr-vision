@@ -2,7 +2,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from 'react';
-import { useSettings } from '@/providers/SettingsProvider';
+import { useSettingsStore } from '@/store/settingsStore'; // MODIFIED: Import Zustand store
 import { toast } from '@/hooks/use-toast';
 
 type WebcamFeedProps = {
@@ -11,7 +11,8 @@ type WebcamFeedProps = {
 
 export function WebcamFeed({ onWebcamElement }: WebcamFeedProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
-  const { settings } = useSettings();
+  // MODIFIED: Use Zustand store selector
+  const showWebcam = useSettingsStore(state => state.showWebcam);
   const [activeStream, setActiveStream] = useState<MediaStream | null>(null);
 
   useEffect(() => {
@@ -43,7 +44,7 @@ export function WebcamFeed({ onWebcamElement }: WebcamFeedProps) {
       setActiveStream(null);
     };
 
-    if (settings.showWebcam) {
+    if (showWebcam) { // MODIFIED: Use showWebcam from Zustand
       // Stop previous stream if any
       if (activeStream) {
         cleanupStream(activeStream);
@@ -81,7 +82,7 @@ export function WebcamFeed({ onWebcamElement }: WebcamFeedProps) {
     };
   // onWebcamElement and activeStream are part of the effect's closure and dependencies.
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [settings.showWebcam, onWebcamElement]);
+  }, [showWebcam, onWebcamElement]); // MODIFIED: Dependency on showWebcam from Zustand
 
 
   return (
