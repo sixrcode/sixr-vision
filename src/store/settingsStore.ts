@@ -5,6 +5,7 @@
 // Using Zustand allows for selective subscriptions to state slices, reducing unnecessary re-renders.
 
 import { create } from 'zustand';
+import { devtools } from 'zustand/middleware'; // WHY: Import the devtools middleware to connect the store to browser devtools.
 import type { Settings } from '@/types';
 import { DEFAULT_SETTINGS } from '@/lib/constants';
 
@@ -14,32 +15,43 @@ interface SettingsState extends Settings {
   resetSettings: () => void;
 }
 
-// Create the Zustand store
-export const useSettingsStore = create<SettingsState>((set) => ({
-  // WHY: Initialize the store with default settings.
-  // Spreading DEFAULT_SETTINGS ensures all settings are present from the start.
-  ...DEFAULT_SETTINGS,
+// Create the Zustand store, now wrapped with devtools.
+// WHY: Wrapping with devtools allows the store's state and actions to be inspected
+// using browser extensions like Redux DevTools. This is invaluable for debugging.
+export const useSettingsStore = create<SettingsState>()(
+  devtools(
+    (set) => ({
+      // WHY: Initialize the store with default settings.
+      // Spreading DEFAULT_SETTINGS ensures all settings are present from the start.
+      ...DEFAULT_SETTINGS,
 
-  // WHY: Provides a typed action to update a specific setting.
-  // This is more granular than updating the entire settings object,
-  // allowing components to subscribe only to the settings they need.
-  updateSetting: (key, value) =>
-    set((state) => {
-      // WHY: Logging state changes can be helpful during development and debugging.
-      // console.log(`[Zustand SettingsStore] Updating ${String(key)} from`, state[key], 'to', value);
-      return { ...state, [key]: value };
+      // WHY: Provides a typed action to update a specific setting.
+      // The third argument to `set` (e.g., `updateSetting/${String(key)}`) is an action type
+      // that will appear in the devtools, making it easier to trace how state changed.
+      updateSetting: (key, value) =>
+        set(
+          (state) => {
+            // console.log(`[Zustand SettingsStore] Updating ${String(key)} from`, state[key], 'to', value);
+            return { ...state, [key]: value };
+          },
+          false, // false tells Zustand to merge state rather than replace it.
+          `updateSetting/${String(key)}` // WHY: This string serves as an action type for the DevTools.
+        ),
+
+      // WHY: Provides an action to reset all settings to their default values.
+      resetSettings: () =>
+        set(
+          () => {
+            // console.log('[Zustand SettingsStore] Resetting settings to default');
+            return DEFAULT_SETTINGS;
+          },
+          false, // false tells Zustand to merge state rather than replace it.
+          'resetSettings' // WHY: Action type for the DevTools.
+        ),
     }),
-
-  // WHY: Provides an action to reset all settings to their default values.
-  // This is useful for user-initiated resets or application initialization.
-  resetSettings: () =>
-    set(() => {
-      // WHY: Logging the reset action.
-      // console.log('[Zustand SettingsStore] Resetting settings to default');
-      return DEFAULT_SETTINGS;
-    }),
-}));
-
-// Optional: A selector for convenience if you often need the whole settings object (without actions)
-// export const selectAllSettings = (state: SettingsState): Settings => {
-//   const { updateSetting, resetSettings,
+    {
+      name: 'SIXRVisionSettingsStore', // WHY: This name will identify your store in the DevTools extension.
+      enabled: process.env.NODE_ENV === 'development', // WHY: Optionally enable devtools only in development.
+    }
+  )
+);
