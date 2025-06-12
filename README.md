@@ -13,15 +13,16 @@
 - [Project Overview](#project-overview)
 - [Core Features](#core-features)
 - [Visualizer Presets In-Depth](#visualizer-presets-in-depth)
-  - [Spectrum Bars (`spectrum_bars`)](#1-spectrum-bars-spectrum_bars)
-  - [Radial Burst (`radial_burst`)](#2-radial-burst-radial_burst)
-  - [Echoing Shapes (`echoing_shapes`)](#3-echoing-shapes-echoing_shapes)
-  - [Particle Finale (`particle_finale`)](#4-particle-finale-particle_finale)
-  - [Neon Pulse Grid (`neon_pulse_grid`)](#5-neon-pulse-grid-neon_pulse_grid)
-  - [Mirror Silhouette (`mirror_silhouette`)](#6-mirror-silhouette-mirror_silhouette)
-  - [Frequency Rings (`frequency_rings`)](#7-frequency-rings-frequency_rings)
-  - [Strobe Light (`strobe_light`)](#8-strobe-light-strobe_light)
-  - [Geometric Tunnel (`geometric_tunnel`)](#9-geometric-tunnel-geometric_tunnel)
+  - [1. Spectrum Bars (`spectrum_bars`)](#1-spectrum-bars-spectrum_bars)
+  - [2. Radial Burst (`radial_burst`)](#2-radial-burst-radial_burst)
+  - [3. Echoing Shapes (`echoing_shapes`)](#3-echoing-shapes-echoing_shapes)
+  - [4. Particle Finale (`particle_finale`)](#4-particle-finale-particle_finale)
+  - [5. Neon Pulse Grid (`neon_pulse_grid`)](#5-neon-pulse-grid-neon_pulse_grid)
+  - [6. Mirror Silhouette (`mirror_silhouette`)](#6-mirror-silhouette-mirror_silhouette)
+  - [7. Frequency Rings (`frequency_rings`)](#7-frequency-rings-frequency_rings)
+  - [8. Strobe Light (`strobe_light`)](#8-strobe-light-strobe_light)
+  - [9. Geometric Tunnel (`geometric_tunnel`)](#9-geometric-tunnel-geometric_tunnel)
+- [Application Architecture Overview](#application-architecture-overview)
 - [Technology Stack](#technology-stack)
 - [Style Guidelines](#style-guidelines)
 - [Installation](#installation)
@@ -80,10 +81,76 @@ Here's a closer look at the visual experiences offered by the built-in presets:
 ### 9. Geometric Tunnel (`geometric_tunnel`)
 *Description:* Embark on an exhilarating flight through an ever-shifting geometric wormhole. Rings and angular shapes, illuminated in vibrant neon hues from the SBNF palette, rush towards you, their forms and colors pulsing and twisting in sync with the music. The speed of your journey accelerates with the audio's intensity, and the camera's field of view might expand or contract with the beat, creating a thrilling, immersive voyage into a dynamic, digital dimension.
 
+## Application Architecture Overview
+
+The application's architecture is centered around Next.js and React, with state management handled by **Zustand**. The following diagram illustrates the high-level component and data flow:
+
+```mermaid
+flowchart TD
+    %% Top-level hierarchy
+    A[Next.js<br/>RootLayout] --> B[AppProviders<br/>(injects Zustand stores)]
+
+    %% Providers fan-out
+    subgraph Stores
+        direction LR
+        S1[[useSettingsStore]]
+        S2[[useAudioDataStore]]
+        S3[[useSceneStore]]
+    end
+    B --> S1 & S2 & S3
+
+    %% Layout container
+    B --> C[AppContainer]
+
+    %% Container splits UI
+    C --> V[VisualizerView<br/>(Canvas & Loop)]
+    C --> P[ControlPanelView<br/>(UI & Toggles)]
+
+    %% Visualizer internals
+    V --> BO[BrandingOverlay]
+    V --> WF[WebcamFeed<br/>(optional)]
+
+    %% Control-panel internals
+    subgraph "Control Panel"
+        direction TB
+        AC[AudioControls]
+        VC[VisualControls]
+        PS[PresetSelector]
+        AI[Ai Preset Chooser]
+        WC[WebcamControls]
+    end
+    P --> AC & VC & PS & AI & WC
+
+    %% Data flows (selectors) — dashed for reads
+    V -. reads .-> S1 & S2 & S3
+    AC -.-> S1 & S2
+    VC -.-> S1
+    PS -.-> S3
+    AI -.-> S3
+    WC -.-> S1
+
+    %% User interaction triggers
+    U[User Interaction] -->|start audio| S2
+    U -->|toggle webcam| S1
+    U -->|adjust slider| S1
+    U -->|choose preset| S3
+
+    %% Styling
+    classDef store fill:#eef,stroke:#66f,stroke-width:1px;
+    class S1,S2,S3 store;
+```
+
+**Key Points:**
+
+*   `AppProviders` initializes the Zustand stores, making them accessible throughout the application.
+*   `AppContainer` structures the main layout, splitting the UI into `VisualizerView` (for the graphics) and `ControlPanelView` (for user controls).
+*   Components read data from and dispatch actions to the Zustand stores (`useSettingsStore`, `useAudioDataStore`, `useSceneStore`) as needed.
+*   User interactions in the `ControlPanelView` trigger updates in the stores, which in turn drive changes in the `VisualizerView`.
+
 ## Technology Stack
 
 * **Frontend:** Next.js (React, TypeScript) for the web interface. State management is handled primarily by **Zustand**, providing a lean and efficient way to manage global and local component states. Styling uses Tailwind CSS and custom fonts (primarily Poppins, with system fallbacks; thematic fonts like Data70 for titles). UI components leverage ShadCN UI (built on Radix UI primitives) for consistency, with icons from Lucide React. Recharts is used for visualizing data like audio waveforms or logs.
-* **Graphics/Audio:**  Uses the Web Audio API (FFT, energy analysis) for audio-reactive inputs, and Three.js/WebGL for 3D effects in all scenes. Webcam input is handled via HTML5 media APIs, with optional ML segmentation (planned).
+* **Graphics/Audio:** Uses the Web Audio API (FFT, energy analysis) for audio-reactive inputs, and Three.js/WebGL for 3D effects in all scenes. Webcam input is handled via HTML5 media APIs, with optional ML segmentation (planned).
 * **AI/ML:** Google’s Gemini language model is accessed through the GenKit library (@genkit-ai/googleai) for tasks like scene suggestion and asset generation (e.g., style transfer (planned), color palettes, procedural asset image previews).
 * **Backend / Database:** Firebase is used for authentication (planned) and data storage (e.g., IndexedDB for client-side rehearsal logs). The project is structured for Firebase Hosting / Functions. Development can use Firebase emulators for Auth and Firestore if backend features are added.
 * **Development:** The codebase uses a Nix development environment (Node.js 20 and related packages). Development scripts (via `npm run dev`) start the Next.js server. GitHub Actions or the Firebase CLI can be used for deployment.
@@ -114,7 +181,7 @@ Here's a closer look at the visual experiences offered by the built-in presets:
 3. **Environment setup:**
 
    * Copy `.env.example` or create a `.env.local` file.
-   * Add your `GOOGLE_API_KEY="YOUR_KEY_HERE"` to this file. This is required for AI features.
+   * Add your `GOOGLE_API_KEY="YOUR_KEY_HERE"` to this file. This is **required** for AI features.
    * Add any other Firebase config variables (API keys, project ID, etc.) if you integrate Firebase backend services.
    * (If using Nix: run `nix develop` to enter the environment with Node.js v20.)
 4. **Start development server:**
