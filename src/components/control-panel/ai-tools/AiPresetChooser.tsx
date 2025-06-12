@@ -8,11 +8,11 @@ import { useAudioData } from '@/providers/AudioDataProvider';
 import { useScene } from '@/providers/SceneProvider';
 import { suggestSceneFromAudio, type SuggestSceneFromAudioInput, type SuggestSceneFromAudioOutput } from '@/ai/flows/suggest-scene-from-audio';
 import { ControlPanelSection } from '../ControlPanelSection';
-// WHY: Import the original useSettings hook for fallback behavior.
-import { useSettings as useSettingsContextHook } from '@/providers/SettingsProvider';
-// WHY: Import the Zustand store for pilot mode.
+// WHY: Context hook is no longer needed.
+// import { useSettings as useSettingsContextHook } from '@/providers/SettingsProvider';
+// WHY: Import the Zustand store directly.
 import { useSettingsStore } from '@/store/settingsStore';
-import type { Settings } from '@/types'; // WHY: For explicit typing of updateSetting.
+import type { Settings } from '@/types'; 
 
 import { Brain, Loader2 } from 'lucide-react';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
@@ -29,17 +29,16 @@ export function AiPresetChooser({ value }: AiPresetChooserProps) {
   const { setCurrentSceneById, scenes } = useScene();
   const { toast } = useToast();
 
-  // WHY: Determine if we are in 'pilot' mode for Zustand.
-  const useZustand = process.env.NEXT_PUBLIC_USE_ZUSTAND === 'pilot';
+  // WHY: Feature flag logic is removed. Component now always uses Zustand.
+  // const useZustand = process.env.NEXT_PUBLIC_USE_ZUSTAND === 'pilot';
 
-  // WHY: Conditionally select settings source and update function.
-  // For reading, we don't need lastAISuggestedAssetPrompt directly in this component's render,
-  // but we need to update it. The updateSettingFromStore will handle writing to the correct place.
-  const updateSettingFromStore = useZustand ? useSettingsStore(state => state.updateSetting) : useSettingsContextHook().updateSetting;
+  // WHY: Directly get updateSetting from the Zustand store.
+  const zustandUpdateSetting = useSettingsStore(state => state.updateSetting);
+  // const updateSettingFromStore = useZustand ? useSettingsStore(state => state.updateSetting) : useSettingsContextHook().updateSetting;
 
-  // WHY: Create a consistent handler function for updating settings.
+  // WHY: Define a consistent handler function for updating settings using Zustand.
   const handleUpdateSetting = <K extends keyof Settings>(key: K, val: Settings[K]) => {
-    updateSettingFromStore(key, val);
+    zustandUpdateSetting(key, val);
   };
 
   const [suggestedSceneInfo, setSuggestedSceneInfo] = useState<SuggestSceneFromAudioOutput | null>(null);
@@ -62,7 +61,7 @@ export function AiPresetChooser({ value }: AiPresetChooserProps) {
       };
       const result = await suggestSceneFromAudio(input);
       setSuggestedSceneInfo(result);
-      // WHY: Update 'lastAISuggestedAssetPrompt' using the determined update function.
+      // WHY: Update 'lastAISuggestedAssetPrompt' using the Zustand update function.
       handleUpdateSetting('lastAISuggestedAssetPrompt', result.suggestedAssetPrompt);
 
       const sceneExists = scenes.find(s => s.id === result.sceneId);
@@ -100,7 +99,6 @@ export function AiPresetChooser({ value }: AiPresetChooserProps) {
     } finally {
       setIsLoading(false);
     }
-  // WHY: handleUpdateSetting is now a dependency.
   }, [audioData, autoLoadEnabled, setCurrentSceneById, toast, scenes, handleUpdateSetting, isLoading]);
 
 

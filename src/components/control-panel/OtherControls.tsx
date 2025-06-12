@@ -2,11 +2,11 @@
 "use client";
 
 import { Button } from '@/components/ui/button';
-// WHY: Import the original useSettings hook for fallback behavior.
-import { useSettings as useSettingsContextHook } from '@/providers/SettingsProvider';
-// WHY: Import the Zustand store for pilot mode.
+// WHY: Context hook is no longer needed.
+// import { useSettings as useSettingsContextHook } from '@/providers/SettingsProvider';
+// WHY: Import the Zustand store directly.
 import { useSettingsStore } from '@/store/settingsStore';
-import type { Settings } from '@/types'; // WHY: For explicit typing of updateSetting.
+import type { Settings } from '@/types'; 
 
 import { ControlPanelSection } from './ControlPanelSection';
 import { AlertTriangle, ZapOff, Database, Trash2 } from 'lucide-react';
@@ -22,22 +22,24 @@ type OtherControlsProps = {
 };
 
 export function OtherControls({ value }: OtherControlsProps) {
-  // WHY: Determine if we are in 'pilot' mode for Zustand.
-  const useZustand = process.env.NEXT_PUBLIC_USE_ZUSTAND === 'pilot';
+  // WHY: Feature flag logic is removed. Component now always uses Zustand.
+  // const useZustand = process.env.NEXT_PUBLIC_USE_ZUSTAND === 'pilot';
 
-  // WHY: Conditionally select settings source and update function.
-  const panicMode = useZustand ? useSettingsStore(state => state.panicMode) : useSettingsContextHook().settings.panicMode;
-  const logoBlackout = useZustand ? useSettingsStore(state => state.logoBlackout) : useSettingsContextHook().settings.logoBlackout;
+  // WHY: Directly select settings from the Zustand store.
+  const panicMode = useSettingsStore(state => state.panicMode);
+  const logoBlackout = useSettingsStore(state => state.logoBlackout);
+  const zustandUpdateSetting = useSettingsStore(state => state.updateSetting);
 
-  const updateSettingFromStore = useZustand ? useSettingsStore(state => state.updateSetting) : useSettingsContextHook().updateSetting;
+  // WHY: Remove fallback to context settings.
+  // const updateSettingFromStore = useZustand ? useSettingsStore(state => state.updateSetting) : useSettingsContextHook().updateSetting;
 
-  // WHY: Create a consistent handler function for updating settings.
+  // WHY: Define a consistent handler function for updating settings using Zustand.
   const handleUpdateSetting = <K extends keyof Settings>(key: K, val: Settings[K]) => {
-    updateSettingFromStore(key, val);
+    zustandUpdateSetting(key, val);
   };
 
   const handlePanicModeToggle = async (checked: boolean) => {
-    // WHY: Update 'panicMode' using the determined update function.
+    // WHY: Update 'panicMode' using the Zustand update function.
     handleUpdateSetting('panicMode', checked);
     try {
       await addLogEntry('panic_mode_toggled', { panicModeActive: checked });
@@ -47,7 +49,7 @@ export function OtherControls({ value }: OtherControlsProps) {
   };
 
   const handleLogoBlackoutToggle = (checked: boolean) => {
-    // WHY: Update 'logoBlackout' using the determined update function.
+    // WHY: Update 'logoBlackout' using the Zustand update function.
     handleUpdateSetting('logoBlackout', checked);
   };
 
@@ -110,14 +112,14 @@ export function OtherControls({ value }: OtherControlsProps) {
         }
         labelHtmlFor="panic-mode-switch"
         switchId="panic-mode-switch"
-        // WHY: Read 'panicMode' from the determined source.
+        // WHY: Read 'panicMode' from Zustand store.
         checked={panicMode}
         onCheckedChange={handlePanicModeToggle}
         tooltipContent={<p>Immediately blacks out the main visualizer output. Useful for emergencies.</p>}
         switchProps={{
           className: cn(
             "data-[state=checked]:bg-destructive",
-            // WHY: Read 'panicMode' for conditional animation.
+            // WHY: Read 'panicMode' from Zustand for conditional animation.
             panicMode && "animate-destructive-pulse"
           )
         }}
@@ -131,7 +133,7 @@ export function OtherControls({ value }: OtherControlsProps) {
         }
         labelHtmlFor="logo-blackout-switch"
         switchId="logo-blackout-switch"
-        // WHY: Read 'logoBlackout' from the determined source.
+        // WHY: Read 'logoBlackout' from Zustand store.
         checked={logoBlackout}
         onCheckedChange={handleLogoBlackoutToggle}
         tooltipContent={<p>Hides all logo and watermark elements from the visualizer.</p>}

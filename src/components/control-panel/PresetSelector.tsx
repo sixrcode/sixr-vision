@@ -2,9 +2,9 @@
 "use client";
 
 import { useScene } from '@/providers/SceneProvider';
-// WHY: Import the original useSettings hook for fallback behavior.
-import { useSettings as useSettingsContextHook } from '@/providers/SettingsProvider';
-// WHY: Import the Zustand store for pilot mode.
+// WHY: Context hook is no longer needed for currentSceneId.
+// import { useSettings as useSettingsContextHook } from '@/providers/SettingsProvider';
+// WHY: Import the Zustand store directly for currentSceneId.
 import { useSettingsStore } from '@/store/settingsStore';
 
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
@@ -19,13 +19,14 @@ type PresetSelectorProps = {
 export function PresetSelector({ value }: PresetSelectorProps) {
   const { scenes, setCurrentSceneById } = useScene();
 
-  // WHY: Determine if we are in 'pilot' mode for Zustand.
-  const useZustand = process.env.NEXT_PUBLIC_USE_ZUSTAND === 'pilot';
+  // WHY: Feature flag logic is removed. Component now always uses Zustand for currentSceneId.
+  // const useZustand = process.env.NEXT_PUBLIC_USE_ZUSTAND === 'pilot';
 
-  // WHY: Conditionally select currentSceneId from Zustand or React Context.
-  const currentSceneId = useZustand
-    ? useSettingsStore(state => state.currentSceneId)
-    : useSettingsContextHook().settings.currentSceneId;
+  // WHY: Directly select currentSceneId from the Zustand store.
+  const currentSceneId = useSettingsStore(state => state.currentSceneId);
+  // const currentSceneId = useZustand
+  //   ? useSettingsStore(state => state.currentSceneId)
+  //   : useSettingsContextHook().settings.currentSceneId;
 
   return (
     <ControlPanelSection title="Presets" value={value}>
@@ -36,7 +37,7 @@ export function PresetSelector({ value }: PresetSelectorProps) {
               <TooltipTrigger asChild>
                 <PresetCard
                   scene={scene}
-                  // WHY: Use the determined currentSceneId for isActive check.
+                  // WHY: Use currentSceneId from Zustand for isActive check.
                   isActive={currentSceneId === scene.id}
                   onClick={() => setCurrentSceneById(scene.id)}
                   onKeyDown={(e) => {

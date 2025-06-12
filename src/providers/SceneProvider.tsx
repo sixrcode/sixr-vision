@@ -4,8 +4,11 @@
 import type { ReactNode } from 'react';
 import { createContext, useContext, useState, useCallback, useMemo } from 'react';
 import type { SceneDefinition, Settings } from '@/types';
-import { SCENES as BUILT_IN_SCENES } from '@/lib/constants';
-import { useSettings } from './SettingsProvider';
+import { SCENES as BUILT_IN_SCENES, DEFAULT_SETTINGS } from '@/lib/constants';
+// WHY: Remove useSettings import as it's being replaced by Zustand store access.
+// import { useSettings } from './SettingsProvider';
+// WHY: Import the Zustand store to access and update settings.
+import { useSettingsStore } from '@/store/settingsStore';
 import { addLogEntry } from '@/services/rehearsalLogService';
 
 type SceneContextType = {
@@ -26,29 +29,26 @@ export function SceneProvider({ children }: { children: ReactNode }) {
     return [];
   });
 
-  const { settings, updateSetting } = useSettings();
+  // WHY: Directly use the Zustand store for settings state.
+  const currentSceneIdFromStore = useSettingsStore(state => state.currentSceneId);
+  const updateSettingFromStore = useSettingsStore(state => state.updateSetting);
 
   const currentScene = useMemo(() => {
-    if (!settings) {
-      console.warn("SceneProvider: 'settings' from useSettings() is unexpectedly falsy during currentScene memoization. Current scene might be incorrect.");
-      return undefined;
-    }
-    return registeredScenes.find(scene => scene.id === settings.currentSceneId);
-  }, [registeredScenes, settings]);
+    // WHY: currentSceneId is now sourced directly from the Zustand store.
+    return registeredScenes.find(scene => scene.id === currentSceneIdFromStore);
+  }, [registeredScenes, currentSceneIdFromStore]);
 
   const setCurrentSceneById = useCallback(async (id: string, reason: string = 'manual_selection') => {
-    if (!settings) {
-        console.warn("SceneProvider: 'settings' is unavailable in setCurrentSceneById. Cannot proceed.");
-        return;
-    }
     if (!Array.isArray(registeredScenes)) {
       console.error("SceneProvider: registeredScenes is not an array during setCurrentSceneById.");
       return;
     }
     const sceneExists = registeredScenes.find(s => s.id === id);
     if (sceneExists) {
-      const oldSceneId = settings.currentSceneId;
-      updateSetting('currentSceneId', id);
+      // WHY: Get the old scene ID from the store before updating.
+      const oldSceneId = useSettingsStore.getState().currentSceneId;
+      // WHY: Update currentSceneId directly in the Zustand store.
+      updateSettingFromStore('currentSceneId', id);
       try {
         await addLogEntry('scene_change', {
           previousSceneId: oldSceneId,
@@ -61,25 +61,22 @@ export function SceneProvider({ children }: { children: ReactNode }) {
     } else {
       console.warn(`Scene with id "${id}" not found.`);
     }
-  }, [registeredScenes, updateSetting, settings]);
+  }, [registeredScenes, updateSettingFromStore]);
 
-  // Define registerScene as a plain function directly within the component scope
-  // This is a diagnostic step to bypass potential SSR issues with useCallback for this specific function.
-  const registerScene = (sceneToRegister: SceneDefinition): void => {
+  const registerScene = useCallback((sceneToRegister: SceneDefinition): void => {
     console.warn(`Dynamic scene registration for "${sceneToRegister.id}" is a placeholder. Scene not added to active list.`);
-    // Placeholder: In a real implementation, you might update `registeredScenes` state:
     // setRegisteredScenes(prevScenes => {
     //   if (!prevScenes.find(s => s.id === sceneToRegister.id)) {
     //     return [...prevScenes, sceneToRegister];
     //   }
     //   return prevScenes;
     // });
-  };
+  }, []);
 
   const providerValue = {
     scenes: registeredScenes,
     currentScene,
-    registerScene, // Use the plain function
+    registerScene,
     setCurrentSceneById
   };
 
@@ -93,10 +90,7 @@ export function SceneProvider({ children }: { children: ReactNode }) {
 export function useScene(): SceneContextType {
   const context = useContext(SceneContext);
   if (context === undefined) {
-    // This error should be hit if the provider is not wrapping the consumer,
-    // or if the context value itself is somehow still undefined.
     console.error("useScene must be used within a SceneProvider. Context is undefined.");
-    // Fallback to a default shape to prevent further errors, though this indicates a problem.
     return {
         scenes: [],
         currentScene: undefined,
