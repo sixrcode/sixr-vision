@@ -1,6 +1,6 @@
 
 import { create, type StateCreator } from 'zustand';
-import { devtools } from 'zustand/middleware';
+// import { devtools } from 'zustand/middleware'; // Temporarily remove devtools
 import type { SceneDefinition } from '@/types/state';
 import { SCENES as BUILT_IN_SCENES, DEFAULT_SETTINGS } from '@/lib/constants';
 
@@ -13,11 +13,11 @@ interface SceneState {
 }
 
 const sceneStoreInitializer: StateCreator<SceneState, [], []> = (set, get) => ({
-  scenes: Array.isArray(BUILT_IN_SCENES) ? BUILT_IN_SCENES : [], // Ensure scenes is always an array
+  scenes: Array.isArray(BUILT_IN_SCENES) ? BUILT_IN_SCENES : [],
   currentSceneId: DEFAULT_SETTINGS.currentSceneId,
 
   setCurrentSceneById: (id) => {
-    const currentScenes = get().scenes; // scenes is now guaranteed to be an array
+    const currentScenes = get().scenes;
     const sceneExists = currentScenes.find(s => s.id === id);
     if (sceneExists) {
       set(
@@ -46,7 +46,7 @@ const sceneStoreInitializer: StateCreator<SceneState, [], []> = (set, get) => ({
   resetSceneState: () =>
     set(
       () => ({
-        scenes: Array.isArray(BUILT_IN_SCENES) ? BUILT_IN_SCENES : [], // Also here
+        scenes: Array.isArray(BUILT_IN_SCENES) ? BUILT_IN_SCENES : [],
         currentSceneId: DEFAULT_SETTINGS.currentSceneId,
       }),
       false,
@@ -54,9 +54,15 @@ const sceneStoreInitializer: StateCreator<SceneState, [], []> = (set, get) => ({
     ),
 });
 
+// Temporarily use the initializer directly without devtools
+export const useSceneStore = create<SceneState>(sceneStoreInitializer);
+
+/*
+// Original conditional logic for devtools:
 const createSceneStore =
   typeof window !== 'undefined' && process.env.NODE_ENV === 'development'
     ? devtools(sceneStoreInitializer, { name: 'SIXRVisionSceneStore', store: 'scene' })
     : sceneStoreInitializer;
 
 export const useSceneStore = create<SceneState>(createSceneStore);
+*/

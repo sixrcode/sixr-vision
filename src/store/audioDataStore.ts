@@ -1,6 +1,6 @@
 
 import { create, type StateCreator } from 'zustand';
-import { devtools } from 'zustand/middleware';
+// import { devtools } from 'zustand/middleware'; // Temporarily remove devtools
 import type { AudioData } from '@/types/state';
 import { INITIAL_AUDIO_DATA } from '@/lib/constants';
 
@@ -31,9 +31,15 @@ const audioDataStoreInitializer: StateCreator<AudioDataState, [], []> = (set) =>
     ),
 });
 
+// Temporarily use the initializer directly without devtools
+export const useAudioDataStore = create<AudioDataState>(audioDataStoreInitializer);
+
+/*
+// Original conditional logic for devtools:
 const createAudioDataStore =
   typeof window !== 'undefined' && process.env.NODE_ENV === 'development'
     ? devtools(audioDataStoreInitializer, { name: 'SIXRVisionAudioDataStore', store: 'audioData' })
     : audioDataStoreInitializer;
 
 export const useAudioDataStore = create<AudioDataState>(createAudioDataStore);
+*/

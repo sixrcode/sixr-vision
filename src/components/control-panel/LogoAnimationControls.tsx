@@ -5,11 +5,9 @@ import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
-// WHY: Import the original useSettings hook for fallback.
-import { useSettings as useSettingsContextHook } from '@/providers/SettingsProvider';
-// WHY: Import the Zustand store for conditional usage.
+// WHY: Import the Zustand store directly. The feature flag and context fallback are removed.
 import { useSettingsStore } from '@/store/settingsStore';
-import type { LogoAnimationType, LogoAnimationSettings } from '@/types';
+import type { LogoAnimationType, LogoAnimationSettings, Settings } from '@/types';
 import { ControlPanelSection } from './ControlPanelSection';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import { ControlHint } from './ControlHint';
@@ -19,41 +17,25 @@ type LogoAnimationControlsProps = {
 };
 
 export function LogoAnimationControls({ value }: LogoAnimationControlsProps) {
-  // WHY: Feature flag to determine data source.
-  const useZustand = process.env.NEXT_PUBLIC_USE_ZUSTAND === 'bundle-a';
-
-  // Zustand state and actions
-  const logoOpacityFromStore = useSettingsStore(state => state.logoOpacity);
-  const logoAnimationSettingsFromStore = useSettingsStore(state => state.logoAnimationSettings);
+  // WHY: Directly use Zustand state and actions. The 'useZustand' feature flag is removed.
+  const logoOpacity = useSettingsStore(state => state.logoOpacity);
+  const logoAnimationSettings = useSettingsStore(state => state.logoAnimationSettings);
   const zustandUpdateSetting = useSettingsStore(state => state.updateSetting);
   const zustandUpdateLogoAnimationSetting = useSettingsStore(state => state.updateLogoAnimationSetting);
 
-  // Context state and actions (fallback)
-  const { settings: contextSettings, updateSetting: contextUpdateSetting } = useSettingsContextHook();
-
-  // Determine current values based on feature flag
-  const logoOpacity = useZustand ? logoOpacityFromStore : contextSettings.logoOpacity;
-  const logoAnimationSettings = useZustand ? logoAnimationSettingsFromStore : contextSettings.logoAnimationSettings;
+  // WHY: The context fallback (useSettingsContextHook) is removed.
 
   const handleOpacityChange = (val: number) => {
-    if (useZustand) {
-      zustandUpdateSetting('logoOpacity', val);
-    } else {
-      contextUpdateSetting('logoOpacity', val);
-    }
+    // WHY: Directly use Zustand update function.
+    zustandUpdateSetting('logoOpacity', val);
   };
 
   const handleAnimationSettingChange = <K extends keyof LogoAnimationSettings>(
     key: K,
     val: LogoAnimationSettings[K]
   ) => {
-    if (useZustand) {
-      zustandUpdateLogoAnimationSetting(key, val);
-    } else {
-      // Context doesn't have a dedicated logo animation setting updater,
-      // so we update the whole logoAnimationSettings object.
-      contextUpdateSetting('logoAnimationSettings', { ...logoAnimationSettings, [key]: val });
-    }
+    // WHY: Directly use Zustand update function.
+    zustandUpdateLogoAnimationSetting(key, val);
   };
   
   const currentAnimType = logoAnimationSettings.type;
@@ -63,6 +45,7 @@ export function LogoAnimationControls({ value }: LogoAnimationControlsProps) {
       <div className="space-y-1">
         <Tooltip>
           <TooltipTrigger asChild>
+            {/* WHY: Directly read from Zustand store. */}
             <Label htmlFor="logoopacity-slider">Overall Opacity ({logoOpacity.toFixed(2)})</Label>
           </TooltipTrigger>
  <TooltipContent><p>Controls the maximum visibility of all logo and watermark elements.</p>
@@ -74,7 +57,7 @@ export function LogoAnimationControls({ value }: LogoAnimationControlsProps) {
           min={0}
           max={1}
           step={0.01}
-          value={[logoOpacity]}
+          value={[logoOpacity]} // WHY: Directly use Zustand state.
           onValueChange={([val]) => handleOpacityChange(val)}
           aria-label={`Overall Logo Opacity: ${logoOpacity.toFixed(2)}`}
         />
@@ -90,7 +73,7 @@ export function LogoAnimationControls({ value }: LogoAnimationControlsProps) {
           </TooltipContent>
         </Tooltip>
         <Select
-          value={logoAnimationSettings.type}
+          value={logoAnimationSettings.type} // WHY: Directly use Zustand state.
           onValueChange={(val) => handleAnimationSettingChange('type', val as LogoAnimationType)}
         >
           <SelectTrigger id="logo-animation-type-select" aria-label={`Select Logo Animation Type, current value ${logoAnimationSettings.type}`}>
@@ -119,7 +102,7 @@ export function LogoAnimationControls({ value }: LogoAnimationControlsProps) {
           <Input
             id="logo-animation-color"
             type="color"
-            value={logoAnimationSettings.color}
+            value={logoAnimationSettings.color} // WHY: Directly use Zustand state.
             onChange={(e) => handleAnimationSettingChange('color', e.target.value)}
             className="h-10"
             aria-label={`Logo Animation Color, current value ${logoAnimationSettings.color}`}
@@ -132,7 +115,7 @@ export function LogoAnimationControls({ value }: LogoAnimationControlsProps) {
           <Tooltip>
             <TooltipTrigger asChild>
               <Label htmlFor="logo-animation-speed-slider">
-                Speed ({logoAnimationSettings.speed.toFixed(1)})
+                Speed ({logoAnimationSettings.speed.toFixed(1)}) {/* WHY: Directly use Zustand state. */}
               </Label>
             </TooltipTrigger>
  <TooltipContent><p>Adjusts the speed of &apos;Blink&apos;, &apos;Pulse&apos;, or &apos;Rainbow Cycle&apos; animations.</p>
@@ -144,7 +127,7 @@ export function LogoAnimationControls({ value }: LogoAnimationControlsProps) {
             min={0.2}
             max={3}
             step={0.1}
-            value={[logoAnimationSettings.speed]}
+            value={[logoAnimationSettings.speed]} // WHY: Directly use Zustand state.
             onValueChange={([val]) => handleAnimationSettingChange('speed', val)}
             aria-label={`Logo Animation Speed: ${logoAnimationSettings.speed.toFixed(1)}`}
           />
@@ -157,3 +140,4 @@ export function LogoAnimationControls({ value }: LogoAnimationControlsProps) {
     </ControlPanelSection>
   );
 }
+
