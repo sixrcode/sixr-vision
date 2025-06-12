@@ -4,7 +4,12 @@
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useSettings } from '@/providers/SettingsProvider';
+// WHY: Import the original useSettings hook for fallback behavior.
+import { useSettings as useSettingsContextHook } from '@/providers/SettingsProvider';
+// WHY: Import the Zustand store for pilot mode.
+import { useSettingsStore } from '@/store/settingsStore';
+import type { Settings } from '@/types'; // WHY: For explicit typing of updateSetting.
+
 import { FFT_SIZES } from '@/lib/constants';
 import { ControlPanelSection } from './ControlPanelSection';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
@@ -22,13 +27,30 @@ type AudioControlsProps = {
 };
 
 export function AudioControls({ value, audioInputDevices, isAudioToggling }: AudioControlsProps) {
-  const { settings, updateSetting } = useSettings();
+  // WHY: Determine if we are in 'pilot' mode for Zustand.
+  // When 'pilot', this component (and others in this phase) will use Zustand.
+  const useZustand = process.env.NEXT_PUBLIC_USE_ZUSTAND === 'pilot';
+
+  // WHY: Conditionally select settings source and update function.
+  const selectedAudioInputDeviceId = useZustand ? useSettingsStore(state => state.selectedAudioInputDeviceId) : useSettingsContextHook().settings.selectedAudioInputDeviceId;
+  const fftSize = useZustand ? useSettingsStore(state => state.fftSize) : useSettingsContextHook().settings.fftSize;
+  const gain = useZustand ? useSettingsStore(state => state.gain) : useSettingsContextHook().settings.gain;
+  const enableAgc = useZustand ? useSettingsStore(state => state.enableAgc) : useSettingsContextHook().settings.enableAgc;
+  const monitorAudio = useZustand ? useSettingsStore(state => state.monitorAudio) : useSettingsContextHook().settings.monitorAudio;
+
+  const updateSettingFromStore = useZustand ? useSettingsStore(state => state.updateSetting) : useSettingsContextHook().updateSetting;
+
+  // WHY: Create a consistent handler function for updating settings.
+  const handleUpdateSetting = <K extends keyof Settings>(key: K, val: Settings[K]) => {
+    updateSettingFromStore(key, val);
+  };
 
   const handleDeviceChange = (newDeviceId: string) => {
     if (newDeviceId === DEFAULT_AUDIO_INPUT_VALUE) {
-      updateSetting('selectedAudioInputDeviceId', undefined);
+      // WHY: Update 'selectedAudioInputDeviceId' using the determined update function.
+      handleUpdateSetting('selectedAudioInputDeviceId', undefined);
     } else {
-      updateSetting('selectedAudioInputDeviceId', newDeviceId);
+      handleUpdateSetting('selectedAudioInputDeviceId', newDeviceId);
     }
     // Re-initialization will be handled by ControlPanelView's useEffect
   };
@@ -46,7 +68,8 @@ export function AudioControls({ value, audioInputDevices, isAudioToggling }: Aud
           </TooltipContent>
         </Tooltip>
         <Select
-          value={settings.selectedAudioInputDeviceId || DEFAULT_AUDIO_INPUT_VALUE}
+          // WHY: Select value is driven by 'selectedAudioInputDeviceId' from the determined source.
+          value={selectedAudioInputDeviceId || DEFAULT_AUDIO_INPUT_VALUE}
           onValueChange={handleDeviceChange}
           disabled={audioInputDevices.length === 0 || isAudioToggling}
         >
@@ -77,11 +100,13 @@ export function AudioControls({ value, audioInputDevices, isAudioToggling }: Aud
           </TooltipContent>
         </Tooltip>
         <Select
-          value={String(settings.fftSize)}
-          onValueChange={(val) => updateSetting('fftSize', Number(val) as typeof settings.fftSize)}
+          // WHY: Select value is driven by 'fftSize' from the determined source.
+          value={String(fftSize)}
+          // WHY: Update 'fftSize' using the determined update function. Cast to number type.
+          onValueChange={(val) => handleUpdateSetting('fftSize', Number(val) as typeof fftSize)}
           disabled={isAudioToggling}
         >
-          <SelectTrigger id="fftSize-select" aria-label={`Select FFT Bins, current value ${settings.fftSize}`}>
+          <SelectTrigger id="fftSize-select" aria-label={`Select FFT Bins, current value ${fftSize}`}>
             <SelectValue placeholder="Select FFT size" />
           </SelectTrigger>
           <SelectContent>
@@ -93,11 +118,13 @@ export function AudioControls({ value, audioInputDevices, isAudioToggling }: Aud
         <ControlHint>Controls the resolution of audio frequency analysis.</ControlHint>
       </div>
 
-      <div className={cn("space-y-1 mt-3", settings.enableAgc && "opacity-50 pointer-events-none")}>
+      {/* WHY: Conditional styling based on 'enableAgc' from the determined source. */}
+      <div className={cn("space-y-1 mt-3", enableAgc && "opacity-50 pointer-events-none")}>
         <Tooltip>
           <TooltipTrigger asChild>
-            <Label htmlFor="gain-slider" className={cn(settings.enableAgc && "text-muted-foreground")}>
-              Manual Gain ({settings.gain.toFixed(2)}) {settings.enableAgc && "(AGC Active)"}
+            {/* WHY: Read 'gain' and 'enableAgc' from the determined source. */}
+            <Label htmlFor="gain-slider" className={cn(enableAgc && "text-muted-foreground")}>
+              Manual Gain ({gain.toFixed(2)}) {enableAgc && "(AGC Active)"}
             </Label>
           </TooltipTrigger>
           <TooltipContent>
@@ -109,10 +136,13 @@ export function AudioControls({ value, audioInputDevices, isAudioToggling }: Aud
           min={0}
           max={2}
           step={0.05}
-          value={[settings.gain]}
-          onValueChange={([val]) => updateSetting('gain', val)}
-          disabled={settings.enableAgc || isAudioToggling}
-          aria-label={`Manual Gain: ${settings.gain.toFixed(2)}${settings.enableAgc ? ". Automatic Gain Control is Active." : ""}`}
+          // WHY: Slider value is driven by 'gain' from the determined source.
+          value={[gain]}
+          // WHY: Update 'gain' using the determined update function.
+          onValueChange={([val]) => handleUpdateSetting('gain', val)}
+          // WHY: Disabled state based on 'enableAgc' from the determined source.
+          disabled={enableAgc || isAudioToggling}
+          aria-label={`Manual Gain: ${gain.toFixed(2)}${enableAgc ? ". Automatic Gain Control is Active." : ""}`}
         />
       </div>
       
@@ -120,18 +150,22 @@ export function AudioControls({ value, audioInputDevices, isAudioToggling }: Aud
         labelContent="Automatic Gain Control (AGC)"
         labelHtmlFor="agc-switch"
         switchId="agc-switch"
-        checked={settings.enableAgc}
-        onCheckedChange={(checked) => updateSetting('enableAgc', checked)}
+        // WHY: Switch state is driven by 'enableAgc' from the determined source.
+        checked={enableAgc}
+        // WHY: Update 'enableAgc' using the determined update function.
+        onCheckedChange={(checked) => handleUpdateSetting('enableAgc', checked)}
         tooltipContent={<>
           <p>Automatically adjusts gain to maintain a consistent audio level.</p>
-          {settings.enableAgc && <p className="text-xs text-primary">AGC is currently managing audio levels.</p>}
+          {/* WHY: Conditional text based on 'enableAgc' from the determined source. */}
+          {enableAgc && <p className="text-xs text-primary">AGC is currently managing audio levels.</p>}
         </>}
         containerClassName="pt-2"
         switchAriaLabel="Toggle Automatic Gain Control"
         switchProps={{ disabled: isAudioToggling }}
       />
        <ControlHint>
-        {settings.enableAgc ? "AGC is active. Manual gain is disabled." : "Adjust gain manually or enable AGC."}
+        {/* WHY: Conditional hint based on 'enableAgc' from the determined source. */}
+        {enableAgc ? "AGC is active. Manual gain is disabled." : "Adjust gain manually or enable AGC."}
       </ControlHint>
 
       <div className="mt-4">
@@ -139,8 +173,10 @@ export function AudioControls({ value, audioInputDevices, isAudioToggling }: Aud
           labelContent="Monitor Audio (Playback to Speakers)"
           labelHtmlFor="monitor-audio-switch"
           switchId="monitor-audio-switch"
-          checked={settings.monitorAudio}
-          onCheckedChange={(checked) => updateSetting('monitorAudio', checked)}
+          // WHY: Switch state is driven by 'monitorAudio' from the determined source.
+          checked={monitorAudio}
+          // WHY: Update 'monitorAudio' using the determined update function.
+          onCheckedChange={(checked) => handleUpdateSetting('monitorAudio', checked)}
           tooltipContent={
             <div className="space-y-1">
               <p className="flex items-center text-destructive">

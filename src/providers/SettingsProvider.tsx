@@ -2,12 +2,9 @@
 "use client";
 
 import type { ReactNode } from 'react';
-import { createContext, useContext, useState, useCallback } from 'react';
+import { createContext, useContext, useState, useCallback, useMemo } from 'react';
 import type { Settings } from '@/types';
 import { DEFAULT_SETTINGS } from '@/lib/constants';
-// WHY: Import the Zustand store to enable shadow mode synchronization.
-// This allows us to write to Zustand whenever the React Context state changes,
-// facilitating a gradual migration and testing of the Zustand store.
 import { useSettingsStore } from '@/store/settingsStore';
 
 type SettingsContextType = {
@@ -16,40 +13,40 @@ type SettingsContextType = {
   resetSettings: () => void;
 };
 
-const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
+const defaultContextValue: SettingsContextType = {
+  settings: DEFAULT_SETTINGS,
+  updateSetting: () => console.warn('Default updateSetting called - SettingsProvider not yet mounted/available?'),
+  resetSettings: () => console.warn('Default resetSettings called - SettingsProvider not yet mounted/available?'),
+};
+
+const SettingsContext = createContext<SettingsContextType>(defaultContextValue);
 
 export function SettingsProvider({ children }: { children: ReactNode }) {
-  const [settings, setSettings] = useState<Settings>(DEFAULT_SETTINGS);
+  const [settings, setSettingsState] = useState<Settings>(DEFAULT_SETTINGS);
 
-  const updateSetting = useCallback(<K extends keyof Settings>(key: K, value: Settings[K]) => {
-    setSettings((prev) => ({ ...prev, [key]: value }));
-
-    // WHY: Implement shadow mode synchronization to Zustand.
-    // If the feature flag NEXT_PUBLIC_USE_ZUSTAND is set to 'shadow',
-    // any update to the React Context settings will also be mirrored
-    // to the Zustand store. This helps ensure data consistency during the
-    // migration period and allows parts of the app to start reading from
-    // Zustand while writes are still managed centrally here.
-    if (process.env.NEXT_PUBLIC_USE_ZUSTAND === 'shadow') {
-      // console.log(`[SettingsProvider SHADOW] Mirroring update to Zustand: ${String(key)} =`, value);
+  const updateSettingCallback = useCallback(<K extends keyof Settings>(key: K, value: Settings[K]) => {
+    setSettingsState((prev) => ({ ...prev, [key]: value }));
+    // Ensures shadow writes happen in pilot too if context is still used by some components, or if settings are updated directly via context
+    if (process.env.NEXT_PUBLIC_USE_ZUSTAND === 'shadow' || process.env.NEXT_PUBLIC_USE_ZUSTAND === 'pilot') {
       useSettingsStore.getState().updateSetting(key, value);
     }
   }, []);
 
-  const resetSettings = useCallback(() => {
-    setSettings(DEFAULT_SETTINGS);
-
-    // WHY: Implement shadow mode synchronization for reset.
-    // Similar to updateSetting, if in 'shadow' mode, resetting the React Context
-    // settings will also trigger a reset in the Zustand store.
-    if (process.env.NEXT_PUBLIC_USE_ZUSTAND === 'shadow') {
-      // console.log('[SettingsProvider SHADOW] Mirroring reset to Zustand');
+  const resetSettingsCallback = useCallback(() => {
+    setSettingsState(DEFAULT_SETTINGS);
+    if (process.env.NEXT_PUBLIC_USE_ZUSTAND === 'shadow' || process.env.NEXT_PUBLIC_USE_ZUSTAND === 'pilot') {
       useSettingsStore.getState().resetSettings();
     }
   }, []);
 
+  const providerValue = useMemo(() => ({
+    settings: settings,
+    updateSetting: updateSettingCallback,
+    resetSettings: resetSettingsCallback,
+  }), [settings, updateSettingCallback, resetSettingsCallback]);
+
   return (
-    <SettingsContext.Provider value={{ settings, updateSetting, resetSettings }}>
+    <SettingsContext.Provider value={providerValue}>
       {children}
     </SettingsContext.Provider>
   );
@@ -57,5 +54,12 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
 
 export function useSettings(): SettingsContextType {
   const context = useContext(SettingsContext);
-  if (context === undefined) {
-    // WHY: This error ensures that useSettings is only called within components
+  // This check should be largely redundant if createContext has a default that matches the type,
+  // but it's a safeguard. The primary issue arises if `useSettings` itself is undefined when imported.
+  if (context === undefined) { // Should theoretically not happen with defaultContextValue
+      console.error("CRITICAL: SettingsContext is undefined in useSettings. This implies createContext default was overridden or useSettings called outside Provider. Falling back to default context value.");
+      return defaultContextValue;
+  }
+  return context;
+}
+    
