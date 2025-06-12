@@ -8,7 +8,12 @@ import { useAudioData } from '@/providers/AudioDataProvider';
 import { useScene } from '@/providers/SceneProvider';
 import { suggestSceneFromAudio, type SuggestSceneFromAudioInput, type SuggestSceneFromAudioOutput } from '@/ai/flows/suggest-scene-from-audio';
 import { ControlPanelSection } from '../ControlPanelSection';
-import { useSettings } from '@/providers/SettingsProvider';
+// WHY: Import the original useSettings hook for fallback behavior.
+import { useSettings as useSettingsContextHook } from '@/providers/SettingsProvider';
+// WHY: Import the Zustand store for pilot mode.
+import { useSettingsStore } from '@/store/settingsStore';
+import type { Settings } from '@/types'; // WHY: For explicit typing of updateSetting.
+
 import { Brain, Loader2 } from 'lucide-react';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import { ControlHint } from '../ControlHint';
@@ -22,16 +27,29 @@ type AiPresetChooserProps = {
 export function AiPresetChooser({ value }: AiPresetChooserProps) {
   const { audioData } = useAudioData();
   const { setCurrentSceneById, scenes } = useScene();
-  const { updateSetting } = useSettings();
+  const { toast } = useToast();
+
+  // WHY: Determine if we are in 'pilot' mode for Zustand.
+  const useZustand = process.env.NEXT_PUBLIC_USE_ZUSTAND === 'pilot';
+
+  // WHY: Conditionally select settings source and update function.
+  // For reading, we don't need lastAISuggestedAssetPrompt directly in this component's render,
+  // but we need to update it. The updateSettingFromStore will handle writing to the correct place.
+  const updateSettingFromStore = useZustand ? useSettingsStore(state => state.updateSetting) : useSettingsContextHook().updateSetting;
+
+  // WHY: Create a consistent handler function for updating settings.
+  const handleUpdateSetting = <K extends keyof Settings>(key: K, val: Settings[K]) => {
+    updateSettingFromStore(key, val);
+  };
+
   const [suggestedSceneInfo, setSuggestedSceneInfo] = useState<SuggestSceneFromAudioOutput | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const { toast } = useToast();
-  const [autoLoadEnabled, setAutoLoadEnabled] = useState(false); 
+  const [autoLoadEnabled, setAutoLoadEnabled] = useState(false);
   const initialLoadAttemptedRef = useRef(false);
   const periodicUpdateIntervalId = useRef<NodeJS.Timeout | null>(null);
 
   const fetchSuggestion = useCallback(async (isAutoTrigger = false) => {
-    if (isLoading && !isAutoTrigger) return; 
+    if (isLoading && !isAutoTrigger) return;
     if (isLoading && isAutoTrigger && autoLoadEnabled) return;
 
     setIsLoading(true);
@@ -44,31 +62,32 @@ export function AiPresetChooser({ value }: AiPresetChooserProps) {
       };
       const result = await suggestSceneFromAudio(input);
       setSuggestedSceneInfo(result);
-      updateSetting('lastAISuggestedAssetPrompt', result.suggestedAssetPrompt);
+      // WHY: Update 'lastAISuggestedAssetPrompt' using the determined update function.
+      handleUpdateSetting('lastAISuggestedAssetPrompt', result.suggestedAssetPrompt);
 
       const sceneExists = scenes.find(s => s.id === result.sceneId);
 
       if (autoLoadEnabled && sceneExists) {
         setCurrentSceneById(result.sceneId, 'ai_auto_suggestion');
-        if (!isAutoTrigger) { 
+        if (!isAutoTrigger) {
           toast({ title: 'AI Scene Loaded', description: `Switched to ${result.sceneId} based on audio analysis.` });
         }
       } else if (autoLoadEnabled && !sceneExists && !isAutoTrigger) {
          toast({ title: 'AI Suggestion Error', description: `AI suggested scene "${result.sceneId}", but it's not available.`, variant: 'destructive' });
       } else if (!isAutoTrigger && !sceneExists) {
         toast({ title: 'AI Suggestion Error', description: `AI suggested scene &quot;${result.sceneId}&quot;, but it's not available. Asset idea: &quot;${result.suggestedAssetPrompt}&quot;`, variant: 'destructive' });
-      } else if (autoLoadEnabled && !isAutoTrigger) { // Manual trigger when auto-load is on but didn't load (e.g. no scene found)
+      } else if (autoLoadEnabled && !isAutoTrigger) {
       } else if (!isAutoTrigger) {
         toast({ title: 'AI Suggestion', description: `Suggested scene: ${result.sceneId}. Asset idea: "${result.suggestedAssetPrompt}"` });
       }
-      
+
       if (isAutoTrigger && !initialLoadAttemptedRef.current) {
-        initialLoadAttemptedRef.current = true; 
+        initialLoadAttemptedRef.current = true;
       }
 
     } catch (error) {
       console.error('Error suggesting scene:', error);
-      if (!isAutoTrigger || (isAutoTrigger && autoLoadEnabled)) { 
+      if (!isAutoTrigger || (isAutoTrigger && autoLoadEnabled)) {
         toast({
           title: 'Error Suggesting Scene',
           description: error instanceof Error ? error.message : 'Failed to get scene suggestion.',
@@ -76,24 +95,24 @@ export function AiPresetChooser({ value }: AiPresetChooserProps) {
         });
       }
       if (isAutoTrigger && !initialLoadAttemptedRef.current) {
-        initialLoadAttemptedRef.current = true; 
+        initialLoadAttemptedRef.current = true;
       }
     } finally {
       setIsLoading(false);
     }
-  }, [audioData, autoLoadEnabled, setCurrentSceneById, toast, scenes, updateSetting, isLoading]);
+  // WHY: handleUpdateSetting is now a dependency.
+  }, [audioData, autoLoadEnabled, setCurrentSceneById, toast, scenes, handleUpdateSetting, isLoading]);
 
 
-  // Effect for initial scene suggestion on load (if autoLoadEnabled is true by default for the component)
  useEffect(() => {
     let timerId: NodeJS.Timeout | undefined;
-    if (!initialLoadAttemptedRef.current && autoLoadEnabled && audioData.rms > 0.01 && audioData.bpm > 0) { 
+    if (!initialLoadAttemptedRef.current && autoLoadEnabled && audioData.rms > 0.01 && audioData.bpm > 0) {
       console.log("AiPresetChooser: Attempting initial AI scene suggestion.");
       timerId = setTimeout(() => {
-        if (!initialLoadAttemptedRef.current) { 
-            fetchSuggestion(true); 
+        if (!initialLoadAttemptedRef.current) {
+            fetchSuggestion(true);
         }
-      }, 5000); 
+      }, 5000);
     }
     return () => {
         if(timerId) clearTimeout(timerId);
@@ -101,24 +120,23 @@ export function AiPresetChooser({ value }: AiPresetChooserProps) {
   }, [audioData.rms, audioData.bpm, autoLoadEnabled, fetchSuggestion]);
 
 
-  // Effect for periodic auto-loading if enabled by user
   useEffect(() => {
     if (periodicUpdateIntervalId.current) {
       clearInterval(periodicUpdateIntervalId.current);
       periodicUpdateIntervalId.current = null;
     }
-    if (autoLoadEnabled && initialLoadAttemptedRef.current) { // Only start periodic after initial attempt
-      periodicUpdateIntervalId.current = setInterval(() => { 
+    if (autoLoadEnabled && initialLoadAttemptedRef.current) {
+      periodicUpdateIntervalId.current = setInterval(() => {
         if (audioData.bpm > 0 && (audioData.bassEnergy > 0.1 || audioData.midEnergy > 0.1 || audioData.trebleEnergy > 0.1)) {
            fetchSuggestion(true);
         }
-      }, 30000); 
+      }, 30000);
     }
     return () => {
       if (periodicUpdateIntervalId.current) {
         clearInterval(periodicUpdateIntervalId.current);
         periodicUpdateIntervalId.current = null;
-      } 
+      }
     };
   }, [audioData, autoLoadEnabled, fetchSuggestion, initialLoadAttemptedRef]);
 
@@ -181,4 +199,3 @@ export function AiPresetChooser({ value }: AiPresetChooserProps) {
     </ControlPanelSection>
   );
 }
-

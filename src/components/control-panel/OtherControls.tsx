@@ -2,7 +2,12 @@
 "use client";
 
 import { Button } from '@/components/ui/button';
-import { useSettings } from '@/providers/SettingsProvider';
+// WHY: Import the original useSettings hook for fallback behavior.
+import { useSettings as useSettingsContextHook } from '@/providers/SettingsProvider';
+// WHY: Import the Zustand store for pilot mode.
+import { useSettingsStore } from '@/store/settingsStore';
+import type { Settings } from '@/types'; // WHY: For explicit typing of updateSetting.
+
 import { ControlPanelSection } from './ControlPanelSection';
 import { AlertTriangle, ZapOff, Database, Trash2 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
@@ -17,25 +22,36 @@ type OtherControlsProps = {
 };
 
 export function OtherControls({ value }: OtherControlsProps) {
-  const { settings, updateSetting } = useSettings();
+  // WHY: Determine if we are in 'pilot' mode for Zustand.
+  const useZustand = process.env.NEXT_PUBLIC_USE_ZUSTAND === 'pilot';
+
+  // WHY: Conditionally select settings source and update function.
+  const panicMode = useZustand ? useSettingsStore(state => state.panicMode) : useSettingsContextHook().settings.panicMode;
+  const logoBlackout = useZustand ? useSettingsStore(state => state.logoBlackout) : useSettingsContextHook().settings.logoBlackout;
+
+  const updateSettingFromStore = useZustand ? useSettingsStore(state => state.updateSetting) : useSettingsContextHook().updateSetting;
+
+  // WHY: Create a consistent handler function for updating settings.
+  const handleUpdateSetting = <K extends keyof Settings>(key: K, val: Settings[K]) => {
+    updateSettingFromStore(key, val);
+  };
 
   const handlePanicModeToggle = async (checked: boolean) => {
-    updateSetting('panicMode', checked);
+    // WHY: Update 'panicMode' using the determined update function.
+    handleUpdateSetting('panicMode', checked);
     try {
       await addLogEntry('panic_mode_toggled', { panicModeActive: checked });
     } catch (e) {
       console.warn("Failed to log panic mode toggle:", e);
     }
   };
-  
+
+  const handleLogoBlackoutToggle = (checked: boolean) => {
+    // WHY: Update 'logoBlackout' using the determined update function.
+    handleUpdateSetting('logoBlackout', checked);
+  };
+
   const handleExportLog = async () => {
-    // --- PRIVACY & SECURITY NOTE ---
-    // 1. Clearly inform the user what data is being logged locally.
-    // 2. Obtain consent if logging potentially sensitive inputs (e.g., detailed AI prompts).
-    // 3. Avoid logging raw audio/video data or PII unless absolutely necessary and secured.
-    // 4. Consider options for users to clear their local rehearsal log.
-    // 5. The current implementation logs operational data like scene changes and setting values.
-    // --- End of Privacy Note ---
     try {
       const logEntries = await getAllLogEntries();
       if (logEntries.length === 0) {
@@ -45,21 +61,17 @@ export function OtherControls({ value }: OtherControlsProps) {
         });
         return;
       }
-
-      // Convert to CSV string
-      const header = 'timestamp,event_type,details_json\n';
-      const rows = logEntries.map(entry => 
+      const header = 'timestamp,event_type,details_json\\n';
+      const rows = logEntries.map(entry =>
         `${new Date(entry.timestamp).toISOString()},${entry.event},"${JSON.stringify(entry.details).replace(/"/g, '""')}"`
-      ).join('\n');
+      ).join('\\n');
       const csvString = header + rows;
-
       console.log("--- Rehearsal Log (from IndexedDB - CSV Format) ---");
       console.log(csvString);
       console.log("----------------------------------------------------");
-
-      toast({ 
-        title: "Export Log (Simulated)", 
-        description: `Fetched ${logEntries.length} entries from IndexedDB. CSV-formatted log printed to console. Actual CSV file download is a future feature.` 
+      toast({
+        title: "Export Log (Simulated)",
+        description: `Fetched ${logEntries.length} entries from IndexedDB. CSV-formatted log printed to console. Actual CSV file download is a future feature.`
       });
     } catch (error) {
       console.error("Error exporting log:", error);
@@ -70,7 +82,7 @@ export function OtherControls({ value }: OtherControlsProps) {
       });
     }
   };
-  
+
   const handleClearLog = async () => {
     try {
       await clearLogEntries();
@@ -98,14 +110,16 @@ export function OtherControls({ value }: OtherControlsProps) {
         }
         labelHtmlFor="panic-mode-switch"
         switchId="panic-mode-switch"
-        checked={settings.panicMode}
+        // WHY: Read 'panicMode' from the determined source.
+        checked={panicMode}
         onCheckedChange={handlePanicModeToggle}
         tooltipContent={<p>Immediately blacks out the main visualizer output. Useful for emergencies.</p>}
-        switchProps={{ 
+        switchProps={{
           className: cn(
-            "data-[state=checked]:bg-destructive", // Ensured destructive color for checked state
-            settings.panicMode && "animate-destructive-pulse"
-          ) 
+            "data-[state=checked]:bg-destructive",
+            // WHY: Read 'panicMode' for conditional animation.
+            panicMode && "animate-destructive-pulse"
+          )
         }}
         switchAriaLabel="Toggle Panic Mode"
       />
@@ -117,13 +131,14 @@ export function OtherControls({ value }: OtherControlsProps) {
         }
         labelHtmlFor="logo-blackout-switch"
         switchId="logo-blackout-switch"
-        checked={settings.logoBlackout}
-        onCheckedChange={(checked) => updateSetting('logoBlackout', checked)}
+        // WHY: Read 'logoBlackout' from the determined source.
+        checked={logoBlackout}
+        onCheckedChange={handleLogoBlackoutToggle}
         tooltipContent={<p>Hides all logo and watermark elements from the visualizer.</p>}
         containerClassName="mt-3"
         switchAriaLabel="Toggle Logo Blackout"
       />
-      
+
       <div className="mt-4 space-y-1">
         <Tooltip>
           <TooltipTrigger asChild>

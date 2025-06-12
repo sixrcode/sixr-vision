@@ -2,7 +2,11 @@
 "use client";
 
 import { useScene } from '@/providers/SceneProvider';
-import { useSettings } from '@/providers/SettingsProvider';
+// WHY: Import the original useSettings hook for fallback behavior.
+import { useSettings as useSettingsContextHook } from '@/providers/SettingsProvider';
+// WHY: Import the Zustand store for pilot mode.
+import { useSettingsStore } from '@/store/settingsStore';
+
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { ControlPanelSection } from './ControlPanelSection';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
@@ -14,7 +18,14 @@ type PresetSelectorProps = {
 
 export function PresetSelector({ value }: PresetSelectorProps) {
   const { scenes, setCurrentSceneById } = useScene();
-  const { settings } = useSettings();
+
+  // WHY: Determine if we are in 'pilot' mode for Zustand.
+  const useZustand = process.env.NEXT_PUBLIC_USE_ZUSTAND === 'pilot';
+
+  // WHY: Conditionally select currentSceneId from Zustand or React Context.
+  const currentSceneId = useZustand
+    ? useSettingsStore(state => state.currentSceneId)
+    : useSettingsContextHook().settings.currentSceneId;
 
   return (
     <ControlPanelSection title="Presets" value={value}>
@@ -25,7 +36,8 @@ export function PresetSelector({ value }: PresetSelectorProps) {
               <TooltipTrigger asChild>
                 <PresetCard
                   scene={scene}
-                  isActive={settings.currentSceneId === scene.id}
+                  // WHY: Use the determined currentSceneId for isActive check.
+                  isActive={currentSceneId === scene.id}
                   onClick={() => setCurrentSceneById(scene.id)}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' || e.key === ' ') {
