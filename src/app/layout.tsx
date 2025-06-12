@@ -28,33 +28,33 @@ const geistMono = { variable: '' };
 // === DATA 70 FONT CONFIGURATION ===
 // IMPORTANT: Ensure the font file 'Data70.ttf' is in 'src/app/fonts/'.
 // Create the 'src/app/fonts/' directory if it doesn't exist.
-const data70Font = localFont({
-  src: [
-    {
-      path: './fonts/Data70.ttf', // Expects Data70.ttf in src/app/fonts/
-    },
-  ],
-  variable: '--font-data70',
-  display: 'swap',
-  fallback: ['monospace'], 
-});
-// const data70Font = { variable: ''}; // Use this if Data70.ttf is confirmed unavailable & causing build errors
+// const data70Font = localFont({
+//   src: [
+//     {
+//       path: './fonts/Data70.ttf', // Expects Data70.ttf in src/app/fonts/
+//     },
+//   ],
+//   variable: '--font-data70',
+//   display: 'swap',
+//   fallback: ['monospace'], 
+// });
+const data70Font = { variable: ''}; // Use this if Data70.ttf is confirmed unavailable & causing build errors
 
 // === TORUS FONT CONFIGURATION ===
 // Now using Fontspring-DEMO-toruspro-variable.ttf
 // IMPORTANT: Ensure 'Fontspring-DEMO-toruspro-variable.ttf' is in 'src/app/fonts/'.
-const torusVariationsFont = localFont({
-  src: [
-    {
-      // Path relative to this layout.tsx file
-      path: './fonts/Fontspring-DEMO-toruspro-variable.ttf',
-    },
-  ],
-  variable: '--font-torus-variations',
-  display: 'swap',
-  fallback: ['monospace'], // Use system monospace as fallback
-});
-// const torusVariationsFont = { variable: '' }; // Placeholder if Torus font loading is disabled
+// const torusVariationsFont = localFont({
+//   src: [
+//     {
+//       // Path relative to this layout.tsx file
+//       path: './fonts/Fontspring-DEMO-toruspro-variable.ttf',
+//     },
+//   ],
+//   variable: '--font-torus-variations',
+//   display: 'swap',
+//   fallback: ['monospace'], // Use system monospace as fallback
+// });
+const torusVariationsFont = { variable: '' }; // Placeholder if Torus font loading is disabled
 
 export const metadata: Metadata = {
   title: 'SIXR Vision - SBNF Cosmic Grapevines',

@@ -84,9 +84,9 @@ export async function getAllLogEntries(): Promise<RehearsalLogEntry[]> {
       getRequest.onsuccess = () => {
  resolve(getRequest.result as RehearsalLogEntry[]);
       };
-      request.onerror = () => {
-        console.error('Error fetching log entries:', request.error);
-        reject(request.error);
+      getRequest.onerror = () => {
+        console.error('Error fetching log entries:', getRequest.error);
+        reject(getRequest.error);
       };
     });
   } catch (error) {
@@ -116,3 +116,4 @@ export async function clearLogEntries(): Promise<void> {
     return Promise.resolve();
   }
 }
+
