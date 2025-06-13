@@ -19,10 +19,6 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  experimental: {
-    // allowedDevOrigins was here, but it's not a valid experimental key.
-    // It should be a top-level key.
-  },
   allowedDevOrigins: [
     'https://6000-firebase-studio-1747722195027.cluster-3ch54x2epbcnetrm6ivbqqebjk.cloudworkstations.dev',
     'http://localhost:9002' // Uncommented for local development
