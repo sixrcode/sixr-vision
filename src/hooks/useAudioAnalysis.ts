@@ -104,10 +104,15 @@ export function useAudioAnalysis() {
    */
   const stopAudioAnalysis = useCallback(async () => {
     console.log("stopAudioAnalysis called. Current state - isInitializedInternalActual:", isInitializedInternalRef.current);
-    if (!isInitializedInternalRef.current && (!audioContextRef.current && !mediaStreamRef.current)) {
-        console.log("Audio not initialized or already stopped. Aborting stopAudioAnalysis.");
+
+    // Check if there's anything to stop before proceeding
+    const shouldStop = isInitializedInternalRef.current || audioContextRef.current || mediaStreamRef.current;
+    if (!shouldStop) {
+        console.log("Audio not initialized or already stopped. Skipping stopAudioAnalysis.");
         return;
     }
+
+    console.log("Proceeding with audio stop and cleanup.");
 
     if (localAnalysisLoopFrameIdRef.current) {
       cancelAnimationFrame(localAnalysisLoopFrameIdRef.current);
@@ -115,24 +120,50 @@ export function useAudioAnalysis() {
       console.log("Analysis loop stopped by stopAudioAnalysis.");
     }
 
-    if (gainNodeRef.current && audioContextRef.current && audioContextRef.current.destination) {
-        try { gainNodeRef.current.disconnect(audioContextRef.current.destination); } catch (e) { console.warn("Error disconnecting gainNode from destination", e); }
+    // Disconnect nodes with defensive checks
+    // Note: The order of disconnection can sometimes matter in complex graphs.
+    // We prioritize disconnecting from the destination first, then intermediate nodes.
+
+    // Disconnect GainNode from destination (if connected)
+    if (gainNodeRef.current && audioContextRef.current?.destination) {
+      try {
+        // Check if the node has outputs connected before attempting to disconnect
+        if (gainNodeRef.current.numberOfOutputs > 0) {
+          gainNodeRef.current.disconnect(audioContextRef.current.destination);
+          console.log("GainNode disconnected from destination.");
+        }
+      } catch (e) {
+        if (e instanceof DOMException && e.name === 'InvalidAccessError') {
+           console.info("GainNode already disconnected from destination or never connected.");
+        } else {
+           console.warn("Error disconnecting gainNode from destination", e);
+        }
+      }
     }
+
+    // Disconnect sourceNode from subsequent nodes (GainNode or AnalyserNode)
     if (sourceNodeRef.current) {
         if (gainNodeRef.current) {
-            try { sourceNodeRef.current.disconnect(gainNodeRef.current); } catch (e) { console.warn("Error disconnecting sourceNodeRef from gainNodeRef", e); }
+            try { sourceNodeRef.current.disconnect(gainNodeRef.current); console.log("SourceNode disconnected from GainNode."); }
+            catch (e) { console.warn("Error disconnecting sourceNode from GainNode", e); }
+        } else if(analyserRef.current) { // Direct connection case
+            try { sourceNodeRef.current.disconnect(analyserRef.current); console.log("SourceNode disconnected from AnalyserNode."); }
+            catch (e) { console.warn("Error disconnecting sourceNode from AnalyserNode", e); }
         }
-        if(analyserRef.current && gainNodeRef.current === null) {
- try { sourceNodeRef.current.disconnect(analyserRef.current); } catch(e) {console.warn("Error disconnecting sourceNodeRef from analyserRef", e);}
-        }
-        sourceNodeRef.current.disconnect();
- sourceNodeRef.current = null;
+        // Disconnect any remaining connections from the source node
+        try { sourceNodeRef.current.disconnect(); console.log("SourceNode disconnected from all."); }
+        catch (e) { console.warn("Error performing general disconnect on SourceNode", e); }
+        sourceNodeRef.current = null;
     }
+
+    // Disconnect GainNode from AnalyserNode (if connected) and clear all its connections
     if (gainNodeRef.current) {
         if(analyserRef.current) {
-            try { gainNodeRef.current.disconnect(analyserRef.current); } catch (e) { console.warn("Error disconnecting gainNodeRef from analyserRef", e); }
+            try { gainNodeRef.current.disconnect(analyserRef.current); console.log("GainNode disconnected from AnalyserNode."); }
+            catch (e) { console.warn("Error disconnecting GainNode from AnalyserNode", e); }
         }
-        gainNodeRef.current.disconnect();
+        try { gainNodeRef.current.disconnect(); console.log("GainNode disconnected from all."); }
+        catch (e) { console.warn("Error performing general disconnect on GainNode", e); }
         gainNodeRef.current = null;
     }
     if (analyserRef.current) {
@@ -178,8 +209,14 @@ export function useAudioAnalysis() {
    * @returns {Promise<boolean>} True if initialization was successful, false otherwise.
    */
   const initializeAudio = useCallback(async (): Promise<boolean> => {
-    console.log("initializeAudio called. Current state - isInitializedInternalActual:", isInitializedInternalRef.current, "AudioContext state:", audioContextRef.current?.state);
+    console.log(
+      "initializeAudio called. Current state - isInitializedInternalActual:",
+      isInitializedInternalRef.current,
+      "AudioContext state:",
+      audioContextRef.current?.state
+    );
 
+    // If already initialized, perform cleanup before restarting
     if (isInitializedInternalRef.current || audioContextRef.current) {
       console.log("Performing cleanup before audio re-initialization...");
       await stopAudioAnalysis();
@@ -203,10 +240,14 @@ export function useAudioAnalysis() {
         console.log("No audio input devices found.");
       }
 
-      const audioConstraints: MediaTrackConstraints = { };
-      // Use settingsRef.current to access the latest settings from Zustand
-      if (settingsRef.current.selectedAudioInputDeviceId && audioInputs.some(d => d.deviceId === settingsRef.current.selectedAudioInputDeviceId)) {
-        audioConstraints.deviceId = { exact: settingsRef.current.selectedAudioInputDeviceId };
+      const audioConstraints: MediaTrackConstraints = {};
+      if (
+        settingsRef.current.selectedAudioInputDeviceId &&
+        audioInputs.some(d => d.deviceId === settingsRef.current.selectedAudioInputDeviceId)
+      ) {
+        audioConstraints.deviceId = {
+          exact: settingsRef.current.selectedAudioInputDeviceId,
+        };
         console.log("Attempting to use selected deviceId:", settingsRef.current.selectedAudioInputDeviceId);
       } else {
         console.log("No specific deviceId selected or selection invalid, using default audio input.");
@@ -223,11 +264,19 @@ export function useAudioAnalysis() {
         console.log(`Selected Audio Track Label: ${selectedTrack.label || 'No label'}`);
         console.log("Selected Audio Track Settings:", JSON.stringify(selectedTrack.getSettings(), null, 2));
       } else {
-        console.warn("No audio tracks found in the obtained stream.");
         throw new Error("No audio tracks available in the microphone stream.");
       }
 
-      const newAudioContext = new (window.AudioContext || (window as { webkitAudioContext: typeof AudioContext; }).webkitAudioContext)();
+      // ✅ Safe cross-browser AudioContext creation
+      const AudioContextConstructor =
+        window.AudioContext ||
+        ('webkitAudioContext' in window ? (window as any).webkitAudioContext : undefined);
+
+      if (!AudioContextConstructor) {
+        throw new Error("AudioContext is not supported in this browser.");
+      }
+
+      const newAudioContext = new AudioContextConstructor();
       audioContextRef.current = newAudioContext;
       console.log("AudioContext created. State:", newAudioContext.state);
 
@@ -238,55 +287,71 @@ export function useAudioAnalysis() {
       }
 
       if (newAudioContext.state !== 'running') {
-        throw new Error(`AudioContext could not be started/resumed. State: ${newAudioContext.state}`);
+        throw new Error(`AudioContext could not be started. State: ${newAudioContext.state}`);
       }
 
       sourceNodeRef.current = newAudioContext.createMediaStreamSource(stream);
       analyserRef.current = newAudioContext.createAnalyser();
       gainNodeRef.current = newAudioContext.createGain();
 
-      console.log("Analyser fftSize will be set to:", settingsRef.current.fftSize);
       analyserRef.current.fftSize = settingsRef.current.fftSize;
       analyserRef.current.smoothingTimeConstant = 0.3;
-      console.log("Analyser fftSize set to:", analyserRef.current.fftSize, "Resulting frequencyBinCount:", analyserRef.current.frequencyBinCount);
       dataArrayRef.current = new Uint8Array(analyserRef.current.frequencyBinCount);
+      console.log(
+        "Analyser fftSize set to:",
+        analyserRef.current.fftSize,
+        "Resulting frequencyBinCount:",
+        analyserRef.current.frequencyBinCount
+      );
 
       sourceNodeRef.current.connect(gainNodeRef.current);
       gainNodeRef.current.connect(analyserRef.current);
 
-      if (settingsRef.current.monitorAudio && gainNodeRef.current && newAudioContext.destination) {
-        gainNodeRef.current.connect(newAudioContext.destination);
-        console.log("Audio monitoring enabled: GainNode connected to destination.");
+      if (settingsRef.current.monitorAudio && audioContextRef.current.destination) {
+        gainNodeRef.current.connect(audioContextRef.current.destination);
+        console.log("Audio monitoring enabled.");
       }
 
-      if (settingsRef.current.enableAgc && gainNodeRef.current) {
-        gainNodeRef.current.gain.setValueAtTime(1.0, newAudioContext.currentTime);
-      } else if (gainNodeRef.current) {
-        gainNodeRef.current.gain.setValueAtTime(settingsRef.current.gain, newAudioContext.currentTime);
-      }
-      if (gainNodeRef.current) console.log("GainNode initial value set to:", gainNodeRef.current.gain.value);
+      const initialGain = settingsRef.current.enableAgc ? 1.0 : settingsRef.current.gain;
+      gainNodeRef.current.gain.setValueAtTime(initialGain, newAudioContext.currentTime);
+      console.log("GainNode initial value set to:", initialGain);
 
       setIsInitialized(true);
       setError(null);
-      console.log("Audio initialized successfully. isInitialized set to true.");
+      console.log("Audio initialized successfully.");
       return true;
 
     } catch (err) {
       console.error("Error initializing audio:", err);
-      const errorMessage = err instanceof Error ? err.message : String(err);
+
+      let errorMessage = 'Unknown error';
+      if (err instanceof DOMException && err.name === 'NotAllowedError') {
+        errorMessage =
+          'Microphone access was denied. Please allow microphone access in your browser settings and reload the page.';
+      } else if (err instanceof Error) {
+        errorMessage = err.message;
+      }
+
       setError(errorMessage);
       setIsInitialized(false);
+
       if (mediaStreamRef.current) {
         mediaStreamRef.current.getTracks().forEach(track => track.stop());
         mediaStreamRef.current = null;
       }
+
       if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
-        try { await audioContextRef.current.close(); } catch(e) { console.warn("Error closing audio context during init failure cleanup", e); }
+        try {
+          await audioContextRef.current.close();
+        } catch (e) {
+          console.warn("Error closing audio context during init failure cleanup", e);
+        }
         audioContextRef.current = null;
       }
+
       return false;
     }
-  }, [setIsInitialized, setError, setAudioInputDevices, stopAudioAnalysis]); // settingsRef is stable
+  }, [setIsInitialized, setError, setAudioInputDevices, stopAudioAnalysis]);
 
 
   /**
