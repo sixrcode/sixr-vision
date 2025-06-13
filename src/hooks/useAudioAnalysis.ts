@@ -2,10 +2,10 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { useAudioDataStore } from '@/store/audioDataStore'; // MODIFIED: Import Zustand store
-import { useSettingsStore } from '@/store/settingsStore'; // MODIFIED: Import Zustand store
+import { useAudioDataStore } from '@/store/audioDataStore';
+import { useSettingsStore } from '@/store/settingsStore';
 import { INITIAL_AUDIO_DATA } from '@/lib/constants';
-import type { Settings, AudioData } from '@/types'; // Ensure AudioData is imported
+import type { Settings, AudioData } from '@/types';
 
 // Beat Detection Parameters
 const BEAT_DETECTION_BASS_THRESHOLD = 0.05;
@@ -23,7 +23,7 @@ const AGC_MAX_GAIN = 4.0;
 const AGC_ATTACK_TIME_CONSTANT = 0.03;
 const AGC_RELEASE_TIME_CONSTANT = 0.4;
 
-const EFFECTIVE_SILENCE_THRESHOLD_SUM = 15; // Sum of all spectrum bins; if below this, considered silence.
+const EFFECTIVE_SILENCE_THRESHOLD_SUM = 15;
 
 /**
  * @fileOverview This hook manages the entire audio analysis pipeline for the SIXR Vision application.
@@ -39,8 +39,7 @@ const EFFECTIVE_SILENCE_THRESHOLD_SUM = 15; // Sum of all spectrum bins; if belo
  *  - audioInputDevices: An array of MediaDeviceInfo objects for available audio input devices.
  */
 export function useAudioAnalysis() {
-  // MODIFIED: Get settings and audio data from Zustand stores
-  const settings = useSettingsStore(state => state); // Get all settings for settingsRef
+  const settings = useSettingsStore(state => state);
   const settingsRef = useRef(settings);
 
   useEffect(() => {
@@ -48,7 +47,7 @@ export function useAudioAnalysis() {
   }, [settings]);
 
   const setAudioData = useAudioDataStore(state => state.setAudioData);
-  const currentGlobalAudioData = useAudioDataStore(state => state); // For bpm access
+  const currentGlobalAudioData = useAudioDataStore(state => state);
 
   const [isInitializedInternalActual, setIsInitializedInternalActual] = useState(false);
   const [errorInternalActual, setErrorInternalActual] = useState<string | null>(null);
@@ -64,25 +63,15 @@ export function useAudioAnalysis() {
     errorInternalRef.current = errorInternalActual;
   }, [errorInternalActual]);
 
-
-  /**
-   * Updates the internal 'isInitialized' state and logs the change.
-   * @param {boolean} val - The new initialization state.
-   */
   const setIsInitialized = useCallback((val: boolean) => {
     console.log(`setIsInitialized called with: ${val}. Previous isInitialized: ${isInitializedInternalRef.current}`);
     setIsInitializedInternalActual(val);
   }, []);
 
-  /**
-   * Updates the internal 'error' state and logs the change.
-   * @param {string | null} val - The new error message, or null if no error.
-   */
   const setError = useCallback((val: string | null) => {
     console.log(`setError called with: ${val}. Previous error: ${errorInternalRef.current}`);
     setErrorInternalActual(val);
   }, []);
-
 
   const audioContextRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
@@ -96,16 +85,9 @@ export function useAudioAnalysis() {
   const beatTimestampsRef = useRef<number[]>([]);
   const previousRmsRef = useRef(0);
 
-
-  /**
-   * Stops audio capture and analysis, releasing microphone access and cleaning up AudioContext resources.
-   * Resets audio data to initial values.
-   * @async
-   */
   const stopAudioAnalysis = useCallback(async () => {
     console.log("stopAudioAnalysis called. Current state - isInitializedInternalActual:", isInitializedInternalRef.current);
 
-    // Check if there's anything to stop before proceeding
     const shouldStop = isInitializedInternalRef.current || audioContextRef.current || mediaStreamRef.current;
     if (!shouldStop) {
         console.log("Audio not initialized or already stopped. Skipping stopAudioAnalysis.");
@@ -120,14 +102,8 @@ export function useAudioAnalysis() {
       console.log("Analysis loop stopped by stopAudioAnalysis.");
     }
 
-    // Disconnect nodes with defensive checks
-    // Note: The order of disconnection can sometimes matter in complex graphs.
-    // We prioritize disconnecting from the destination first, then intermediate nodes.
-
-    // Disconnect GainNode from destination (if connected)
     if (gainNodeRef.current && audioContextRef.current?.destination) {
       try {
-        // Check if the node has outputs connected before attempting to disconnect
         if (gainNodeRef.current.numberOfOutputs > 0) {
           gainNodeRef.current.disconnect(audioContextRef.current.destination);
           console.log("GainNode disconnected from destination.");
@@ -141,22 +117,19 @@ export function useAudioAnalysis() {
       }
     }
 
-    // Disconnect sourceNode from subsequent nodes (GainNode or AnalyserNode)
     if (sourceNodeRef.current) {
         if (gainNodeRef.current) {
             try { sourceNodeRef.current.disconnect(gainNodeRef.current); console.log("SourceNode disconnected from GainNode."); }
             catch (e) { console.warn("Error disconnecting sourceNode from GainNode", e); }
-        } else if(analyserRef.current) { // Direct connection case
+        } else if(analyserRef.current) {
             try { sourceNodeRef.current.disconnect(analyserRef.current); console.log("SourceNode disconnected from AnalyserNode."); }
             catch (e) { console.warn("Error disconnecting sourceNode from AnalyserNode", e); }
         }
-        // Disconnect any remaining connections from the source node
         try { sourceNodeRef.current.disconnect(); console.log("SourceNode disconnected from all."); }
         catch (e) { console.warn("Error performing general disconnect on SourceNode", e); }
         sourceNodeRef.current = null;
     }
 
-    // Disconnect GainNode from AnalyserNode (if connected) and clear all its connections
     if (gainNodeRef.current) {
         if(analyserRef.current) {
             try { gainNodeRef.current.disconnect(analyserRef.current); console.log("GainNode disconnected from AnalyserNode."); }
@@ -200,36 +173,27 @@ export function useAudioAnalysis() {
     console.log("Audio analysis stopped and state reset. isInitialized set to false.");
   }, [setAudioData, setIsInitialized, setError]);
 
-
-  /**
-   * Initializes audio capture and analysis.
-   * Requests microphone permission, sets up AudioContext, AnalyserNode, and GainNode.
-   * Starts the audio analysis loop if successful.
-   * @async
-   * @returns {Promise<boolean>} True if initialization was successful, false otherwise.
-   */
   const initializeAudio = useCallback(async (): Promise<boolean> => {
     console.log(
       "initializeAudio called. Current state - isInitializedInternalActual:",
-      isInitializedInternalRef.current,
+      isInitializedInternalRef.current, // Use the hook's ref
       "AudioContext state:",
-      audioContextRef.current?.state
+      audioContextRef.current?.state // Use the hook's ref
     );
 
-    // If already initialized, perform cleanup before restarting
-    if (isInitializedInternalRef.current || audioContextRef.current) {
+    if (isInitializedInternalRef.current || audioContextRef.current) { // Use hook's refs
       console.log("Performing cleanup before audio re-initialization...");
-      await stopAudioAnalysis();
+      await stopAudioAnalysis(); // Use hook's stopAudioAnalysis
       console.log("Cleanup via stopAudioAnalysis finished before re-init.");
     }
 
-    setError(null);
+    setError(null); // Use hook's setError
 
     try {
       console.log("Enumerating audio input devices...");
       const devices = await navigator.mediaDevices.enumerateDevices();
       const audioInputs = devices.filter(device => device.kind === 'audioinput');
-      setAudioInputDevices(audioInputs);
+      setAudioInputDevices(audioInputs); // Use hook's setAudioInputDevices
 
       if (audioInputs.length > 0) {
         console.log("Available audio input devices:");
@@ -242,7 +206,7 @@ export function useAudioAnalysis() {
 
       const audioConstraints: MediaTrackConstraints = {};
       if (
-        settingsRef.current.selectedAudioInputDeviceId &&
+        settingsRef.current.selectedAudioInputDeviceId && // Use hook's settingsRef
         audioInputs.some(d => d.deviceId === settingsRef.current.selectedAudioInputDeviceId)
       ) {
         audioConstraints.deviceId = {
@@ -255,7 +219,7 @@ export function useAudioAnalysis() {
 
       console.log("Requesting microphone access with constraints:", audioConstraints);
       const stream = await navigator.mediaDevices.getUserMedia({ audio: audioConstraints, video: false });
-      mediaStreamRef.current = stream;
+      mediaStreamRef.current = stream; // Use hook's mediaStreamRef
       console.log("Microphone access granted.");
 
       const audioTracks = stream.getAudioTracks();
@@ -267,17 +231,15 @@ export function useAudioAnalysis() {
         throw new Error("No audio tracks available in the microphone stream.");
       }
 
-      // ✅ Safe cross-browser AudioContext creation
       const AudioContextConstructor =
-        window.AudioContext ||
-        ('webkitAudioContext' in window ? (window as any).webkitAudioContext : undefined);
+        window.AudioContext || ('webkitAudioContext' in window ? (window as any).webkitAudioContext : undefined);
 
       if (!AudioContextConstructor) {
         throw new Error("AudioContext is not supported in this browser.");
       }
 
       const newAudioContext = new AudioContextConstructor();
-      audioContextRef.current = newAudioContext;
+      audioContextRef.current = newAudioContext; // Use hook's audioContextRef
       console.log("AudioContext created. State:", newAudioContext.state);
 
       if (newAudioContext.state === 'suspended') {
@@ -290,13 +252,13 @@ export function useAudioAnalysis() {
         throw new Error(`AudioContext could not be started. State: ${newAudioContext.state}`);
       }
 
-      sourceNodeRef.current = newAudioContext.createMediaStreamSource(stream);
-      analyserRef.current = newAudioContext.createAnalyser();
-      gainNodeRef.current = newAudioContext.createGain();
+      sourceNodeRef.current = newAudioContext.createMediaStreamSource(stream); // Use hook's sourceNodeRef
+      analyserRef.current = newAudioContext.createAnalyser(); // Use hook's analyserRef
+      gainNodeRef.current = newAudioContext.createGain(); // Use hook's gainNodeRef
 
-      analyserRef.current.fftSize = settingsRef.current.fftSize;
+      analyserRef.current.fftSize = settingsRef.current.fftSize; // Use hook's settingsRef
       analyserRef.current.smoothingTimeConstant = 0.3;
-      dataArrayRef.current = new Uint8Array(analyserRef.current.frequencyBinCount);
+      dataArrayRef.current = new Uint8Array(analyserRef.current.frequencyBinCount); // Use hook's dataArrayRef
       console.log(
         "Analyser fftSize set to:",
         analyserRef.current.fftSize,
@@ -307,17 +269,17 @@ export function useAudioAnalysis() {
       sourceNodeRef.current.connect(gainNodeRef.current);
       gainNodeRef.current.connect(analyserRef.current);
 
-      if (settingsRef.current.monitorAudio && audioContextRef.current.destination) {
+      if (settingsRef.current.monitorAudio && audioContextRef.current.destination) { // Use hook's settingsRef and audioContextRef
         gainNodeRef.current.connect(audioContextRef.current.destination);
         console.log("Audio monitoring enabled.");
       }
 
-      const initialGain = settingsRef.current.enableAgc ? 1.0 : settingsRef.current.gain;
+      const initialGain = settingsRef.current.enableAgc ? 1.0 : settingsRef.current.gain; // Use hook's settingsRef
       gainNodeRef.current.gain.setValueAtTime(initialGain, newAudioContext.currentTime);
       console.log("GainNode initial value set to:", initialGain);
 
-      setIsInitialized(true);
-      setError(null);
+      setIsInitialized(true); // Use hook's setIsInitialized
+      setError(null); // Use hook's setError
       console.log("Audio initialized successfully.");
       return true;
 
@@ -332,15 +294,15 @@ export function useAudioAnalysis() {
         errorMessage = err.message;
       }
 
-      setError(errorMessage);
-      setIsInitialized(false);
+      setError(errorMessage); // Use hook's setError
+      setIsInitialized(false); // Use hook's setIsInitialized
 
-      if (mediaStreamRef.current) {
+      if (mediaStreamRef.current) { // Use hook's mediaStreamRef
         mediaStreamRef.current.getTracks().forEach(track => track.stop());
         mediaStreamRef.current = null;
       }
 
-      if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
+      if (audioContextRef.current && audioContextRef.current.state !== 'closed') { // Use hook's audioContextRef
         try {
           await audioContextRef.current.close();
         } catch (e) {
@@ -348,22 +310,12 @@ export function useAudioAnalysis() {
         }
         audioContextRef.current = null;
       }
-
       return false;
     }
-  }, [setIsInitialized, setError, setAudioInputDevices, stopAudioAnalysis]);
+  }, [stopAudioAnalysis, setError, setAudioInputDevices, setIsInitialized]); // Correct dependencies
 
-
-  /**
-   * Calculates audio energy (bass, mid, treble, RMS) and detects beats from spectrum data.
-   * @param {Uint8Array} spectrum - The raw frequency spectrum data.
-   * @param {number} currentRmsForCalc - The previous RMS value for smoothing.
-   * @param {number} currentLastBeatTime - Timestamp of the last detected beat.
-   * @param {number} currentPreviousRms - The RMS value from the immediately preceding frame.
-   * @returns {object} An object containing bassEnergy, midEnergy, trebleEnergy, rms, and newBeat (boolean).
-   */
   const calculateEnergy = useCallback((
-    spectrumData: Uint8Array, // Renamed to avoid conflict
+    spectrumData: Uint8Array,
     currentRmsForCalc: number,
     currentLastBeatTime: number,
     currentPreviousRms: number
@@ -394,8 +346,8 @@ export function useAudioAnalysis() {
     let sumOfSquares = 0;
     for (let i = 0; i < spectrumLength; i++) sumOfSquares += ((spectrumData[i] || 0) / 255) ** 2;
     let rmsRaw = spectrumLength > 0 ? Math.sqrt(sumOfSquares / spectrumLength) : 0;
-    const rms = currentRmsForCalc + (rmsRaw - currentRmsForCalc) * RMS_SMOOTHING_FACTOR; // This is the smoothed RMS
-    let newBeat = false; // Corrected declaration
+    const rms = currentRmsForCalc + (rmsRaw - currentRmsForCalc) * RMS_SMOOTHING_FACTOR;
+    let newBeat = false;
     const currentTime = performance.now();
      if (
         (bassEnergy > BEAT_DETECTION_BASS_THRESHOLD && currentTime - currentLastBeatTime > BEAT_REFRACTORY_BASS_MS) ||
@@ -406,12 +358,6 @@ export function useAudioAnalysis() {
     return { bassEnergy, midEnergy, trebleEnergy, rms, newBeat };
   }, []);
 
-  /**
-   * Estimates Beats Per Minute (BPM) from a series of beat timestamps.
-   * @param {number[]} currentBeatTs - Array of recent beat timestamps.
-   * @param {number} currentBpm - The current BPM value for smoothing.
-   * @returns {number} The estimated BPM.
-   */
   const estimateBPM = useCallback((currentBeatTs: number[], currentBpm: number): number => {
     if (currentBeatTs.length < 5) return currentBpm || 120;
     const intervals = [];
@@ -427,11 +373,6 @@ export function useAudioAnalysis() {
     return smoothedBpm > 0 ? smoothedBpm : 120;
   }, []);
 
-  /**
-   * The main audio analysis loop, running on each animation frame.
-   * Gets spectrum data, calculates energies, detects beats, estimates BPM, and applies AGC.
-   * Updates the global audioData state.
-   */
   const analyze = useCallback(() => {
     if (!analyserRef.current || !dataArrayRef.current || !audioContextRef.current || audioContextRef.current.state !== 'running' || !isInitializedInternalRef.current) {
        if (localAnalysisLoopFrameIdRef.current) {
@@ -444,13 +385,6 @@ export function useAudioAnalysis() {
     const currentSpectrum = new Uint8Array(dataArrayRef.current.length);
     analyserRef.current.getByteFrequencyData(currentSpectrum);
     const spectrumSum = currentSpectrum.reduce((a, b) => a + b, 0);
-
-    // console.log(
-    //     '[RAW Audio Data] Sum:', spectrumSum,
-    //     'Bins (first 5):', Array.from(currentSpectrum.slice(0,5)),
-    //     'Manual Gain Setting:', settingsRef.current.gain,
-    //     'Actual GainNode Value:', gainNodeRef.current?.gain.value.toFixed(3)
-    // );
 
     let energyAndRmsResult: Pick<AudioData, 'bassEnergy' | 'midEnergy' | 'trebleEnergy' | 'rms'> & { newBeat: boolean };
     let calculatedBpm = currentGlobalAudioData.bpm;
@@ -503,9 +437,7 @@ export function useAudioAnalysis() {
      localAnalysisLoopFrameIdRef.current = requestAnimationFrame(analyze);
   }, [calculateEnergy, estimateBPM, setAudioData, currentGlobalAudioData.bpm]);
 
-  // Effect to manage the analysis loop based on initialization state
   useEffect(() => {
-    // Phase 1 Fix: Use isInitializedInternalRef.current in the condition
     if (
       isInitializedInternalRef.current &&
       audioContextRef.current &&
@@ -530,9 +462,8 @@ export function useAudioAnalysis() {
             localAnalysisLoopFrameIdRef.current = null;
         }
     };
-  }, [isInitializedInternalActual, analyze, stopAudioAnalysis]); // Keep isInitializedInternalActual here to react to its changes
+  }, [isInitializedInternalActual, analyze]);
 
-  // Effect to update gain based on manual settings (only if AGC is off)
   useEffect(() => {
     if (isInitializedInternalActual && gainNodeRef.current && audioContextRef.current && audioContextRef.current.state === 'running') {
       if (!settingsRef.current.enableAgc) {
@@ -541,7 +472,6 @@ export function useAudioAnalysis() {
     }
   }, [isInitializedInternalActual, settings.gain, settings.enableAgc]);
 
-  // Effect to update FFT size
   useEffect(() => {
     if (analyserRef.current && isInitializedInternalActual) {
       if (settingsRef.current.fftSize !== analyserRef.current.fftSize) {
@@ -554,7 +484,6 @@ export function useAudioAnalysis() {
     }
   }, [isInitializedInternalActual, settings.fftSize, setAudioData]);
 
-  // Effect to manage audio monitoring connection
   useEffect(() => {
     if (isInitializedInternalActual && gainNodeRef.current && audioContextRef.current && audioContextRef.current.destination) {
       if (settingsRef.current.monitorAudio) {
@@ -576,14 +505,12 @@ export function useAudioAnalysis() {
     };
   }, [isInitializedInternalActual, settings.monitorAudio]);
 
-  // Final cleanup effect: runs only once when the hook is unmounted
   useEffect(() => {
     return () => {
       console.log("useAudioAnalysis hook is UNMOUNTING, calling stopAudioAnalysis for final cleanup.");
       stopAudioAnalysis();
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [stopAudioAnalysis]);
 
   return {
     initializeAudio,
@@ -593,3 +520,5 @@ export function useAudioAnalysis() {
     audioInputDevices
   };
 }
+
+    
