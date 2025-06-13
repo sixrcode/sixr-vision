@@ -21,7 +21,8 @@ const nextConfig: NextConfig = {
   },
   allowedDevOrigins: [
     'https://6000-firebase-studio-1747722195027.cluster-3ch54x2epbcnetrm6ivbqqebjk.cloudworkstations.dev',
-    'http://localhost:9002' // Uncommented for local development
+    'https://6000-firebase-studio-1747722195027.cluster-3ch54x2epbcnetrm6ivbqqebjk.cloudworkstations.dev:443', // Added entry with port
+    'http://localhost:9002'
   ],
 };
 
