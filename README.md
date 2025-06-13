@@ -232,7 +232,9 @@ An `InitPromptOverlay` component is rendered at a high level within the `AppCont
         *   **Mirror Toggle:** Flip the webcam feed horizontally in "Webcam Layer" controls.
 
     ⚠️ **On first load, or if permissions haven't been granted, a prompt will appear asking for microphone and (optional) camera access. These are required to unlock the full visual and interactive experience. Click "Enable Mic" or "Enable Cam" on the prompt to grant access or retry if permissions were previously blocked.**
+
 *   **Presets:** Click on scene thumbnails or press number keys **1–9** to load built-in scenes (see "Visualizer Presets In-Depth" for descriptions). Scenes cross-fade automatically if "Enable Scene Transitions" is active. Press **P** to blackout (panic mode), and **L** to toggle the SIXR logo blackout.
+
 *   **AI tools:** Explore the "AI: ..." sections in the control panel. Use the Palette Genie, Procedural Assets generator, or let the AI suggest scenes. These may require a valid `GOOGLE_API_KEY`. For example, try the SBNF-themed prompt "Cosmic Grapevines" for procedural assets.
 *   **Remote control:** (Planned Feature) The app will listen for WebSocket/OSC commands. You'll be able to send commands like `{"route":"/preset","value":"radial_burst"}` to change scenes remotely. (An Art-Net lighting console will be able to send/receive as well.)
 *   **Performance monitoring:** (Planned Feature) If you experience frame drops, an on-screen FPS display or heatmap will be available. A watchdog will attempt to self-adjust settings to recover smoothness. Use the IndexedDB logs (downloadable CSV from "System & Safety") to review performance over time.

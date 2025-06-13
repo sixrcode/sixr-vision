@@ -4,7 +4,7 @@ import type {NextConfig} from 'next';
 const nextConfig: NextConfig = {
   /* config options here */
   typescript: {
-    ignoreBuildErrors: true, 
+    ignoreBuildErrors: true,
   },
   eslint: {
     ignoreDuringBuilds: true, // Relax ESLint for builds
@@ -25,7 +25,7 @@ const nextConfig: NextConfig = {
   },
   allowedDevOrigins: [
     'https://6000-firebase-studio-1747722195027.cluster-3ch54x2epbcnetrm6ivbqqebjk.cloudworkstations.dev',
-    // You might want to add other local development origins here if needed, e.g., 'http://localhost:9002'
+    'http://localhost:9002' // Uncommented for local development
   ],
 };
 
