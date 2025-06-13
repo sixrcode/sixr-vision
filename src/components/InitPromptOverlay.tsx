@@ -13,7 +13,7 @@ export default function InitPromptOverlay() {
   const [isLoadingCam, setIsLoadingCam] = useState(false);
   const [isLoadingBoth, setIsLoadingBoth] = useState(false);
 
-  const { initializeAudio, isInitialized: micActive, error: audioError } = useAudioAnalysis();
+  const { initializeAudio, isInitialized: micActive, error: audioError } = useAudioAnalysis() as { initializeAudio: () => Promise<boolean>, isInitialized: boolean, error: Error | string | null };
   const showWebcam = useSettingsStore(state => state.showWebcam);
   const updateSetting = useSettingsStore(state => state.updateSetting);
 
@@ -25,7 +25,10 @@ export default function InitPromptOverlay() {
         // OR if mic is fine but webcam is not shown, still prompt (to enable cam).
         // OR if webcam is fine but mic is not, still prompt (to enable mic).
         // Essentially, prompt if either is missing or if mic has an error.
-        if ((!micActive || audioError) || !showWebcam ) {
+        // Check if audioError is an object and has a message property before accessing message.
+        const hasAudioErrorMessage = typeof audioError === 'object' && audioError !== null && 'message' in audioError && typeof audioError.message === 'string';
+
+        if ((!micActive || hasAudioErrorMessage) || !showWebcam ) {
              // But only if we are not in the middle of an "Enable Both" attempt that might succeed.
             if (!isLoadingBoth) {
                 setIsVisible(true);
@@ -75,12 +78,13 @@ export default function InitPromptOverlay() {
     let camEnableAttempted = false;
 
     try {
-      console.log("[InitPromptOverlay - EnableBoth] Attempting microphone initialization...");
+      // Initialize audio first
+      console.log("[InitPromptOverlay - EnableBoth] Attempting audio initialization...");
       micOk = await initializeAudio();
-      console.log("[InitPromptOverlay - EnableBoth] Microphone initialization successful:", micOk);
+      console.log("[InitPromptOverlay - EnableBoth] Audio initialization successful:", micOk);
 
       if (micOk) {
-        console.log("[InitPromptOverlay - EnableBoth] Microphone OK. Attempting to enable camera setting...");
+        console.log("[InitPromptOverlay - EnableBoth] Audio OK. Attempting to enable camera setting...");
         updateSetting('showWebcam', true);
         camEnableAttempted = true;
         console.log("[InitPromptOverlay - EnableBoth] Camera enabling setting updated (showWebcam: true).");
@@ -92,7 +96,7 @@ export default function InitPromptOverlay() {
     } finally {
       setIsLoadingBoth(false);
       // Log the outcome. Actual camera status is reflected by `showWebcam` from Zustand.
-      console.log(
+      console.info(
         "[InitPromptOverlay - EnableBoth] Process finished. Mic init success:", micOk, 
         "Camera enable attempted:", camEnableAttempted
       );
@@ -175,7 +179,7 @@ export default function InitPromptOverlay() {
         </div>
         {audioError && !micActive && (
             <p className="text-xs text-destructive mt-4">
-                Mic Error: {audioError}. Please check browser permissions and audio device selection in settings.
+                Mic Error: {typeof audioError === 'string' ? audioError : (audioError as Error).message}. Please check browser permissions and audio device selection in settings.
             </p>
         )}
         <p className="text-xs text-muted-foreground mt-6">

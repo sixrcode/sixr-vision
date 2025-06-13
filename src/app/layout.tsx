@@ -59,7 +59,7 @@ const torusVariationsFont = { variable: '' }; // Placeholder if Torus font loadi
 export const metadata: Metadata = {
   title: 'SIXR Vision - SBNF Cosmic Grapevines',
   description: 'Audio-Reactive Visualizer with AI Features, themed for SBNF 2025',
-  icons: [], // Explicitly provide an empty array for icons
+  // Removed 'icons: []' to revert to default Next.js icon handling
 };
 
 export default function RootLayout({
