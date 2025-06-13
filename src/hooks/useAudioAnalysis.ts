@@ -72,7 +72,7 @@ export function useAudioAnalysis() {
   const setIsInitialized = useCallback((val: boolean) => {
     console.log(`setIsInitialized called with: ${val}. Previous isInitialized: ${isInitializedInternalRef.current}`);
     setIsInitializedInternalActual(val);
-  }, []); 
+  }, []);
 
   /**
    * Updates the internal 'error' state and logs the change.
@@ -81,7 +81,7 @@ export function useAudioAnalysis() {
   const setError = useCallback((val: string | null) => {
     console.log(`setError called with: ${val}. Previous error: ${errorInternalRef.current}`);
     setErrorInternalActual(val);
-  }, []); 
+  }, []);
 
 
   const audioContextRef = useRef<AudioContext | null>(null);
@@ -139,7 +139,7 @@ export function useAudioAnalysis() {
         analyserRef.current.disconnect();
         analyserRef.current = null;
     }
-    
+
     dataArrayRef.current = null;
 
     if (mediaStreamRef.current) {
@@ -162,7 +162,7 @@ export function useAudioAnalysis() {
 
     setIsInitialized(false);
     setAudioData(INITIAL_AUDIO_DATA);
-    setError(null); 
+    setError(null);
     previousRmsRef.current = 0;
     lastBeatTimeRef.current = 0;
     beatTimestampsRef.current = [];
@@ -179,20 +179,20 @@ export function useAudioAnalysis() {
    */
   const initializeAudio = useCallback(async (): Promise<boolean> => {
     console.log("initializeAudio called. Current state - isInitializedInternalActual:", isInitializedInternalRef.current, "AudioContext state:", audioContextRef.current?.state);
-    
+
     if (isInitializedInternalRef.current || audioContextRef.current) {
       console.log("Performing cleanup before audio re-initialization...");
-      await stopAudioAnalysis(); 
+      await stopAudioAnalysis();
       console.log("Cleanup via stopAudioAnalysis finished before re-init.");
     }
-    
-    setError(null); 
+
+    setError(null);
 
     try {
       console.log("Enumerating audio input devices...");
       const devices = await navigator.mediaDevices.enumerateDevices();
       const audioInputs = devices.filter(device => device.kind === 'audioinput');
-      setAudioInputDevices(audioInputs); 
+      setAudioInputDevices(audioInputs);
 
       if (audioInputs.length > 0) {
         console.log("Available audio input devices:");
@@ -202,7 +202,7 @@ export function useAudioAnalysis() {
       } else {
         console.log("No audio input devices found.");
       }
-      
+
       const audioConstraints: MediaTrackConstraints = { };
       // Use settingsRef.current to access the latest settings from Zustand
       if (settingsRef.current.selectedAudioInputDeviceId && audioInputs.some(d => d.deviceId === settingsRef.current.selectedAudioInputDeviceId)) {
@@ -247,7 +247,7 @@ export function useAudioAnalysis() {
 
       console.log("Analyser fftSize will be set to:", settingsRef.current.fftSize);
       analyserRef.current.fftSize = settingsRef.current.fftSize;
-      analyserRef.current.smoothingTimeConstant = 0.3; 
+      analyserRef.current.smoothingTimeConstant = 0.3;
       console.log("Analyser fftSize set to:", analyserRef.current.fftSize, "Resulting frequencyBinCount:", analyserRef.current.frequencyBinCount);
       dataArrayRef.current = new Uint8Array(analyserRef.current.frequencyBinCount);
 
@@ -267,7 +267,7 @@ export function useAudioAnalysis() {
       if (gainNodeRef.current) console.log("GainNode initial value set to:", gainNodeRef.current.gain.value);
 
       setIsInitialized(true);
-      setError(null); 
+      setError(null);
       console.log("Audio initialized successfully. isInitialized set to true.");
       return true;
 
@@ -339,7 +339,7 @@ export function useAudioAnalysis() {
       newBeat = true;
     }
     return { bassEnergy, midEnergy, trebleEnergy, rms, newBeat };
-  }, []); 
+  }, []);
 
   /**
    * Estimates Beats Per Minute (BPM) from a series of beat timestamps.
@@ -356,11 +356,11 @@ export function useAudioAnalysis() {
     if (intervals.length === 0) return currentBpm || 120;
     intervals.sort((a, b) => a - b);
     const medianInterval = intervals[Math.floor(intervals.length / 2)];
-    if (medianInterval === 0 || medianInterval < 50 ) return currentBpm || 120; 
+    if (medianInterval === 0 || medianInterval < 50 ) return currentBpm || 120;
     const bpm = 60000 / medianInterval;
     const smoothedBpm = Math.round(currentBpm * 0.8 + bpm * 0.2);
     return smoothedBpm > 0 ? smoothedBpm : 120;
-  }, []); 
+  }, []);
 
   /**
    * The main audio analysis loop, running on each animation frame.
@@ -379,7 +379,7 @@ export function useAudioAnalysis() {
     const currentSpectrum = new Uint8Array(dataArrayRef.current.length);
     analyserRef.current.getByteFrequencyData(currentSpectrum);
     const spectrumSum = currentSpectrum.reduce((a, b) => a + b, 0);
-    
+
     // console.log(
     //     '[RAW Audio Data] Sum:', spectrumSum,
     //     'Bins (first 5):', Array.from(currentSpectrum.slice(0,5)),
@@ -388,13 +388,13 @@ export function useAudioAnalysis() {
     // );
 
     let energyAndRmsResult: Pick<AudioData, 'bassEnergy' | 'midEnergy' | 'trebleEnergy' | 'rms'> & { newBeat: boolean };
-    let calculatedBpm = currentGlobalAudioData.bpm; 
+    let calculatedBpm = currentGlobalAudioData.bpm;
     let finalSpectrumToSet: Uint8Array;
 
     if (spectrumSum < EFFECTIVE_SILENCE_THRESHOLD_SUM) {
       energyAndRmsResult = { bassEnergy: 0, midEnergy: 0, trebleEnergy: 0, rms: 0, newBeat: false };
       finalSpectrumToSet = new Uint8Array(currentSpectrum.length).fill(0);
-      previousRmsRef.current = 0; 
+      previousRmsRef.current = 0;
     } else {
       energyAndRmsResult = calculateEnergy(
         currentSpectrum,
@@ -402,12 +402,12 @@ export function useAudioAnalysis() {
         lastBeatTimeRef.current,
         previousRmsRef.current
       );
-      previousRmsRef.current = energyAndRmsResult.rms; 
+      previousRmsRef.current = energyAndRmsResult.rms;
 
       if (energyAndRmsResult.newBeat) {
           const currentTime = performance.now();
           lastBeatTimeRef.current = currentTime;
-          beatTimestampsRef.current = [...beatTimestampsRef.current, currentTime].slice(-20); 
+          beatTimestampsRef.current = [...beatTimestampsRef.current, currentTime].slice(-20);
       }
       calculatedBpm = estimateBPM(beatTimestampsRef.current, currentGlobalAudioData.bpm);
       finalSpectrumToSet = currentSpectrum;
@@ -424,30 +424,30 @@ export function useAudioAnalysis() {
     });
 
     if (settingsRef.current.enableAgc && gainNodeRef.current && audioContextRef.current && audioContextRef.current.state === 'running') {
-        const currentRmsForAgc = energyAndRmsResult.rms; 
+        const currentRmsForAgc = energyAndRmsResult.rms;
         const currentGain = gainNodeRef.current.gain.value;
-        if (currentRmsForAgc > 0.005) { 
+        if (currentRmsForAgc > 0.005) {
             let targetGain = currentGain * (AGC_TARGET_RMS / currentRmsForAgc);
-            targetGain = Math.max(AGC_MIN_GAIN, Math.min(AGC_MAX_GAIN, targetGain)); 
+            targetGain = Math.max(AGC_MIN_GAIN, Math.min(AGC_MAX_GAIN, targetGain));
             const timeConstant = currentRmsForAgc > AGC_TARGET_RMS ? AGC_ATTACK_TIME_CONSTANT : AGC_RELEASE_TIME_CONSTANT;
             gainNodeRef.current.gain.setTargetAtTime(targetGain, audioContextRef.current.currentTime, timeConstant);
-        } else if (currentGain > 1.5) { 
-            gainNodeRef.current.gain.setTargetAtTime(1.0, audioContextRef.current.currentTime, AGC_RELEASE_TIME_CONSTANT * 2 ); 
+        } else if (currentGain > 1.5) {
+            gainNodeRef.current.gain.setTargetAtTime(1.0, audioContextRef.current.currentTime, AGC_RELEASE_TIME_CONSTANT * 2 );
         }
     }
      localAnalysisLoopFrameIdRef.current = requestAnimationFrame(analyze);
-  }, [calculateEnergy, estimateBPM, setAudioData, currentGlobalAudioData.bpm]); 
- 
+  }, [calculateEnergy, estimateBPM, setAudioData, currentGlobalAudioData.bpm]);
+
   // Effect to manage the analysis loop based on initialization state
   useEffect(() => {
-    // PATCH: Use isInitializedInternalRef.current in the condition
+    // Phase 1 Fix: Use isInitializedInternalRef.current in the condition
     if (
       isInitializedInternalRef.current &&
       audioContextRef.current &&
       audioContextRef.current.state === 'running'
     ) {
       console.log("Starting audio analysis loop (from isInitialized/context state effect).");
-      if (!localAnalysisLoopFrameIdRef.current) { 
+      if (!localAnalysisLoopFrameIdRef.current) {
           localAnalysisLoopFrameIdRef.current = requestAnimationFrame(analyze);
       }
     } else {
@@ -518,16 +518,13 @@ export function useAudioAnalysis() {
       stopAudioAnalysis();
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); 
+  }, []);
 
-  return { 
-    initializeAudio, 
-    stopAudioAnalysis, 
-    isInitialized: isInitializedInternalActual, 
+  return {
+    initializeAudio,
+    stopAudioAnalysis,
+    isInitialized: isInitializedInternalActual,
     error: errorInternalActual,
     audioInputDevices
   };
 }
-
-
-    
