@@ -2,19 +2,18 @@
 "use client";
 
 import { SixrLogo } from '@/components/icons/SixrLogo';
-import { useSettingsStore } from '@/store/settingsStore'; // MODIFIED: Import Zustand store
-import { useAudioDataStore } from '@/store/audioDataStore'; // MODIFIED: Import Zustand store
+import { useSettingsStore } from '@/store/settingsStore'; 
+import { useAudioDataStore } from '@/store/audioDataStore'; 
 import { useEffect, useState, useRef } from 'react';
 import { cn } from '@/lib/utils';
 import { SIXR_S_COLOR, SIXR_I_COLOR, SIXR_X_COLOR, SIXR_R_COLOR, TORUS_FONT_FAMILY } from '@/lib/brandingConstants';
 
 
 export function BrandingOverlay() {
-  // MODIFIED: Use Zustand store selectors
   const logoOpacity = useSettingsStore(state => state.logoOpacity);
   const logoAnimationSettings = useSettingsStore(state => state.logoAnimationSettings);
   const logoBlackout = useSettingsStore(state => state.logoBlackout);
-  const audioData = useAudioDataStore(state => state); // Get all audio data
+  const audioData = useAudioDataStore(state => state); 
 
   const [bootShimmer, setBootShimmer] = useState(true);
   const [showMainBranding, setShowMainBranding] = useState(false);
@@ -35,14 +34,14 @@ export function BrandingOverlay() {
   useEffect(() => {
     let intervalId: NodeJS.Timeout | undefined;
     if (animType === 'blink') {
-      const blinkInterval = 1000 / animSpeed; // animSpeed is multiplier, higher is faster
+      const blinkInterval = 1000 / animSpeed; 
       intervalId = setInterval(() => {
         setBlinkOn(prev => !prev);
-      }, blinkInterval / 2); // Blink on for half interval, off for half
+      }, blinkInterval / 2); 
     }
     return () => {
       if (intervalId) clearInterval(intervalId);
-      setBlinkOn(true); // Ensure it's on if animation changes
+      setBlinkOn(true); 
     };
   }, [animType, animSpeed]);
 
@@ -52,8 +51,7 @@ export function BrandingOverlay() {
       const animateHue = (currentTime: number) => {
         const deltaTime = currentTime - lastTime;
         lastTime = currentTime;
-        // animSpeed of 1 roughly cycles once per 6 seconds. Higher animSpeed increases cycle rate.
-        const hueIncrement = (animSpeed / 5) * (360 / 60) * (deltaTime / (1000 / 60)); // Adjusted for reasonable speed
+        const hueIncrement = (animSpeed / 5) * (360 / 60) * (deltaTime / (1000 / 60)); 
         setRainbowHue(prevHue => (prevHue + hueIncrement) % 360);
         animationFrameRef.current = requestAnimationFrame(animateHue);
       };
@@ -67,21 +65,19 @@ export function BrandingOverlay() {
   }, [animType, animSpeed]);
 
 
-  if (logoBlackout) { // MODIFIED: Read directly from Zustand state
+  if (logoBlackout) { 
     return null;
   }
 
-  const rmsGlowIntensity = Math.min(1, audioData.rms * 2); // Cap intensity
+  const rmsGlowIntensity = Math.min(1, audioData.rms * 2); 
   const masterOpacity = logoOpacity;
 
-  // Default letter colors
   let sDisplayColor = SIXR_S_COLOR;
   let iDisplayColor = SIXR_I_COLOR;
   let xDisplayColor = SIXR_X_COLOR;
   let rDisplayColor = SIXR_R_COLOR;
   let logoColorOverride: string | undefined = undefined;
 
-  // Apply animation colors
   if (animType === 'solid') {
     logoColorOverride = animColor;
   } else if (animType === 'blink' && blinkOn) {
@@ -90,7 +86,6 @@ export function BrandingOverlay() {
     logoColorOverride = `hsl(${rainbowHue}, 100%, 70%)`;
   }
 
-  // If there's a color override for the entire logo (solid, blink, rainbow), apply it to all letters
   if (animType === 'solid' || (animType === 'blink' && blinkOn) || animType === 'rainbowCycle') {
     sDisplayColor = logoColorOverride!;
     iDisplayColor = logoColorOverride!;
@@ -100,17 +95,15 @@ export function BrandingOverlay() {
   
   const centralTextBaseStyle: React.CSSProperties = {
     fontFamily: TORUS_FONT_FAMILY,
-    opacity: masterOpacity, // Base opacity
-    transition: 'opacity 0.1s ease-in-out, color 0.05s linear', // Smooth transitions
+    opacity: masterOpacity, 
+    transition: 'opacity 0.1s ease-in-out, color 0.05s linear', 
   };
 
-  // Individual letter styles for the central text
   const centralTextStyleS: React.CSSProperties = { ...centralTextBaseStyle, color: sDisplayColor };
   const centralTextStyleI: React.CSSProperties = { ...centralTextBaseStyle, color: iDisplayColor };
   const centralTextStyleX: React.CSSProperties = { ...centralTextBaseStyle, color: xDisplayColor };
   const centralTextStyleR: React.CSSProperties = { ...centralTextBaseStyle, color: rDisplayColor };
 
-  // Handle blink animation opacity for central text
   if (animType === 'blink' && !blinkOn) {
     centralTextStyleS.opacity = 0;
     centralTextStyleI.opacity = 0;
@@ -118,12 +111,11 @@ export function BrandingOverlay() {
     centralTextStyleR.opacity = 0;
   }
   
-  // Determine glow color for central text, defaulting to X's color if not overridden
   let centralTextGlowColor = SIXR_X_COLOR; 
   if (animType === 'solid' || (animType === 'blink' && blinkOn)) {
     centralTextGlowColor = animColor;
   } else if (animType === 'rainbowCycle') {
-     centralTextGlowColor = `hsl(${rainbowHue}, 100%, 80%)`; // Brighter for glow
+     centralTextGlowColor = `hsl(${rainbowHue}, 100%, 80%)`; 
   }
 
   const centralTextContainerStyle: React.CSSProperties = {
@@ -135,21 +127,19 @@ export function BrandingOverlay() {
     `,
   };
   
-  // CSS custom properties for pulse animation are set here, used by the Tailwind animation utility
   const pulseCustomProperties: React.CSSProperties = animType === 'pulse' ? {
     ['--logo-pulse-start-opacity' as string]: masterOpacity,
     ['--logo-pulse-mid-opacity' as string]: masterOpacity * 0.6,
-    ['--logo-pulse-duration' as string]: `${2 / animSpeed}s`, // Pass duration via variable
+    ['--logo-pulse-duration' as string]: `${2 / animSpeed}s`, 
   } : {};
 
 
   const logoWrapperBaseStyle: React.CSSProperties = {
-    opacity: animType === 'pulse' ? undefined : masterOpacity, // Pulse animation handles its own opacity via CSS vars
+    opacity: animType === 'pulse' ? undefined : masterOpacity, 
     transition: 'opacity 0.3s ease-in-out, color 0.05s linear',
   };
 
 
-  // Styles for rotating watermark and beat-flash logo
   const rotatingWatermarkStyle: React.CSSProperties = {...logoWrapperBaseStyle, ...pulseCustomProperties};
   const beatFlashLogoStyle: React.CSSProperties = {...logoWrapperBaseStyle, ...pulseCustomProperties};
 
@@ -158,7 +148,6 @@ export function BrandingOverlay() {
     beatFlashLogoStyle.opacity = 0;
   }
 
-  // Determine glow color for beat flash, defaulting to X's color if not overridden
   let beatFlashGlowColor = SIXR_X_COLOR;
   if (animType === 'solid' || (animType === 'blink' && blinkOn)) {
     beatFlashGlowColor = animColor;
@@ -226,6 +215,25 @@ export function BrandingOverlay() {
             />
           </div>
         </>
+      )}
+
+      {/* RMS Debug Indicator */}
+      {audioData && (
+        <div
+          style={{
+            position: 'fixed',
+            bottom: '20px',
+            right: '20px',
+            width: '40px',
+            height: '40px',
+            backgroundColor: `hsla(0, 100%, 50%, ${Math.min(1, audioData.rms * 4)})`, // Red, opacity based on RMS, slightly amplified
+            borderRadius: '50%',
+            zIndex: 10000, 
+            transition: 'background-color 0.05s linear',
+            pointerEvents: 'none',
+          }}
+          title={`RMS: ${audioData.rms.toFixed(3)}`}
+        />
       )}
     </>
   );
