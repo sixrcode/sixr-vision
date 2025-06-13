@@ -440,7 +440,11 @@ export function useAudioAnalysis() {
  
   // Effect to manage the analysis loop based on initialization state
   useEffect(() => {
-    if (isInitializedInternalActual && audioContextRef.current && audioContextRef.current.state === 'running') {
+    if (
+      isInitializedInternalRef.current && // Changed from isInitializedInternalActual
+      audioContextRef.current &&
+      audioContextRef.current.state === 'running'
+    ) {
       console.log("Starting audio analysis loop (from isInitialized/context state effect).");
       if (!localAnalysisLoopFrameIdRef.current) { 
           localAnalysisLoopFrameIdRef.current = requestAnimationFrame(analyze);
@@ -460,7 +464,7 @@ export function useAudioAnalysis() {
             localAnalysisLoopFrameIdRef.current = null;
         }
     };
-  }, [isInitializedInternalActual, analyze, stopAudioAnalysis]);
+  }, [isInitializedInternalActual, analyze, stopAudioAnalysis]); // Keep isInitializedInternalActual here to react to its changes
 
   // Effect to update gain based on manual settings (only if AGC is off)
   useEffect(() => {
@@ -523,3 +527,4 @@ export function useAudioAnalysis() {
     audioInputDevices
   };
 }
+
