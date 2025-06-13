@@ -9,6 +9,9 @@ import { cn } from '@/lib/utils'
 
 export default function InitPromptOverlay() {
   const [isVisible, setIsVisible] = useState(false);
+  const [isLoadingMic, setIsLoadingMic] = useState(false);
+  const [isLoadingCam, setIsLoadingCam] = useState(false);
+  const [isLoadingBoth, setIsLoadingBoth] = useState(false);
 
   const { initializeAudio, isInitialized: micActive, error: audioError } = useAudioAnalysis();
   const showWebcam = useSettingsStore(state => state.showWebcam);
@@ -36,18 +39,30 @@ export default function InitPromptOverlay() {
   }, [micActive, showWebcam, audioError]);
 
   const handleEnableMic = async () => {
-    await initializeAudio();
-    // Visibility will be handled by the useEffect above
+    setIsLoadingMic(true);
+    try {
+      await initializeAudio();
+    } finally {
+      setIsLoadingMic(false);
+      // Visibility will be handled by the useEffect above
+    }
   };
 
   const handleEnableCam = () => {
-    updateSetting('showWebcam', true);
-    // Visibility will be handled by the useEffect above
+    setIsLoadingCam(true);
+    try {
+      updateSetting('showWebcam', true);
+    } finally {
+      setIsLoadingCam(false);
+      // Visibility will be handled by the useEffect above
+    }
   };
 
   const handleEnableBoth = async () => {
-    const micInitializedSuccessfully = await initializeAudio();
-    if (micInitializedSuccessfully) {
+    setIsLoadingBoth(true);
+    try {
+      const micInitializedSuccessfully = await initializeAudio();
+      // Only attempt to enable camera if mic initialization started (it might still fail asynchronously)
       updateSetting('showWebcam', true);
     }
     // If mic failed, audioError will be set by useAudioAnalysis,
@@ -81,7 +96,7 @@ export default function InitPromptOverlay() {
           <Button
             onClick={handleEnableBoth}
             className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
-            disabled={bothEnabled}
+            disabled={bothEnabled || isLoadingBoth}
             aria-label="Enable Microphone and Camera"
           >
             <CheckCircle2 className="mr-2 h-4 w-4" />
@@ -92,7 +107,7 @@ export default function InitPromptOverlay() {
               onClick={handleEnableMic}
               className="w-full sm:w-auto flex-1"
               variant="outline"
-              disabled={micFullyActive}
+              disabled={micFullyActive || isLoadingMic}
               aria-label={micFullyActive ? "Microphone Enabled" : (audioError ? "Retry Microphone Initialization" : "Enable Microphone")}
             >
               <Mic className="mr-2 h-4 w-4" />
@@ -102,7 +117,7 @@ export default function InitPromptOverlay() {
               onClick={handleEnableCam}
               variant="outline"
               className="w-full sm:w-auto flex-1"
-              disabled={showWebcam}
+              disabled={showWebcam || isLoadingCam}
               aria-label={showWebcam ? "Camera Enabled" : "Enable Camera"}
             >
               <Camera className="mr-2 h-4 w-4" />

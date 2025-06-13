@@ -36,7 +36,7 @@ const geistMono = { variable: '' };
 //   ],
 //   variable: '--font-data70',
 //   display: 'swap',
-//   fallback: ['monospace'], 
+//   fallback: ['monospace'],
 // });
 const data70Font = { variable: ''}; // Use this if Data70.ttf is confirmed unavailable & causing build errors
 
@@ -59,6 +59,7 @@ const torusVariationsFont = { variable: '' }; // Placeholder if Torus font loadi
 export const metadata: Metadata = {
   title: 'SIXR Vision - SBNF Cosmic Grapevines',
   description: 'Audio-Reactive Visualizer with AI Features, themed for SBNF 2025',
+  icons: [], // Explicitly provide an empty array for icons
 };
 
 export default function RootLayout({

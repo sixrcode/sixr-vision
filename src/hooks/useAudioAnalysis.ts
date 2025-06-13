@@ -440,8 +440,9 @@ export function useAudioAnalysis() {
  
   // Effect to manage the analysis loop based on initialization state
   useEffect(() => {
+    // PATCH: Use isInitializedInternalRef.current in the condition
     if (
-      isInitializedInternalRef.current && // Changed from isInitializedInternalActual
+      isInitializedInternalRef.current &&
       audioContextRef.current &&
       audioContextRef.current.state === 'running'
     ) {
@@ -528,3 +529,5 @@ export function useAudioAnalysis() {
   };
 }
 
+
+    
