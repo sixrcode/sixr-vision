@@ -5,7 +5,7 @@ import { Poppins } from 'next/font/google';
 // import { GeistMono } from 'geist/font/mono'; // Temporarily disabled due to 403 errors in Firebase Studio
 import localFont from 'next/font/local';
 
-// import './fonts.css'; // No longer needed for Torus as it's handled by next/font/local
+// import './fonts.css'; // No longer needed if all fonts managed by next/font
 import './globals.css';
 
 import { Toaster } from '@/components/ui/toaster';
@@ -21,9 +21,9 @@ const poppins = Poppins({
 });
 
 // Fallback if GeistSans loading is disabled (due to 403 errors in Firebase Studio)
-const geistSans = { variable: '' };
+// const geistSans = { variable: '' }; // Removed from body className
 // Fallback if GeistMono loading is disabled (due to 403 errors in Firebase Studio)
-const geistMono = { variable: '' };
+// const geistMono = { variable: '' }; // Removed from body className
 
 // === DATA 70 FONT CONFIGURATION ===
 // IMPORTANT: Ensure the font file 'Data70.ttf' is in 'src/app/fonts/'.
@@ -59,7 +59,7 @@ const torusVariationsFont = { variable: '' }; // Placeholder if Torus font loadi
 export const metadata: Metadata = {
   title: 'SIXR Vision - SBNF Cosmic Grapevines',
   description: 'Audio-Reactive Visualizer with AI Features, themed for SBNF 2025',
-  // Removed 'icons: []' to revert to default Next.js icon handling
+  icons: [], // Explicitly state no file-based icons from /app directory
 };
 
 export default function RootLayout({
@@ -81,7 +81,7 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className={`${poppins.variable} ${geistSans.variable} ${geistMono.variable} ${data70Font.variable} ${torusVariationsFont.variable} overflow-x-hidden`}>
+      <body className={`${poppins.variable} ${data70Font.variable} ${torusVariationsFont.variable} overflow-x-hidden`}>
         <a
           href="#main-content"
           className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:p-3 focus:bg-background focus:text-foreground focus:ring-2 focus:ring-ring focus:rounded-md focus:top-2 focus:left-2"
