@@ -21,26 +21,33 @@ export default function InitPromptOverlay() {
     // Show the prompt if neither mic nor cam is active/enabled,
     // OR if there's an audio error (which means mic isn't truly active in a usable way).
     const timer = setTimeout(() => {
-        if ((!micActive && !showWebcam) || (audioError && !micActive)) {
-            setIsVisible(true);
+        // If mic is not truly active (either not initialized or error present) AND webcam is not shown, then prompt.
+        // OR if mic is fine but webcam is not shown, still prompt (to enable cam).
+        // OR if webcam is fine but mic is not, still prompt (to enable mic).
+        // Essentially, prompt if either is missing or if mic has an error.
+        if ((!micActive || audioError) || !showWebcam ) {
+             // But only if we are not in the middle of an "Enable Both" attempt that might succeed.
+            if (!isLoadingBoth) {
+                setIsVisible(true);
+            }
         } else {
             setIsVisible(false);
         }
     }, 750); // Slight delay to allow initial checks to complete
     return () => clearTimeout(timer);
-  }, [micActive, showWebcam, audioError]);
+  }, [micActive, showWebcam, audioError, isLoadingBoth]);
 
 
-  // Hide the overlay if mic becomes active (and no error) or webcam is shown AFTER initial check
+  // Hide the overlay if mic becomes active (and no error) AND webcam is shown
   useEffect(() => {
-    if ((micActive && !audioError) || showWebcam) {
+    if (micActive && !audioError && showWebcam) {
       setIsVisible(false);
     }
   }, [micActive, showWebcam, audioError]);
 
   const handleEnableMic = async () => {
     setIsLoadingMic(true);
-    setIsLoadingBoth(false); // Ensure "Enable Both" loading state is cleared
+    setIsLoadingBoth(false);
     try {
       await initializeAudio();
     } finally {
@@ -50,7 +57,7 @@ export default function InitPromptOverlay() {
 
   const handleEnableCam = () => {
     setIsLoadingCam(true);
-    setIsLoadingBoth(false); // Ensure "Enable Both" loading state is cleared
+    setIsLoadingBoth(false);
     try {
       updateSetting('showWebcam', true);
     } finally {
@@ -62,22 +69,40 @@ export default function InitPromptOverlay() {
     setIsLoadingBoth(true);
     setIsLoadingMic(false); // Clear individual loading states
     setIsLoadingCam(false);
-    let micInitializedSuccessfully = false;
+    let micOk = false;
+    // camOk will be inferred from the showWebcam setting after the attempt
+    // For logging purposes, we can track if the attempt was made.
+    let camEnableAttempted = false;
+
     try {
-      micInitializedSuccessfully = await initializeAudio();
-      if (micInitializedSuccessfully) {
+      console.log("[InitPromptOverlay - EnableBoth] Attempting microphone initialization...");
+      micOk = await initializeAudio();
+      console.log("[InitPromptOverlay - EnableBoth] Microphone initialization successful:", micOk);
+
+      if (micOk) {
+        console.log("[InitPromptOverlay - EnableBoth] Microphone OK. Attempting to enable camera setting...");
         updateSetting('showWebcam', true);
+        camEnableAttempted = true;
+        console.log("[InitPromptOverlay - EnableBoth] Camera enabling setting updated (showWebcam: true).");
+      } else {
+        console.log("[InitPromptOverlay - EnableBoth] Microphone initialization failed. Camera enabling will not be attempted.");
       }
+    } catch (error) {
+        console.error("[InitPromptOverlay - EnableBoth] Error during 'Enable Both' process:", error);
     } finally {
       setIsLoadingBoth(false);
-      // Visibility will be handled by the useEffect above based on micActive, showWebcam, and audioError
+      // Log the outcome. Actual camera status is reflected by `showWebcam` from Zustand.
+      console.log(
+        "[InitPromptOverlay - EnableBoth] Process finished. Mic init success:", micOk, 
+        "Camera enable attempted:", camEnableAttempted
+      );
     }
   };
 
   if (!isVisible) return null;
 
   const micFullyActive = micActive && !audioError;
-  const bothEnabled = micFullyActive && showWebcam;
+  const bothEnabledAndReady = micFullyActive && showWebcam;
 
   return (
     <div className={cn(
@@ -101,17 +126,17 @@ export default function InitPromptOverlay() {
           <Button
             onClick={handleEnableBoth}
             className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
-            disabled={bothEnabled || isLoadingBoth || isLoadingMic || isLoadingCam}
-            aria-label={isLoadingBoth ? "Enabling Microphone and Camera..." : (bothEnabled ? "Microphone and Camera Enabled" : "Enable Microphone and Camera")}
+            disabled={bothEnabledAndReady || isLoadingBoth || isLoadingMic || isLoadingCam}
+            aria-label={isLoadingBoth ? "Enabling Microphone and Camera..." : (bothEnabledAndReady ? "Microphone and Camera Enabled" : "Enable Microphone and Camera")}
           >
             {isLoadingBoth ? (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            ) : bothEnabled ? (
+            ) : bothEnabledAndReady ? (
               <CheckCircle2 className="mr-2 h-4 w-4" />
             ) : (
-              <Mic className="mr-2 h-4 w-4" /> /* Default icon, can be changed */
+              <Mic className="mr-2 h-4 w-4" />
             )}
-            {isLoadingBoth ? "Enabling Both..." : bothEnabled ? "Mic & Cam Enabled" : "Enable Both"}
+            {isLoadingBoth ? "Enabling Both..." : bothEnabledAndReady ? "Mic & Cam Enabled" : "Enable Both"}
           </Button>
           <div className="flex flex-col sm:flex-row gap-3">
             <Button
