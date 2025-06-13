@@ -32,6 +32,7 @@ export type WebGLSceneAssets = {
   particleGeometry?: THREE.BufferGeometry;
   positions?: Float32Array;
   colors?: Float32Array;
+  initialColors?: Float32Array; // Added for radial_burst fade logic
   velocities?: Float32Array;
   lifetimes?: Float32Array;
   initialLifetimes?: Float32Array; // For particle_finale to store initial lifetime
@@ -251,3 +252,4 @@ export const VALID_BLEND_MODES: GlobalCompositeOperation[] = [
   'lighten', 'color-dodge', 'color-burn', 'hard-light', 'soft-light',
   'difference', 'exclusion', 'hue', 'saturation', 'color', 'luminosity'
 ];
+

@@ -117,6 +117,9 @@ export const SCENES: SceneDefinition[] = [
       const SBNF_BAR_HUES = [SBNF_HUES_SCENE.orangeRed, SBNF_HUES_SCENE.orangeYellow, SBNF_HUES_SCENE.lightLavender, SBNF_HUES_SCENE.deepPurple, SBNF_HUES_SCENE.tronBlue];
       const effectiveBrightCap = Math.max(0.05, settings.brightCap);
       const hueTimeShift = (currentTime / 20000) * 360;
+      let barPlusGapWidth = webGLAssets.barPlusGapWidth as number;
+      let barActualWidth = webGLAssets.barActualWidth as number;
+      const numBars = webGLAssets.numBars as number; // Added in initWebGL, but not explicitly typed in WebGLSceneAssets union
 
       if (canvasWidth !== webGLAssets.lastCanvasWidth) {
           webGLAssets.lastCanvasWidth = canvasWidth;
@@ -130,7 +133,6 @@ export const SCENES: SceneDefinition[] = [
       }
 
       const spectrum = audioData.spectrum;
-      const numBars = webGLAssets.numBars as number; // Added in initWebGL, but not explicitly typed in WebGLSceneAssets union
       for (let i = 0; i < numBars; i++) {
         const value = spectrum[i] / 255;
         const barHeight = Math.max(1, value * canvasHeight * 0.8 * effectiveBrightCap * (1 + audioData.rms * 0.5));
@@ -175,16 +177,17 @@ export const SCENES: SceneDefinition[] = [
       const PARTICLE_COUNT = 4000;
       const positions = new Float32Array(PARTICLE_COUNT * 3);
       const colors = new Float32Array(PARTICLE_COUNT * 3);
+      const initialColors = new Float32Array(PARTICLE_COUNT * 3); // Store initial colors for fading
       const velocities = new Float32Array(PARTICLE_COUNT * 3);
       const lifetimes = new Float32Array(PARTICLE_COUNT); 
       const initialLifetimes = new Float32Array(PARTICLE_COUNT); 
-      const lastFadeFactors = new Float32Array(PARTICLE_COUNT).fill(1);
+      // const lastFadeFactors = new Float32Array(PARTICLE_COUNT).fill(1); // No longer needed
 
 
       for (let i = 0; i < PARTICLE_COUNT; i++) {
         lifetimes[i] = 0; 
         const pIdx = i * 3;
-        positions[pIdx + 1] = 10000; 
+        positions[pIdx + 1] = 10000; // Start off-screen
       }
 
       const geometry = new THREE.BufferGeometry();
@@ -200,7 +203,7 @@ export const SCENES: SceneDefinition[] = [
 
       return {
         scene, camera, particles, particleMaterial, particleGeometry: geometry,
-        positions, colors, velocities, lifetimes, initialLifetimes, lastFadeFactors,
+        positions, colors, initialColors, velocities, lifetimes, initialLifetimes, // Removed lastFadeFactors
         PARTICLE_COUNT,
         lastBeatTime: 0,
         lastAmbientSpawnTime: 0,
@@ -211,14 +214,24 @@ export const SCENES: SceneDefinition[] = [
     },
     drawWebGL: ({ renderer, scene, camera, audioData, settings, webGLAssets, canvasWidth, canvasHeight }) => {
       if (!webGLAssets?.particles || !webGLAssets.particleMaterial || !webGLAssets.particleGeometry) return;
-      const { particles, particleMaterial, particleGeometry, positions, colors, velocities, lifetimes, initialLifetimes, lastFadeFactors, PARTICLE_COUNT, tempColor, bgColor } = webGLAssets as WebGLSceneAssets & { particles: THREE.Points, particleMaterial: THREE.PointsMaterial, particleGeometry: THREE.BufferGeometry, positions: Float32Array, colors: Float32Array, velocities: Float32Array, lifetimes: Float32Array, initialLifetimes: Float32Array, lastFadeFactors: Float32Array, PARTICLE_COUNT: number, tempColor: THREE.Color, bgColor: THREE.Color, lastBeatTime: number, lastAmbientSpawnTime: number, lastFrameTimeWebGL: number };
+      const { 
+        particles, particleMaterial, particleGeometry, 
+        positions, colors, initialColors, velocities, lifetimes, initialLifetimes, 
+        PARTICLE_COUNT, tempColor, bgColor 
+      } = webGLAssets as WebGLSceneAssets & { 
+        particles: THREE.Points, particleMaterial: THREE.PointsMaterial, particleGeometry: THREE.BufferGeometry, 
+        positions: Float32Array, colors: Float32Array, initialColors: Float32Array, velocities: Float32Array, 
+        lifetimes: Float32Array, initialLifetimes: Float32Array, 
+        PARTICLE_COUNT: number, tempColor: THREE.Color, bgColor: THREE.Color, 
+        lastBeatTime: number, lastAmbientSpawnTime: number, lastFrameTimeWebGL: number 
+      };
 
       webGLAssets.lastFrameTimeWebGL = webGLAssets.lastFrameTimeWebGL || performance.now();
       const currentTime = performance.now();
       const deltaTime = (currentTime - webGLAssets.lastFrameTimeWebGL) / 1000.0;
       webGLAssets.lastFrameTimeWebGL = currentTime;
 
-      renderer.setClearColor(bgColor.getHex(), 0.1); 
+      renderer.setClearColor(bgColor.getHex(), 1.0); // Changed alpha to 1.0
 
       const SBNF_BURST_HUES = [SBNF_HUES_SCENE.orangeRed, SBNF_HUES_SCENE.orangeYellow, SBNF_HUES_SCENE.lightPeach];
       const SBNF_AMBIENT_HUES = [SBNF_HUES_SCENE.lightLavender, SBNF_HUES_SCENE.deepPurple, SBNF_HUES_SCENE.tronBlue];
@@ -249,8 +262,11 @@ export const SCENES: SceneDefinition[] = [
             const hue = SBNF_BURST_HUES[Math.floor(Math.random() * SBNF_BURST_HUES.length)];
             const [r,g,bVal] = hslToRgb(hue, 90 + Math.random() * 10, 55 + Math.random() * 20);
             tempColor.setRGB(r,g,bVal);
+            
+            initialColors[pIdx] = tempColor.r; 
+            initialColors[pIdx+1] = tempColor.g; 
+            initialColors[pIdx+2] = tempColor.b;
             colors[pIdx] = tempColor.r; colors[pIdx+1] = tempColor.g; colors[pIdx+2] = tempColor.b;
-            lastFadeFactors[i] = 1.0; // Reset fade factor on spawn
             spawned++;
           }
         }
@@ -273,8 +289,11 @@ export const SCENES: SceneDefinition[] = [
             const hue = SBNF_AMBIENT_HUES[Math.floor(Math.random() * SBNF_AMBIENT_HUES.length)];
             const [r,g,bVal] = hslToRgb(hue, 60 + Math.random() * 30, 35 + Math.random() * 20); 
             tempColor.setRGB(r,g,bVal);
+
+            initialColors[pIdx] = tempColor.r; 
+            initialColors[pIdx+1] = tempColor.g; 
+            initialColors[pIdx+2] = tempColor.b;
             colors[pIdx] = tempColor.r; colors[pIdx+1] = tempColor.g; colors[pIdx+2] = tempColor.b;
- lastFadeFactors[i] = 1.0; // Reset fade factor // No unused warning
             spawned++;
           }
         }
@@ -292,15 +311,9 @@ export const SCENES: SceneDefinition[] = [
           const lifeRatio = Math.max(0, lifetimes[i] / initialLifetimes[i]);
           const fade = Math.pow(lifeRatio, 0.65); 
           
-          const originalR = colors[pIdx] / lastFadeFactors[i];
-          const originalG = colors[pIdx+1] / lastFadeFactors[i];
-          const originalB = colors[pIdx+2] / lastFadeFactors[i];
-
-          colors[pIdx] = originalR * fade;
-          colors[pIdx+1] = originalG * fade;
-          colors[pIdx+2] = originalB * fade;
-          
-          lastFadeFactors[i] = fade;
+          colors[pIdx] = initialColors[pIdx] * fade;
+          colors[pIdx+1] = initialColors[pIdx+1] * fade;
+          colors[pIdx+2] = initialColors[pIdx+2] * fade;
 
           if (lifetimes[i] <= 0) {
             positions[pIdx+1] = 10000; 
@@ -1545,3 +1558,4 @@ export function drawProceduralVines(
   });
   ctx.restore();
 }
+
