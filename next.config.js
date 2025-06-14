@@ -6,4 +6,3 @@ const nextConfig = {
     ]
   }
 };
-allowedDevOrigins: ['https://6000-firebase-studio-...cloudworkstations.dev'],

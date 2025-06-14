@@ -1,12 +1,9 @@
-
 {
   "name": "sixr-vision",
   "version": "0.2.0",
   "private": true,
   "scripts": {
-    "dev": "PORT=9002 next dev --turbopack || next dev --turbopack",
-    "genkit:dev": "genkit start -- tsx src/ai/dev.ts",
-    "genkit:watch": "genkit start -- tsx --watch src/ai/dev.ts",
+    "dev": "wait-on tcp:9002 || find-free-port --min 9003 --max 9999 | xargs -I{} PORT={} next dev --turbopack",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
@@ -43,6 +40,7 @@
     "clsx": "^2.1.1",
     "date-fns": "^3.6.0",
     "dotenv": "^16.5.0",
+    "find-free-port": "^1.2.0",
     "firebase": "^11.7.3",
     "geist": "^1.3.0",
     "genkit": "^1.8.0",
@@ -67,6 +65,8 @@
     "@types/three": "^0.167.1",
     "eslint": "9.27.0",
     "eslint-config-next": "15.1.8",
-    "genkit-cli": "^1.8.0"
+    "genkit-cli": "^1.8.0",
+    "port-finder": "^0.12.4",
+    "wait-on": "^8.0.3"
   }
 }
