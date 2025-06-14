@@ -169,62 +169,57 @@ export const SCENES: SceneDefinition[] = [
     rendererType: 'webgl',
     thumbnailUrl: `https://placehold.co/80x60/${SBNF_HEX_COLORS.black}/${SBNF_HEX_COLORS.orangeRed}.png?text=BURST&font=poppins`,
     dataAiHint: 'particle explosion audio beat',
- initWebGL: (canvas) => {
-      const scene = new THREE.Scene(); // No unused warning
-      const camera = new THREE.PerspectiveCamera(75, canvas.width / canvas.height, 0.1, 2000);
-      camera.position.z = 300;
+    initWebGL: ({ scene, camera, renderer, webGLAssets }) => {
+      const particleCount = 512;
+      const geometry = new THREE.BufferGeometry();
+      const positions = [];
+      const velocities = [];
+      const initialColors = [];
 
-      const PARTICLE_COUNT = 4000;
-      const positions = new Float32Array(PARTICLE_COUNT * 3);
-      const colors = new Float32Array(PARTICLE_COUNT * 3);
-      const initialColors = new Float32Array(PARTICLE_COUNT * 3); // Store initial colors for fading
-      const velocities = new Float32Array(PARTICLE_COUNT * 3);
-      const lifetimes = new Float32Array(PARTICLE_COUNT); 
-      const initialLifetimes = new Float32Array(PARTICLE_COUNT); 
-      // const lastFadeFactors = new Float32Array(PARTICLE_COUNT).fill(1); // No longer needed
+      for (let i = 0; i < particleCount; i++) {
+        const angle = (i / particleCount) * 2 * Math.PI;
+        const radius = 0.2 + Math.random() * 0.5;
+        const x = Math.cos(angle) * radius;
+        const y = Math.sin(angle) * radius;
+        const z = (Math.random() - 0.5) * 0.2;
 
-
-      for (let i = 0; i < PARTICLE_COUNT; i++) {
-        lifetimes[i] = 0; 
-        const pIdx = i * 3;
-        positions[pIdx + 1] = 10000; // Start off-screen
+        positions.push(x, y, z);
+        velocities.push(x * 0.01, y * 0.01, z * 0.01); // radial burst
+        initialColors.push(new THREE.Color().setHSL(i / particleCount, 1, 0.5));
       }
 
-      const geometry = new THREE.BufferGeometry();
-      geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-      geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
-      
-      const particleMaterial = new THREE.PointsMaterial({
-        size: 3, vertexColors: true, transparent: true, opacity: 0.85,
-        blending: THREE.AdditiveBlending, sizeAttenuation: true, depthWrite: false,
-      });
-      const particles = new THREE.Points(geometry, particleMaterial);
-      scene.add(particles); // No unused warning
+      const positionAttr = new THREE.Float32BufferAttribute(positions, 3);
+      geometry.setAttribute('position', positionAttr);
 
-      return {
-        scene, camera, particles, particleMaterial, particleGeometry: geometry,
-        positions, colors, initialColors, velocities, lifetimes, initialLifetimes, // Removed lastFadeFactors
-        PARTICLE_COUNT,
-        lastBeatTime: 0,
-        lastAmbientSpawnTime: 0,
-        lastFrameTimeWebGL: performance.now(),
-        tempColor: new THREE.Color(),
- bgColor: new THREE.Color().setHSL(SBNF_HUES_SCENE.black/360, 0, 0.01),
-      } as WebGLSceneAssets;
+      const material = new THREE.PointsMaterial({
+        size: 0.05,
+        vertexColors: true,
+        blending: THREE.AdditiveBlending,
+        transparent: true,
+        depthWrite: false
+      });
+
+      const colors = new Float32Array(particleCount * 3);
+      initialColors.forEach((color, i) => {
+        colors[i * 3] = color.r;
+        colors[i * 3 + 1] = color.g;
+        colors[i * 3 + 2] = color.b;
+      });
+      geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+      const points = new THREE.Points(geometry, material);
+      scene.add(points);
+
+      webGLAssets.points = points;
+      webGLAssets.velocities = velocities;
+      webGLAssets.initialColors = initialColors;
+      webGLAssets.lastCanvasWidth = 0;
+      webGLAssets.lastCanvasHeight = 0;
+      webGLAssets.bgColor = new THREE.Color(0x000010); // Deep night blue
+      webGLAssets.initialized = false;
     },
     drawWebGL: ({ renderer, scene, camera, audioData, settings, webGLAssets, canvasWidth, canvasHeight }) => {
-      if (!webGLAssets?.particles || !webGLAssets.particleMaterial || !webGLAssets.particleGeometry) return;
-      const { 
-        particles, particleMaterial, particleGeometry, 
-        positions, colors, initialColors, velocities, lifetimes, initialLifetimes, 
-        PARTICLE_COUNT, tempColor, bgColor 
-      } = webGLAssets as WebGLSceneAssets & { 
-        particles: THREE.Points, particleMaterial: THREE.PointsMaterial, particleGeometry: THREE.BufferGeometry, 
-        positions: Float32Array, colors: Float32Array, initialColors: Float32Array, velocities: Float32Array, 
-        lifetimes: Float32Array, initialLifetimes: Float32Array, 
-        PARTICLE_COUNT: number, tempColor: THREE.Color, bgColor: THREE.Color, 
-        lastBeatTime: number, lastAmbientSpawnTime: number, lastFrameTimeWebGL: number 
-      };
+      if (!scene || !camera || !renderer || !webGLAssets.points) return;
 
       webGLAssets.lastFrameTimeWebGL = webGLAssets.lastFrameTimeWebGL || performance.now();
       const currentTime = performance.now();
@@ -232,100 +227,35 @@ export const SCENES: SceneDefinition[] = [
       webGLAssets.lastFrameTimeWebGL = currentTime;
 
       renderer.setClearColor(bgColor.getHex(), 1.0); // Changed alpha to 1.0
-
-      const SBNF_BURST_HUES = [SBNF_HUES_SCENE.orangeRed, SBNF_HUES_SCENE.orangeYellow, SBNF_HUES_SCENE.lightPeach];
-      const SBNF_AMBIENT_HUES = [SBNF_HUES_SCENE.lightLavender, SBNF_HUES_SCENE.deepPurple, SBNF_HUES_SCENE.tronBlue];
-      const DRAG_FACTOR = 0.97;
-      const BEAT_COOLDOWN = 80; 
-      const AMBIENT_SPAWN_INTERVAL = 1000 / Math.max(1, 20 + audioData.rms * 60); 
-      const MAX_AMBIENT_SPAWN_PER_FRAME = Math.floor(PARTICLE_COUNT * 0.02); 
-
-      if (audioData.beat && currentTime - webGLAssets.lastBeatTime > BEAT_COOLDOWN) {
-        webGLAssets.lastBeatTime = currentTime;
-        let spawned = 0;
-        const maxBurstParticles = Math.floor(PARTICLE_COUNT * (0.08 + audioData.bassEnergy * 0.20)); 
-
-        for (let i = 0; i < PARTICLE_COUNT && spawned < maxBurstParticles; i++) {
-          if (lifetimes[i] <= 0) {
-            const pIdx = i * 3;
-            positions[pIdx] = (Math.random() - 0.5) * 5; positions[pIdx+1] = (Math.random() - 0.5) * 5; positions[pIdx+2] = (Math.random() - 0.5) * 5;
-            
-            const phi = Math.random() * Math.PI * 2; const theta = Math.acos(Math.random() * 2 - 1);
-            const speed = 150 + audioData.rms * 250 + audioData.bassEnergy * 100;
-            velocities[pIdx] = Math.sin(theta) * Math.cos(phi) * speed;
-            velocities[pIdx+1] = Math.sin(theta) * Math.sin(phi) * speed;
-            velocities[pIdx+2] = Math.cos(theta) * speed;
-            
-            const life = 1.2 + Math.random() * 1.3;
-            lifetimes[i] = life; initialLifetimes[i] = life;
-            
-            const hue = SBNF_BURST_HUES[Math.floor(Math.random() * SBNF_BURST_HUES.length)];
-            const [r,g,bVal] = hslToRgb(hue, 90 + Math.random() * 10, 55 + Math.random() * 20);
-            tempColor.setRGB(r,g,bVal);
-            
-            initialColors[pIdx] = tempColor.r; 
-            initialColors[pIdx+1] = tempColor.g; 
-            initialColors[pIdx+2] = tempColor.b;
-            colors[pIdx] = tempColor.r; colors[pIdx+1] = tempColor.g; colors[pIdx+2] = tempColor.b;
-            spawned++;
-          }
-        }
+      if (
+        webGLAssets.lastCanvasWidth !== canvasWidth ||
+        webGLAssets.lastCanvasHeight !== canvasHeight
+      ) {
+        camera.aspect = canvasWidth / canvasHeight;
+        camera.updateProjectionMatrix();
+        webGLAssets.lastCanvasWidth = canvasWidth;
+        webGLAssets.lastCanvasHeight = canvasHeight;
       }
 
-      if (audioData.rms > 0.02 && currentTime - webGLAssets.lastAmbientSpawnTime > AMBIENT_SPAWN_INTERVAL) {
-        webGLAssets.lastAmbientSpawnTime = currentTime;
-        let spawned = 0;
-        for (let i = 0; i < PARTICLE_COUNT && spawned < MAX_AMBIENT_SPAWN_PER_FRAME; i++) {
-          if (lifetimes[i] <= 0) {
-            const pIdx = i * 3;
-            positions[pIdx] = 0; positions[pIdx+1] = 0; positions[pIdx+2] = 0;
-            const phi = Math.random() * Math.PI * 2; const theta = Math.acos(Math.random() * 2 - 1);
-            const speed = 25 + audioData.rms * 100 * (Math.random() * 0.5 + 0.3); 
-            velocities[pIdx] = Math.sin(theta) * Math.cos(phi) * speed;
-            velocities[pIdx+1] = Math.sin(theta) * Math.sin(phi) * speed;
-            velocities[pIdx+2] = Math.cos(theta) * speed;
-            const life = 1.8 + Math.random() * 1.8; 
-            lifetimes[i] = life; initialLifetimes[i] = life;
-            const hue = SBNF_AMBIENT_HUES[Math.floor(Math.random() * SBNF_AMBIENT_HUES.length)];
-            const [r,g,bVal] = hslToRgb(hue, 60 + Math.random() * 30, 35 + Math.random() * 20); 
-            tempColor.setRGB(r,g,bVal);
+      renderer.setClearColor(webGLAssets.bgColor, 1.0);
 
-            initialColors[pIdx] = tempColor.r; 
-            initialColors[pIdx+1] = tempColor.g; 
-            initialColors[pIdx+2] = tempColor.b;
-            colors[pIdx] = tempColor.r; colors[pIdx+1] = tempColor.g; colors[pIdx+2] = tempColor.b;
-            spawned++;
-          }
-        }
-      }
+      const positions = webGLAssets.points.geometry.attributes.position.array;
+      const colors = webGLAssets.points.geometry.attributes.color.array;
 
-      for (let i = 0; i < PARTICLE_COUNT; i++) {
-        if (lifetimes[i] > 0) {
-          const pIdx = i * 3;
-          positions[pIdx] += velocities[pIdx] * deltaTime;
-          positions[pIdx+1] += velocities[pIdx+1] * deltaTime;
-          positions[pIdx+2] += velocities[pIdx+2] * deltaTime;
-          velocities[pIdx] *= DRAG_FACTOR; velocities[pIdx+1] *= DRAG_FACTOR; velocities[pIdx+2] *= DRAG_FACTOR;
-          
-          lifetimes[i] -= deltaTime;
-          const lifeRatio = Math.max(0, lifetimes[i] / initialLifetimes[i]);
-          const fade = Math.pow(lifeRatio, 0.65); 
-          
-          colors[pIdx] = initialColors[pIdx] * fade;
-          colors[pIdx+1] = initialColors[pIdx+1] * fade;
-          colors[pIdx+2] = initialColors[pIdx+2] * fade;
+      for (let i = 0; i < webGLAssets.velocities.length; i++) {
+        // Update position
+        const idx = i * 3;
+        positions[idx] += webGLAssets.velocities[i][0];
+        positions[idx + 1] += webGLAssets.velocities[i][1];
+        positions[idx + 2] += webGLAssets.velocities[i][2];
 
-          if (lifetimes[i] <= 0) {
-            positions[pIdx+1] = 10000; 
-            colors[pIdx] = 0; colors[pIdx+1] = 0; colors[pIdx+2] = 0;
-          }
-        }
+        // Fade color over time
+        colors[idx] *= 0.96;
+        colors[idx + 1] *= 0.96;
+        colors[idx + 2] *= 0.96;
       }
       particleGeometry.attributes.position.needsUpdate = true;
       particleGeometry.attributes.color.needsUpdate = true;
-
-      particleMaterial.size = Math.max(0.5, (1.5 + audioData.rms * 2.5) * Math.max(0.1, settings.brightCap)); 
-      particleMaterial.opacity = Math.max(0.1, settings.brightCap * (0.3 + audioData.rms * 0.35)); 
 
       const cam = camera as THREE.PerspectiveCamera;
       cam.position.z = 300 - audioData.rms * 100; 
@@ -334,8 +264,9 @@ export const SCENES: SceneDefinition[] = [
     },
     cleanupWebGL: (webGLAssets) => {
       webGLAssets.scene?.remove(webGLAssets.particles!);
-      webGLAssets.particleGeometry?.dispose();
-      webGLAssets.particleMaterial?.dispose();
+      webGLAssets.points.geometry.dispose();
+      webGLAssets.points.material.dispose();
+      webGLAssets.points = null;
     },
   },
   {
