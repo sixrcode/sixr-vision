@@ -3,7 +3,6 @@ import type { Metadata } from 'next';
 import { Poppins } from 'next/font/google';
 // import { GeistSans } from 'geist/font/sans'; // Temporarily disabled due to 403 errors in Firebase Studio
 // import { GeistMono } from 'geist/font/mono'; // Temporarily disabled due to 403 errors in Firebase Studio
-import localFont from 'next/font/local';
 
 // import './fonts.css'; // No longer needed if all fonts managed by next/font
 import './globals.css';
